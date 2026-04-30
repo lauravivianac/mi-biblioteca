@@ -1132,7 +1132,7 @@ const SEED = [
   {year:2028,month:"Noviembre",title:"Divina Comedia: Purgatorio",author:"Dante Alighieri",genre:"Clásico universal",pages:"~300",role:"⚡ Corto"},
   {year:2028,month:"Diciembre",title:"Divina Comedia: Paraíso",author:"Dante Alighieri",genre:"Clásico universal",pages:"~300",role:"⚓ Ancla"},
   {year:2028,month:"Diciembre",title:"Harry Potter y la Piedra Filosofal",author:"J.K. Rowling",genre:"Fantasía / Juvenil",pages:"~309",role:"⚡ Corto"},
-  {year:2026,month:null,title:"París era una Fiesta",author:"Ernest Hemingway",genre:"Clásico universal",pages:"~240",role:"⚓ Ancla"},
+  {year:2026,month:"Mayo",title:"París era una Fiesta",author:"Ernest Hemingway",genre:"Clásico universal",pages:"~240",role:"⚓ Ancla"},
 ];
 
 const MONTH_ORDER = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -1180,6 +1180,19 @@ async function save() {
   }
 }
 
+const ALWAYS_READ = ["Hechizada","El Gato que Amaba los Libros","El Laberinto de la Rosa",
+  "La Historia Interminable","Historia y Nomeolvides","Manual del Guerrero de la Luz",
+  "La Prueba del Cielo","Canción de Navidad","París era una Fiesta"];
+
+function applyAlwaysRead() {
+  books.forEach(b => {
+    if (ALWAYS_READ.includes(b.title)) {
+      if (!userData[b.id]) userData[b.id] = {};
+      userData[b.id].status = 'read';
+    }
+  });
+}
+
 async function load() {
   const seedBooks = SEED.map((x,i) => ({...x, id:'seed-'+i}));
   try {
@@ -1190,9 +1203,20 @@ async function load() {
       covers = d.covers ? JSON.parse(d.covers) : {};
       const customBooks = d.customBooks ? JSON.parse(d.customBooks) : [];
       books = [...seedBooks, ...customBooks];
+      applyAlwaysRead(); // always force these as read
+      // Save corrected read status back to Firebase
+      const customBooksToSave = books.filter(b => !b.id.startsWith('seed-'));
+      try {
+        await setDoc(doc(db, 'biblioteca', USER_ID), {
+          customBooks: JSON.stringify(customBooksToSave),
+          userData: JSON.stringify(userData),
+          covers: JSON.stringify(covers),
+          updatedAt: Date.now()
+        });
+      } catch(e) {}
       localStorage.setItem('bib_user', JSON.stringify(userData));
       localStorage.setItem('bib_covers', JSON.stringify(covers));
-      localStorage.setItem('bib_custom', JSON.stringify(customBooks));
+      localStorage.setItem('bib_custom', JSON.stringify(customBooksToSave));
       return;
     }
   } catch(e) {
@@ -1207,9 +1231,11 @@ async function load() {
     covers = c ? JSON.parse(c) : {};
     const customBooks = customRaw ? JSON.parse(customRaw) : [];
     books = [...seedBooks, ...customBooks];
+    applyAlwaysRead(); // always force these as read
   } catch {
     books = seedBooks;
     userData = {}; covers = {};
+    applyAlwaysRead();
   }
 }
 
@@ -1582,15 +1608,7 @@ if ('serviceWorker' in navigator) {
 
 await load();
 
-  // Mark pre-read books
-  const READ_TITLES = ["Hechizada", "El Gato que Amaba los Libros", "El Laberinto de la Rosa", "La Historia Interminable", "Historia y Nomeolvides", "Manual del Guerrero de la Luz", "La Prueba del Cielo", "Canción de Navidad", "París era una Fiesta"];
-  books.forEach(b => {
-    if (READ_TITLES.includes(b.title)) {
-      if (!userData[b.id]) userData[b.id] = {};
-      userData[b.id].status = 'read'; // always force read for these titles
-    }
-  });
-  await save();
+  // Read status applied inside load() via applyAlwaysRead()
 
 updateStats();
 renderPlan();
