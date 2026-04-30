@@ -1158,39 +1158,49 @@ let detailId = null;
 
 // ─── STORAGE (localStorage for PWA) ───────────────────────────
 async function save() {
+  // Strip always-read status before saving — these are code-driven, not stored
+  const userDataToSave = {};
+  for (const [id, val] of Object.entries(userData)) {
+    const book = books.find(b => b.id === id);
+    if (book && ALWAYS_READ.includes(book.title)) {
+      // Only save rating and review, not status
+      if (val.rating || val.review || val.hidden) {
+        userDataToSave[id] = { rating: val.rating, review: val.review, hidden: val.hidden };
+      }
+    } else {
+      userDataToSave[id] = val;
+    }
+  }
+  const customBooks = books.filter(b => !b.id.startsWith('seed-'));
   try {
-    const customBooks = books.filter(b => !b.id.startsWith('seed-'));
     await setDoc(doc(db, 'biblioteca', USER_ID), {
       customBooks: JSON.stringify(customBooks),
-      userData: JSON.stringify(userData),
+      userData: JSON.stringify(userDataToSave),
       covers: JSON.stringify(covers),
       updatedAt: Date.now()
     });
+  } catch(e) { console.warn('Firebase save failed:', e); }
+  // Always save to localStorage too
+  try {
     localStorage.setItem('bib_custom', JSON.stringify(customBooks));
-    localStorage.setItem('bib_user', JSON.stringify(userData));
+    localStorage.setItem('bib_user', JSON.stringify(userDataToSave));
     localStorage.setItem('bib_covers', JSON.stringify(covers));
-  } catch(e) {
-    console.warn('Firebase save failed, fallback localStorage:', e);
-    try {
-      const customBooks = books.filter(b => !b.id.startsWith('seed-'));
-      localStorage.setItem('bib_custom', JSON.stringify(customBooks));
-      localStorage.setItem('bib_user', JSON.stringify(userData));
-      localStorage.setItem('bib_covers', JSON.stringify(covers));
-    } catch(e2) {}
-  }
+  } catch(e) {}
 }
 
 const ALWAYS_READ = ["Hechizada","El Gato que Amaba los Libros","El Laberinto de la Rosa",
   "La Historia Interminable","Historia y Nomeolvides","Manual del Guerrero de la Luz",
-  "La Prueba del Cielo","Canción de Navidad","París era una Fiesta"];
+  "La Prueba del Cielo","Canción de Navidad"];
 
 function applyAlwaysRead() {
+  // This runs after every load — these books are ALWAYS read, no matter what
   books.forEach(b => {
     if (ALWAYS_READ.includes(b.title)) {
       if (!userData[b.id]) userData[b.id] = {};
-      userData[b.id].status = 'read';
+      userData[b.id].status = 'read'; // unconditional, always
     }
   });
+  console.log('applyAlwaysRead: marked', ALWAYS_READ.length, 'books as read');
 }
 
 async function load() {
@@ -1203,20 +1213,7 @@ async function load() {
       covers = d.covers ? JSON.parse(d.covers) : {};
       const customBooks = d.customBooks ? JSON.parse(d.customBooks) : [];
       books = [...seedBooks, ...customBooks];
-      applyAlwaysRead(); // always force these as read
-      // Save corrected read status back to Firebase
-      const customBooksToSave = books.filter(b => !b.id.startsWith('seed-'));
-      try {
-        await setDoc(doc(db, 'biblioteca', USER_ID), {
-          customBooks: JSON.stringify(customBooksToSave),
-          userData: JSON.stringify(userData),
-          covers: JSON.stringify(covers),
-          updatedAt: Date.now()
-        });
-      } catch(e) {}
-      localStorage.setItem('bib_user', JSON.stringify(userData));
-      localStorage.setItem('bib_covers', JSON.stringify(covers));
-      localStorage.setItem('bib_custom', JSON.stringify(customBooksToSave));
+      applyAlwaysRead(); // always force read — never comes from Firebase
       return;
     }
   } catch(e) {
