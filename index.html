@@ -892,6 +892,14 @@ body {
 </head>
 <body>
 
+<div id="loading-screen" style="position:fixed;inset:0;background:#0D0A1A;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
+  <div style="font-family:Cinzel,serif;font-size:28px;color:#F0C060">✦</div>
+  <div style="font-family:Cinzel,serif;font-size:14px;color:rgba(196,168,255,0.7);letter-spacing:2px">Cargando biblioteca...</div>
+  <div style="width:40px;height:2px;background:rgba(196,168,255,0.2);border-radius:1px;overflow:hidden">
+    <div style="width:100%;height:100%;background:#9B6EE8;animation:slide 1.2s ease-in-out infinite" ></div>
+  </div>
+  <style>@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}</style>
+</div>
 <div class="bg-canvas">
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
@@ -1042,7 +1050,22 @@ body {
   <div class="sheet" id="detail-sheet" style="padding-top:0"></div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_64aXaviQjX4tVzUAD1xr2x3-BdNmvHg",
+  authDomain: "mi-biblioteca-7a3a5.firebaseapp.com",
+  projectId: "mi-biblioteca-7a3a5",
+  storageBucket: "mi-biblioteca-7a3a5.firebasestorage.app",
+  messagingSenderId: "817293770676",
+  appId: "1:817293770676:web:d735516291637dc7037ce1"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const USER_ID = 'laura';
+
 // ─── DATA ──────────────────────────────────────────────────────
 const SEED = [
   {year:2026,month:"Mayo",title:"El Plan de tu Alma",author:"Robert Schwartz",genre:"No ficción / Desarrollo",pages:"~320",role:"⚓ Ancla"},
@@ -1109,7 +1132,7 @@ const SEED = [
   {year:2028,month:"Noviembre",title:"Divina Comedia: Purgatorio",author:"Dante Alighieri",genre:"Clásico universal",pages:"~300",role:"⚡ Corto"},
   {year:2028,month:"Diciembre",title:"Divina Comedia: Paraíso",author:"Dante Alighieri",genre:"Clásico universal",pages:"~300",role:"⚓ Ancla"},
   {year:2028,month:"Diciembre",title:"Harry Potter y la Piedra Filosofal",author:"J.K. Rowling",genre:"Fantasía / Juvenil",pages:"~309",role:"⚡ Corto"},
-  {year:null,month:null,title:"París era una Fiesta",author:"Ernest Hemingway",genre:"Clásico universal",pages:"~240",role:"⚓ Ancla"},
+  {year:2026,month:null,title:"París era una Fiesta",author:"Ernest Hemingway",genre:"Clásico universal",pages:"~240",role:"⚓ Ancla"},
 ];
 
 const MONTH_ORDER = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -1134,25 +1157,58 @@ let searchQ = '';
 let detailId = null;
 
 // ─── STORAGE (localStorage for PWA) ───────────────────────────
-function save() {
+async function save() {
   try {
-    localStorage.setItem('bib_books', JSON.stringify(books));
+    const customBooks = books.filter(b => !b.id.startsWith('seed-'));
+    await setDoc(doc(db, 'biblioteca', USER_ID), {
+      customBooks: JSON.stringify(customBooks),
+      userData: JSON.stringify(userData),
+      covers: JSON.stringify(covers),
+      updatedAt: Date.now()
+    });
+    localStorage.setItem('bib_custom', JSON.stringify(customBooks));
     localStorage.setItem('bib_user', JSON.stringify(userData));
     localStorage.setItem('bib_covers', JSON.stringify(covers));
-  } catch(e) {}
+  } catch(e) {
+    console.warn('Firebase save failed, fallback localStorage:', e);
+    try {
+      const customBooks = books.filter(b => !b.id.startsWith('seed-'));
+      localStorage.setItem('bib_custom', JSON.stringify(customBooks));
+      localStorage.setItem('bib_user', JSON.stringify(userData));
+      localStorage.setItem('bib_covers', JSON.stringify(covers));
+    } catch(e2) {}
+  }
 }
 
-function load() {
+async function load() {
+  const seedBooks = SEED.map((x,i) => ({...x, id:'seed-'+i}));
   try {
-    const b = localStorage.getItem('bib_books');
+    const snap = await getDoc(doc(db, 'biblioteca', USER_ID));
+    if (snap.exists()) {
+      const d = snap.data();
+      userData = d.userData ? JSON.parse(d.userData) : {};
+      covers = d.covers ? JSON.parse(d.covers) : {};
+      const customBooks = d.customBooks ? JSON.parse(d.customBooks) : [];
+      books = [...seedBooks, ...customBooks];
+      localStorage.setItem('bib_user', JSON.stringify(userData));
+      localStorage.setItem('bib_covers', JSON.stringify(covers));
+      localStorage.setItem('bib_custom', JSON.stringify(customBooks));
+      return;
+    }
+  } catch(e) {
+    console.warn('Firebase load failed, fallback localStorage:', e);
+  }
+  try {
+    localStorage.removeItem('bib_books');
     const u = localStorage.getItem('bib_user');
     const c = localStorage.getItem('bib_covers');
-    if (b) books = JSON.parse(b);
-    else { books = SEED.map((x,i) => ({...x, id:'b'+i})); save(); }
+    const customRaw = localStorage.getItem('bib_custom');
     userData = u ? JSON.parse(u) : {};
     covers = c ? JSON.parse(c) : {};
+    const customBooks = customRaw ? JSON.parse(customRaw) : [];
+    books = [...seedBooks, ...customBooks];
   } catch {
-    books = SEED.map((x,i) => ({...x, id:'b'+i}));
+    books = seedBooks;
     userData = {}; covers = {};
   }
 }
@@ -1189,9 +1245,10 @@ const rv = id => userData[id]?.review || '';
 const fi = t => t.charAt(0).toUpperCase();
 
 function updateStats() {
-  const total = books.length;
-  const read = books.filter(b => st(b.id)==='read').length;
-  const reading = books.filter(b => st(b.id)==='reading').length;
+  const visible = books.filter(b => !userData[b.id]?.hidden);
+  const total = visible.length;
+  const read = visible.filter(b => st(b.id)==='read').length;
+  const reading = visible.filter(b => st(b.id)==='reading').length;
   const pct = total ? Math.round(read/total*100) : 0;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-read').textContent = read;
@@ -1223,7 +1280,7 @@ function setYear(y, el) {
 }
 
 async function renderPlan() {
-  const yb = books.filter(b => b.year === curYear);
+  const yb = books.filter(b => b.year === curYear && !userData[b.id]?.hidden);
   const byMonth = {};
   MONTH_ORDER.forEach(m => { const mb = yb.filter(b => b.month===m); if(mb.length) byMonth[m]=mb; });
 
@@ -1289,7 +1346,7 @@ function renderLib() {
     `<div class="chip ${filterGenre===g?'active':''}" onclick="setGenre('${g}')">${g==='all'?'Todos':g}</div>`
   ).join('');
 
-  let filtered = books;
+  let filtered = books.filter(b => !userData[b.id]?.hidden);
   if (filterGenre!=='all') filtered = filtered.filter(b => b.genre===filterGenre);
   if (searchQ) { const q=searchQ.toLowerCase(); filtered=filtered.filter(b=>b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q)); }
 
@@ -1330,10 +1387,11 @@ function searchLib(q) { searchQ=q; renderLib(); }
 // ─── TRACKER ───────────────────────────────────────────────────
 function renderTracker() {
   updateStats();
+  const visible = books.filter(b => !userData[b.id]?.hidden);
   const ordered = [
-    ...books.filter(b=>st(b.id)==='reading'),
-    ...books.filter(b=>st(b.id)==='pending'),
-    ...books.filter(b=>st(b.id)==='read'),
+    ...visible.filter(b=>st(b.id)==='reading'),
+    ...visible.filter(b=>st(b.id)==='pending'),
+    ...visible.filter(b=>st(b.id)==='read'),
   ];
   let html = '';
   ordered.forEach(book => {
@@ -1443,8 +1501,14 @@ async function detailRating(v) {
 }
 async function deleteBook(id) {
   if (!confirm('¿Eliminar este libro?')) return;
-  books = books.filter(b=>b.id!==id);
-  delete userData[id]; delete covers[id];
+  if (id.startsWith('seed-')) {
+    // Mark seed books as hidden instead of deleting
+    if (!userData[id]) userData[id]={};
+    userData[id].hidden = true;
+  } else {
+    books = books.filter(b=>b.id!==id);
+  }
+  delete covers[id];
   save();
   document.getElementById('detail-overlay').classList.remove('open');
   updateStats(); renderPlan(); renderLib(); renderTracker();
@@ -1480,25 +1544,58 @@ function hexToRgb(hex) {
   return r ? `${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)}` : '255,255,255';
 }
 
-// ─── INIT ───────────────────────────────────────────────────────
-// SW registered inline above
 
-load();
+// ─── EXPOSE TO DOM (required for type=module) ────────────────
+window.nav = nav;
+window.setYear = setYear;
+window.setGenre = setGenre;
+window.searchLib = searchLib;
+window.openDetail = openDetail;
+window.closeDetail = closeDetail;
+window.detailStatus = detailStatus;
+window.detailRating = detailRating;
+window.setReview = setReview;
+window.deleteBook = deleteBook;
+window.openAdd = openAdd;
+window.closeAdd = closeAdd;
+window.addBook = addBook;
+window.toggleRead = toggleRead;
+window.setRating = setRating;
+
+// ─── INIT ───────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE='bib-v2';
+    self.addEventListener('install',e=>{self.skipWaiting();});
+    self.addEventListener('activate',e=>{self.clients.claim();});
+    self.addEventListener('fetch',e=>{
+      if(e.request.url.includes('openlibrary')||e.request.url.includes('covers')){
+        e.respondWith(fetch(e.request).then(r=>{const c=r.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));return r;}).catch(()=>caches.match(e.request)));
+        return;
+      }
+      e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));
+    });
+  `;
+  const swBlob = new Blob([swCode],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+}
+
+await load();
 
   // Mark pre-read books
   const READ_TITLES = ["Hechizada", "El Gato que Amaba los Libros", "El Laberinto de la Rosa", "La Historia Interminable", "Historia y Nomeolvides", "Manual del Guerrero de la Luz", "La Prueba del Cielo", "Canción de Navidad", "París era una Fiesta"];
   books.forEach(b => {
     if (READ_TITLES.includes(b.title)) {
       if (!userData[b.id]) userData[b.id] = {};
-      if (!userData[b.id].status || userData[b.id].status === 'pending') {
-        userData[b.id].status = 'read';
-      }
+      userData[b.id].status = 'read'; // always force read for these titles
     }
   });
-  save();
+  await save();
 
 updateStats();
 renderPlan();
+const ls = document.getElementById('loading-screen');
+if(ls) ls.style.display='none';
 </script>
 </body>
 </html>
