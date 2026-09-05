@@ -89,6 +89,8 @@ de la app**. Nada de esto es opcional: sin ello no pasa review.
 
 ## 3. Mapa de módulos
 
+*(Doce módulos: los diez originales más M10 · Plan lector inteligente y M11 · Mascota, añadidos el 5 de septiembre.)*
+
 ```
                     ┌─────────────────────────────┐
                     │  M0 · FUNDACIÓN             │  ← bloquea todo lo demás
@@ -176,8 +178,15 @@ Sobre lo que ya existe, sin romperlo.
 - **Estados extendidos**: pendiente · leyendo · leído · abandonado · deseado.
 - **Progreso por página o %** (hoy es solo binario leído/no leído) → alimenta el tracker,
   las rachas y las sugerencias.
-- **Escanear ISBN con la cámara** para añadir libro en 2 segundos. *(Además es una de las
-  funciones nativas que justifican la app ante Apple.)*
+- **Añadir un libro por dos caminos, con la misma ficha al final:**
+  - **Con la cámara** — código de barras *o* **foto de la portada**. La foto importa porque
+    muchos libros no tienen código de barras: ediciones viejas, heredadas, latinoamericanas.
+  - **Escribiendo el título** — sugerencias mientras escribes, y la app completa autor,
+    páginas, portada, editorial y año.
+
+  Ambos comparten la misma capa de resolución de metadatos: lo que cambia es de dónde sale la
+  consulta, no lo que pasa después. *(La cámara es además una de las funciones nativas que
+  justifican la app ante Apple.)*
 - **Metadatos mejores**: además de OpenLibrary, fallback a Google Books (mejor cobertura en
   español y de libros latinoamericanos).
 - **Reseña privada vs pública**: interruptor por libro. Clave para el módulo social.
@@ -387,6 +396,81 @@ iOS y Android).
 **Android:** Google Play es más rápido y barato (25 USD una vez). Sugerencia: **salir
 primero en Play**, corregir con usuarias reales, y después iOS.
 
+## M10 · Plan lector inteligente `nuevo`
+
+**El problema.** La app ya tiene un plan lector precioso —70+ libros repartidos por mes entre
+2026 y 2028, con su ⚓ Ancla y su ⚡ Corto cada mes— pero está **escrito a mano en el código**.
+Si cambia el ritmo real, si se atraviesa un libro de 1.200 páginas, o si se acumulan
+pendientes, el plan no se mueve: se queda mintiendo.
+
+**La conversación que la app debería tener**
+
+> ¿Cuánto tiempo puedes leer al día? → 30 minutos entre semana, una hora los domingos
+> ¿Qué quieres lograr este año? → 24 libros
+> Tienes 18 pendientes y 6 represados de meses anteriores. Te armo un plan.
+
+**Alcance**
+
+- **Tiempo disponible**: minutos al día, distintos entre semana y fin de semana, con días libres.
+- **Objetivo de lectura**: en libros, páginas o minutos. Y objetivos secundarios que encajan
+  mejor con este plan que una cifra: «tres clásicos», «cinco géneros distintos».
+- **Ritmo real**: páginas por día calculadas del progreso registrado, y por género — no se
+  lee igual un thriller que un ensayo.
+- **Generación del plan**: reparto mes a mes manteniendo el formato que ya funciona,
+  equilibrando géneros y respetando afinidades de temporada (terror en octubre, mitología
+  en invierno).
+- **Libros represados**: los que quedaron atrás vuelven al plan con prioridad, o se sueltan
+  sin culpa.
+- **Ajuste manual**: fijar un libro a un mes, regenerar solo de aquí en adelante, volver al
+  plan anterior.
+
+**Cómo se resuelve:** es un problema de reparto, no de IA. Entran páginas, ritmo por género,
+meses disponibles y preferencias; sale una asignación. Con reglas es más barato, instantáneo
+y —sobre todo— **explicable**, que es lo que permite decir «te puse este libro en marzo porque…».
+
+**El criterio que lo hace útil:** un plan que no se puede cumplir desmotiva más que no tener
+plan. Si el ritmo real dice que no dan 24 libros, la app lo dice con cariño y propone 16. El
+objetivo es de la usuaria; la honestidad sobre si va cumpliéndose es de la app. Y el plan
+generado es una **propuesta**: mover libros a mano siempre gana.
+
+---
+
+## M11 · Mascota lectora customizable `nuevo`
+
+Una compañera que vive en la app, reacciona a cómo vas leyendo y se puede personalizar. Es el
+mecanismo que hace que la gente vuelva cada día a apps como Finch o Forest: no lees por la
+estadística, lees porque hay alguien esperándote.
+
+> **Nota:** la referencia dada es Catzi, que no conozco de primera mano. Lo de aquí está
+> construido sobre el patrón general de app-con-mascota. Si hay algo específico de Catzi que
+> replicar —cómo se ve, cómo interactúa, qué hace cuando no lees— conviene ajustarlo antes de
+> construir.
+
+**Alcance**
+
+- **La mascota**: vive en el inicio, tiene nombre elegido por ti, y su estado refleja tu
+  hábito — contenta si leíste hoy, dormida tras días sin nada, celebrando cuando terminas
+  un libro.
+- **Personalización**: apariencia, accesorios y su rincón (estantería, lámpara, planta, taza).
+- **Su voz**: frases cortas **escritas a mano**, no generadas, con huecos que se rellenan con
+  tus datos: «llevas tres días con el mismo capítulo, ¿está pesado?».
+
+**Por qué las frases no las genera el agente:** cuestan cero, responden al instante, y —la que
+de verdad importa— una mascota con voz propia y consistente se siente un personaje; una que
+improvisa cada vez se siente un chatbot con sombrero.
+
+**El límite que hay que respetar:** la mascota **nunca castiga**. Que se ponga a dormir tras
+una semana sin leer es acogedor; que se enferme, se muera o te haga sentir culpable es
+exactamente la razón por la que la gente desinstala este tipo de apps. Dormida significa
+«aquí sigo cuando quieras», no «me abandonaste». Y quien solo quiera registrar libros debe
+poder apagarla.
+
+**Cómo encaja:** con M6, la tienda pasa a tener **dos estantes** —temas y cosas de la
+mascota—; con M5, los logros son la moneda que desbloquea accesorios; con M10, la mascota es
+quien recuerda el plan y quien lo celebra.
+
+---
+
 ---
 
 ## 4. Temas transversales
@@ -420,8 +504,8 @@ primero en Play**, corregir con usuarias reales, y después iOS.
 |---|---|---|
 | **1. Base** | M0 | Login real, datos por usuaria, temas técnicamente posibles. *Sin esto no hay nada más.* |
 | **2. Valor propio** | M1 + M6 | Mejor gestión de libros + tienda de temas. Disfrutable **sin necesitar amigas** — importante: una app social vacía se siente muerta |
-| **3. Inteligencia** | M3 + M4 | Agente y recomendaciones. Diferenciador claro, y funciona con una sola usuaria |
-| **4. Hábito** | M5 | Rachas y blog. Retención |
+| **3. Inteligencia** | M10 + M3 + M4 | Plan lector automático, agente y recomendaciones. Diferenciador claro, y funciona con una sola usuaria |
+| **4. Hábito** | M5 + M11 | Rachas, blog y mascota. Retención |
 | **5. Social** | M2 + M8 | Amigas, feed, comentarios y compartir a Stories. **El momento de invitar gente**, cuando la app ya vale la pena |
 | **6. Comunidad** | M7 | Intercambio por ciudad. Necesita masa crítica local |
 | **7. Tiendas** | M9 | Play primero, después App Store |
@@ -433,17 +517,26 @@ funciona — y esas fases son además las que puedes disfrutar mientras se const
 
 ---
 
-## 6. Qué necesito de ti para arrancar
+## 6. Decisiones tomadas y lo que queda abierto
 
-1. **Auth:** ¿confirmas email + Google + Apple, y dejamos Instagram solo para compartir?
-2. **Backend del agente:** ¿Cloudflare Workers (gratis) o Cloud Functions (requiere activar
-   facturación en Firebase)?
-3. **Por dónde empiezo:** mi recomendación es **M0 (fundación) + M6 (tienda de temas)**
-   juntos — el primero es invisible pero imprescindible, y el segundo se ve y se disfruta
-   de inmediato.
-4. **Intercambio:** ¿arrancamos solo con **ciudad de Colombia**, o con país + ciudad libre
-   desde el principio?
-5. **Temas:** ¿te sirve la lista de 8, quitamos/añadimos alguno?
+**Decidido el 5 de septiembre de 2026**
 
-> La key de DeepSeek **no la pegues aquí ni en el repositorio**: cuando montemos el Worker
-> se configura como secreto del entorno.
+| Decisión | Elegido |
+|---|---|
+| Autenticación | Email + Google + **Apple**. Instagram **no** es login, solo compartir |
+| Backend del agente | **Cloudflare Workers**, gratis, con la key como secreto del entorno |
+| Intercambio | **País + ciudad libres** desde el principio |
+| Siguiente paso | Backlog completo antes de construir: 12 épicas y 87 historias en el repositorio |
+
+**Queda abierto**
+
+1. **Prioridad:** con el backlog en la mano, qué se construye primero. Mi recomendación sigue
+   siendo **M0 + M6**: el primero es invisible pero imprescindible, el segundo se ve enseguida.
+2. **La mascota (M11):** la referencia dada es Catzi, que no conozco. Si hay algo específico
+   suyo que replicar —cómo se ve, cómo interactúa, qué hace cuando no lees— conviene definirlo
+   antes de construirla.
+3. **Temas:** ¿sirve la lista de ocho, quitamos o añadimos alguno?
+
+> La key de DeepSeek **no la pegues en el chat ni en el repositorio**: cuando montemos el
+> Worker se configura como secreto del entorno con `wrangler secret put`.
+

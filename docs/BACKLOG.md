@@ -20,149 +20,185 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 
 **Resumen**
 
-| Épica | Módulo | Historias | Prioridad |
-|---|---|---:|---|
-| E0 | Fundación: auth, datos y refactor | 10 | P0 |
-| E1 | Biblioteca mejorada | 7 | P1 |
-| E2 | Social: perfil, amigas y comentarios | 9 | P2 |
-| E3 | Agente IA con DeepSeek | 9 | P1 |
-| E4 | Recomendaciones | 6 | P1 |
-| E5 | Rachas, hábito y blog | 8 | P2 |
-| E6 | Tienda de temas | 6 | P1 |
-| E7 | Intercambio de libros | 9 | P3 |
-| E8 | Compartir a Instagram | 4 | P2 |
-| E9 | Empaquetado y tiendas | 7 | P3 |
-| | **Total** | **75** | |
+| Épica | Issue | Módulo | Historias | Prioridad |
+|---|---|---|---:|---|
+| E0 | #1 | Fundación: auth, datos y refactor | 10 | P0 |
+| E1 | #2 | Biblioteca mejorada | 8 | P1 |
+| E2 | #3 | Social: perfil, amigas y comentarios | 9 | P2 |
+| E3 | #4 | Agente IA con DeepSeek | 9 | P1 |
+| E4 | #5 | Recomendaciones | 6 | P1 |
+| E5 | #6 | Rachas, hábito y blog | 7 | P2 |
+| E6 | #7 | Tienda de temas | 6 | P1 |
+| E7 | #8 | Intercambio de libros | 9 | P3 |
+| E8 | #9 | Compartir a Instagram | 4 | P2 |
+| E9 | #10 | Empaquetado y tiendas | 7 | P3 |
+| E10 | #30 | Plan lector inteligente | 6 | P1 |
+| E11 | #31 | Mascota lectora customizable | 6 | P2 |
+| | | **Total** | **87** | |
 
 ---
 
-## E0 · Fundación — auth, datos y refactor `P0`
+## E0 · Fundación — auth, datos y refactor `P0` · #1
 
 > Bloquea todo lo demás. Hoy el ID de usuaria está escrito a mano en el código y no hay
 > autenticación: cualquiera que abra la app escribe sobre los datos de Laura.
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 0.1 | Migrar el proyecto a Vite y partir `index.html` en módulos | L | — |
-| 0.2 | Extraer todos los colores del CSS a design tokens | M | 0.1 |
-| 0.3 | Registro e inicio de sesión con email y contraseña | M | 0.1 |
-| 0.4 | Inicio de sesión con Google | S | 0.3 |
-| 0.5 | Inicio de sesión con Apple | M | 0.3 |
-| 0.6 | Migrar `biblioteca/laura` a `users/{uid}` sin perder datos | M | 0.3 |
-| 0.7 | Reglas de seguridad de Firestore | M | 0.6 |
-| 0.8 | Onboarding de primera vez | S | 0.3 |
-| 0.9 | Borrar mi cuenta y todos mis datos desde la app | M | 0.6 |
-| 0.10 | Exportar mis datos a JSON | S | 0.6 |
+| 0.1 | #12 | Migrar el proyecto a Vite y partir `index.html` en módulos | L |
+| 0.2 | #13 | Extraer todos los colores del CSS a design tokens | M |
+| 0.3 | #14 | Registro e inicio de sesión con email y contraseña | M |
+| 0.4 | #15 | Inicio de sesión con Google | S |
+| 0.5 | #16 | Inicio de sesión con Apple | M |
+| 0.6 | #17 | Migrar `biblioteca/laura` a `users/{uid}` sin perder datos | M |
+| 0.7 | #18 | Reglas de seguridad de Firestore | M |
+| 0.8 | #19 | Onboarding de primera vez | S |
+| 0.9 | #20 | Borrar mi cuenta y todos mis datos desde la app | M |
+| 0.10 | #21 | Exportar mis datos a JSON | S |
 
-## E1 · Biblioteca mejorada `P1`
+## E1 · Biblioteca mejorada `P1` · #2
 
-| # | Historia | Tam | Depende de |
+> **Añadir un libro tiene dos caminos** —cámara (código de barras o foto de la portada) y
+> título tecleado— que comparten la misma capa de metadatos y terminan en la misma ficha.
+
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 1.1 | Crear estanterías propias y meter libros en ellas | M | E0 |
-| 1.2 | Estados extendidos: abandonado y deseado | S | E0 |
-| 1.3 | Registrar progreso por página o porcentaje | M | E0 |
-| 1.4 | Añadir un libro escaneando su ISBN con la cámara | L | E0 |
-| 1.5 | Google Books como respaldo de metadatos y portadas | M | E0 |
-| 1.6 | Marcar cada reseña como privada o pública | S | E0 |
-| 1.7 | Guardar citas favoritas con su página | M | E0 |
+| 1.1 | #22 | Crear estanterías propias y meter libros en ellas | M |
+| 1.2 | #23 | Estados extendidos: abandonado y deseado | S |
+| 1.3 | #24 | Registrar progreso por página o porcentaje | M |
+| 1.4 | #25 | Añadir un libro con la cámara: código de barras o foto de la portada | L |
+| 1.5 | #26 | Google Books como respaldo de metadatos y portadas | M |
+| 1.6 | #27 | Añadir un libro escribiendo solo el título | M |
+| 1.7 | #28 | Marcar cada reseña como privada o pública | S |
+| 1.8 | #29 | Guardar citas favoritas con su página | M |
 
-## E2 · Social — perfil, amigas y comentarios `P2`
+## E2 · Social — perfil, amigas y comentarios `P2` · #3
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 2.1 | Elegir un `@usuario` único | M | E0 |
-| 2.2 | Perfil público con estanterías y estadísticas | L | 2.1, 1.6 |
-| 2.3 | Seguir y dejar de seguir a alguien | M | 2.1 |
-| 2.4 | Buscar personas por `@usuario` o nombre | M | 2.1 |
-| 2.5 | Invitar por link y por código QR | S | 2.1 |
-| 2.6 | Feed de actividad de a quién sigo | L | 2.3 |
-| 2.7 | Comentar y reaccionar en el feed | M | 2.6 |
-| 2.8 | Reportar y bloquear personas y contenido | L | 2.3 |
-| 2.9 | Cuenta privada con solicitudes de seguimiento | M | 2.3 |
+| 2.1 | #44 | Elegir un `@usuario` único | M |
+| 2.2 | #45 | Perfil público con estanterías y estadísticas | L |
+| 2.3 | #46 | Seguir y dejar de seguir a alguien | M |
+| 2.4 | #47 | Buscar personas por `@usuario` o nombre | M |
+| 2.5 | #48 | Invitar por link y por código QR | S |
+| 2.6 | #49 | Feed de actividad de a quién sigo | L |
+| 2.7 | #50 | Comentar y reaccionar en el feed | M |
+| 2.8 | #51 | Reportar y bloquear personas y contenido | L |
+| 2.9 | #52 | Cuenta privada con solicitudes de seguimiento | M |
 
-## E3 · Agente IA con DeepSeek `P1`
+## E3 · Agente IA con DeepSeek `P1` · #4
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 3.1 | Worker de Cloudflare con la key de DeepSeek como secreto | M | — |
-| 3.2 | El Worker verifica el token de Firebase antes de responder | M | 3.1, 0.3 |
-| 3.3 | Guardrails: lista blanca de intents y prompt restrictivo | L | 3.2 |
-| 3.4 | Límite por usuaria y presupuesto mensual con corte | M | 3.2 |
-| 3.5 | Caché compartida de respuestas por libro | M | 3.2 |
-| 3.6 | Resumen del libro sin spoilers | M | 3.3, 3.5 |
-| 3.7 | «¿Lo leo o no?» con pros y contras personalizados | M | 3.6 |
-| 3.8 | Comparar dos libros pendientes | S | 3.6 |
-| 3.9 | El agente es opt-in, con aviso de privacidad | S | 3.6 |
+| 3.1 | #53 | Worker de Cloudflare con la key de DeepSeek como secreto | M |
+| 3.2 | #54 | El Worker verifica el token de Firebase antes de responder | M |
+| 3.3 | #55 | Guardrails: lista blanca de intents y prompt restrictivo | L |
+| 3.4 | #56 | Límite por usuaria y presupuesto mensual con corte | M |
+| 3.5 | #57 | Caché compartida de respuestas por libro | M |
+| 3.6 | #58 | Resumen del libro sin spoilers | M |
+| 3.7 | #59 | «¿Lo leo o no?» con pros y contras personalizados | M |
+| 3.8 | #60 | Comparar dos libros pendientes | S |
+| 3.9 | #61 | El agente es opt-in, con aviso de privacidad | S |
 
-## E4 · Recomendaciones `P1`
+## E4 · Recomendaciones `P1` · #5
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 4.1 | Motor local de recomendación por género, autor y longitud | L | E0 |
-| 4.2 | Traer candidatos reales de OpenLibrary y Google Books | M | 1.5 |
-| 4.3 | Sugerencias al terminar un libro | M | 4.1 |
-| 4.4 | Sugerencias para llenar los huecos del plan lector | M | 4.1 |
-| 4.5 | El agente explica por qué recomienda cada libro | S | 4.1, 3.6 |
-| 4.6 | «Quien leyó esto también leyó» | M | 4.1, 2.3 |
+| 4.1 | #62 | Motor local de recomendación por género, autor y longitud | L |
+| 4.2 | #63 | Traer candidatos reales de OpenLibrary y Google Books | M |
+| 4.3 | #64 | Sugerencias al terminar un libro | M |
+| 4.4 | #65 | Sugerir libros para llenar los huecos del plan lector | M |
+| 4.5 | #66 | El agente explica por qué recomienda cada libro | S |
+| 4.6 | #67 | «Quien leyó esto también leyó» | M |
 
-## E5 · Rachas, hábito y blog `P2`
+## E5 · Rachas, hábito y blog `P2` · #6
 
-| # | Historia | Tam | Depende de |
+> El objetivo de lectura vive ahora en E10, junto al plan que lo hace posible.
+
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 5.1 | Racha diaria de lectura con congelaciones | M | 1.3 |
-| 5.2 | Meta anual con ritmo necesario | M | E0 |
-| 5.3 | Recordatorio de lectura a mi hora habitual | M | 9.2 |
-| 5.4 | Logros por hitos de lectura | M | 1.3 |
-| 5.5 | Resumen anual «Tu año en libros» | M | 5.2 |
-| 5.6 | Escribir entradas de blog y notas de lectura | L | E0 |
-| 5.7 | Elegir la visibilidad de cada entrada | S | 5.6 |
-| 5.8 | El agente ordena mis notas en un borrador | M | 5.6, 3.3 |
+| 5.1 | #68 | Racha diaria de lectura con congelaciones | M |
+| 5.2 | #69 | Recordatorio de lectura a mi hora habitual | M |
+| 5.3 | #70 | Logros por hitos de lectura | M |
+| 5.4 | #71 | Resumen anual «Tu año en libros» | M |
+| 5.5 | #72 | Escribir entradas de blog y notas de lectura | L |
+| 5.6 | #73 | Elegir la visibilidad de cada entrada | S |
+| 5.7 | #74 | El agente ordena mis notas en un borrador | M |
 
-## E6 · Tienda de temas `P1`
+## E6 · Tienda de temas `P1` · #7
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 6.1 | Motor de temas que aplica un JSON de design tokens | M | 0.2 |
-| 6.2 | Pantalla de tienda con vista previa en vivo | M | 6.1 |
-| 6.3 | Los ocho temas iniciales | L | 6.1 |
-| 6.4 | El tema elegido se recuerda entre sesiones y dispositivos | S | 6.1 |
-| 6.5 | Todos los temas pasan contraste AA | M | 6.3 |
-| 6.6 | Temas de temporada que se desbloquean con logros | M | 6.3, 5.4 |
+| 6.1 | #75 | Motor de temas que aplica un JSON de design tokens | M |
+| 6.2 | #76 | Pantalla de tienda con vista previa en vivo | M |
+| 6.3 | #77 | Los ocho temas iniciales | L |
+| 6.4 | #78 | El tema elegido me sigue entre dispositivos | S |
+| 6.5 | #79 | Todos los temas pasan contraste AA | M |
+| 6.6 | #80 | Temas de temporada que se desbloquean con logros | M |
 
-## E7 · Intercambio de libros `P3`
+## E7 · Intercambio de libros `P3` · #8
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 7.1 | País y ciudad libres en el perfil | M | E0 |
-| 7.2 | Poner un libro ya leído como disponible para intercambio | M | 7.1 |
-| 7.3 | Explorar libros disponibles en mi ciudad | L | 7.2 |
-| 7.4 | Solicitar un intercambio ofreciendo un libro mío | M | 7.3 |
-| 7.5 | Chat dentro de la app para acordar el encuentro | L | 7.4 |
-| 7.6 | Confirmar el intercambio y valorar a la otra persona | M | 7.5 |
-| 7.7 | Reportar y bloquear desde listado, chat y perfil | M | 7.5, 2.8 |
-| 7.8 | Avisos de seguridad en el flujo de encuentro | S | 7.5 |
-| 7.9 | Requisitos para publicar: correo verificado y antigüedad | S | 7.2 |
+| 7.1 | #81 | País y ciudad en el perfil | M |
+| 7.2 | #82 | Poner un libro ya leído como disponible para intercambio | M |
+| 7.3 | #83 | Explorar libros disponibles en mi ciudad | L |
+| 7.4 | #84 | Solicitar un intercambio ofreciendo un libro mío | M |
+| 7.5 | #85 | Chat dentro de la app para acordar el encuentro | L |
+| 7.6 | #86 | Confirmar el intercambio y valorar a la otra persona | M |
+| 7.7 | #87 | Reportar y bloquear desde listado, chat y perfil | M |
+| 7.8 | #88 | Avisos de seguridad en el flujo de encuentro | S |
+| 7.9 | #89 | Requisitos para publicar: correo verificado y antigüedad | S |
 
-## E8 · Compartir a Instagram `P2`
+## E8 · Compartir a Instagram `P2` · #9
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 8.1 | Generador de tarjetas 1080×1920 con el tema activo | L | 6.1 |
-| 8.2 | Tarjeta de «libro terminado» y de cita favorita | M | 8.1, 1.7 |
-| 8.3 | Tarjeta del resumen anual | S | 8.1, 5.5 |
-| 8.4 | Compartir a Stories en móvil y descargar en web | M | 8.1 |
+| 8.1 | #90 | Generador de tarjetas 1080×1920 con el tema activo | L |
+| 8.2 | #91 | Tarjetas de libro terminado y de cita favorita | M |
+| 8.3 | #92 | Tarjetas del resumen anual y de logros | S |
+| 8.4 | #93 | Compartir a Stories en móvil y descargar en web | M |
 
-## E9 · Empaquetado y tiendas `P3`
+## E9 · Empaquetado y tiendas `P3` · #10
 
-| # | Historia | Tam | Depende de |
+| # | Issue | Historia | Tam |
 |---|---|---|---|
-| 9.1 | Empaquetar con Capacitor para iOS y Android | L | E0 |
-| 9.2 | Notificaciones push con FCM | L | 9.1 |
-| 9.3 | Iconos, splash y textos de ficha de tienda | M | 9.1 |
-| 9.4 | Política de privacidad, términos, EULA y contacto de soporte | M | — |
-| 9.5 | Ficha de privacidad declarando DeepSeek y sus servidores | S | 9.4, 3.1 |
-| 9.6 | Publicar en Google Play | M | 9.1, 9.3, 9.4 |
-| 9.7 | Publicar en la App Store con cuenta de demo | L | 9.6, 0.5, 0.9, 2.8 |
+| 9.1 | #94 | Empaquetar con Capacitor para iOS y Android | L |
+| 9.2 | #95 | Notificaciones push con FCM | L |
+| 9.3 | #96 | Iconos, splash y textos de ficha de tienda | M |
+| 9.4 | #97 | Política de privacidad, términos, EULA y contacto de soporte | M |
+| 9.5 | #98 | Ficha de privacidad declarando DeepSeek y sus servidores | S |
+| 9.6 | #99 | Publicar en Google Play | M |
+| 9.7 | #100 | Publicar en la App Store con cuenta de demo | L |
+
+## E10 · Plan lector inteligente `P1` · #30
+
+> El plan lector actual está **escrito a mano en el código**: 70+ libros repartidos por mes
+> entre 2026 y 2028. Esta épica lo convierte en algo vivo, generado a partir del tiempo
+> disponible, el objetivo y los libros represados.
+
+| # | Issue | Historia | Tam |
+|---|---|---|---|
+| 10.1 | #32 | Decirle a la app cuánto tiempo tengo para leer | M |
+| 10.2 | #33 | Establecer mi objetivo de lectura | M |
+| 10.3 | #34 | Calcular mi ritmo real de lectura | M |
+| 10.4 | #35 | Generar el plan mensual automáticamente | L |
+| 10.5 | #36 | Rescatar los libros represados | M |
+| 10.6 | #37 | Ajustar el plan a mano y regenerarlo cuando cambie mi vida | M |
+
+## E11 · Mascota lectora customizable `P2` · #31
+
+> Una compañera que reacciona a cómo vas leyendo y se personaliza con lo que ganas leyendo.
+> **Nunca castiga**: si no has leído, te espera; no te reclama.
+
+| # | Issue | Historia | Tam |
+|---|---|---|---|
+| 11.1 | #38 | Tener una mascota con nombre en el inicio | L |
+| 11.2 | #39 | La mascota reacciona a mi hábito de lectura | M |
+| 11.3 | #40 | Personalizar la apariencia de mi mascota y su rincón | L |
+| 11.4 | #41 | Desbloquear accesorios leyendo | M |
+| 11.5 | #42 | La mascota comenta mis lecturas | M |
+| 11.6 | #43 | Poder ocultar la mascota | S |
 
 ---
 
@@ -170,10 +206,18 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 
 - **P0 no se negocia.** E0 es invisible para la usuaria pero desbloquea todo. Mientras no
   exista, cualquier historia social escribe sobre datos compartidos y abiertos.
-- **El orden propuesto** (ver `PLAN-MODULOS.md`) es E0 → E1+E6 → E3+E4 → E5 → E2+E8 → E7 → E9.
+- **Orden propuesto:** E0 → E1+E6 → E10+E3+E4 → E5+E11 → E2+E8 → E7 → E9.
   La lógica: que la app sea buena **para una sola usuaria** antes de invitar gente, porque
-  una red social vacía se siente muerta.
+  una red social vacía se siente muerta. E10 y E11 refuerzan justamente eso: el plan y la
+  mascota funcionan sin que haya nadie más.
 - **Historias con requisito legal o de tienda**, que no pueden quedarse fuera si el objetivo
-  es publicar: 0.5 (Sign in with Apple), 0.9 (borrado de cuenta), 2.8 (reportar y bloquear),
-  9.4 y 9.5.
-- **7.7 depende de 2.8**: la moderación se construye una vez y se reutiliza en el intercambio.
+  es publicar: #16 (Sign in with Apple), #20 (borrado de cuenta), #51 (reportar y bloquear),
+  #61 (opt-in del agente), #97 y #98.
+- **Dependencias que conviene no romper:**
+  - #87 (moderar intercambio) reutiliza #51: la moderación se construye una vez.
+  - #75 (motor de temas) exige #13 (design tokens). Sin eso, E6 no es posible.
+  - E10 entera exige #24 (progreso por página): sin datos de avance no hay ritmo que calcular.
+  - #25 y #27 comparten la capa de metadatos de #26: construirla una sola vez.
+- **La tienda tiene dos estantes:** temas (E6) y cosas de la mascota (E11). Todo se
+  desbloquea leyendo, nada se paga — lo que además evita la compra integrada de Apple y
+  su 15–30 %.
