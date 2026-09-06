@@ -211,6 +211,46 @@
   </div>
 </div>
 
+<!-- COMENTARIOS -->
+<div class="overlay" id="comments-overlay" onclick="closeComments(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('comments-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Comentarios</div>
+    <div id="comments-body"></div>
+  </div>
+</div>
+
+<!-- REPORTAR -->
+<div class="overlay" id="report-overlay" onclick="closeReport(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('report-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Reportar</div>
+    <div id="report-body"></div>
+  </div>
+</div>
+
+<!-- BLOQUEAR O SILENCIAR -->
+<div class="overlay" id="block-overlay" onclick="closeBlock(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('block-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Bloquear o silenciar</div>
+    <div id="block-body"></div>
+  </div>
+</div>
+
+<!-- LISTA DE BLOQUEADAS -->
+<div class="overlay" id="blocked-overlay" onclick="closeBlocked(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('blocked-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Bloqueadas y silenciadas</div>
+    <div id="blocked-body"></div>
+  </div>
+</div>
+
 <!-- INVITAR: LINK Y QR -->
 <div class="overlay" id="invite-overlay" onclick="closeInvite(event)">
   <div class="sheet">

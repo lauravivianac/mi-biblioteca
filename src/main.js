@@ -20,6 +20,8 @@ import * as profileui from './profileui.js';
 import * as socialui from './socialui.js';
 import * as inviteui from './inviteui.js';
 import * as feedui from './feedui.js';
+import * as commentsui from './commentsui.js';
+import { loadMyBlocks } from './moderation.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
 
@@ -62,7 +64,7 @@ setConsentPrompt(screens.ensureAgentConsent);
 Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
-  ...profileui, ...socialui, ...inviteui, ...feedui,
+  ...profileui, ...socialui, ...inviteui, ...feedui, ...commentsui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
@@ -141,6 +143,10 @@ watchAuth(async (user) => {
 
   /* El punto de avisos. No bloquea nada. */
   socialui.refreshNotices().catch(() => {});
+
+  /* A quién he bloqueado, en cuanto hay sesión: hace falta ANTES de
+     pintar nada social, porque es lo que decide qué no se enseña. */
+  loadMyBlocks().catch(() => {});
 
   /* Un link de perfil también manda estando dentro, y el onboarding
      espera: quien llega desde una invitación viene a ver a alguien, no
