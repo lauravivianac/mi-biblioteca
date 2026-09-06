@@ -34,7 +34,7 @@ const REGLA = 'Solo hablas de libros y de lectura. Si te piden cualquier otra co
 
 const str = (v, max) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
 
-const INTENTS = {
+export const INTENTS = {
   /* Último recurso al añadir un libro: el texto sucio de un OCR. */
   identify_book: {
     maxInput: 600,
@@ -174,7 +174,7 @@ function extractSpki(der) {
 const INJECTION = /ignora|olvida|forget|ignore|system\s*prompt|act[úu]a como|act as|jailbreak|instruc/i;
 
 /** El texto de una portada es DATO, no instrucción. */
-function sanitize(text, max) {
+export function sanitize(text, max) {
   const t = String(text || '').replace(/\s+/g, ' ').trim().slice(0, max);
   return INJECTION.test(t) ? t.replace(INJECTION, '') : t;
 }
@@ -193,15 +193,38 @@ const json = (body, status, origin) =>
     headers: { 'content-type': 'application/json', ...cors(origin) },
   });
 
+/**
+ * ¿Puede llamar este origen?
+ *
+ * Acepta un `*` como comodín para UN tramo del dominio, porque Vercel
+ * inventa una URL nueva por rama: sin esto habría que tocar la
+ * configuración del Worker cada vez que se abre un PR, y en la
+ * práctica eso acaba en poner `*` a secas.
+ *
+ * El comodín no afloja la puerta tanto como parece: además del
+ * origen, toda llamada necesita un token válido de ESTE proyecto de
+ * Firebase. El origen filtra sitios; el token filtra personas.
+ */
+export function originAllowed(origin, allowed) {
+  return allowed.some((pattern) => {
+    if (pattern === origin) return true;
+    if (!pattern.includes('*')) return false;
+    const rx = new RegExp('^' + pattern.split('*').map(escapeRx).join('[^./]*') + '$');
+    return rx.test(origin);
+  });
+}
+
+const escapeRx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 export default {
   async fetch(request, env) {
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
     const origin = request.headers.get('Origin') || '';
-    const allowOrigin = allowed.includes(origin) ? origin : allowed[0] || '';
+    const allowOrigin = originAllowed(origin, allowed) ? origin : allowed[0] || '';
 
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors(allowOrigin) });
     if (request.method !== 'POST') return json({ error: 'method' }, 405, allowOrigin);
-    if (allowed.length && !allowed.includes(origin)) return json({ error: 'origin' }, 403, allowOrigin);
+    if (allowed.length && !originAllowed(origin, allowed)) return json({ error: 'origin' }, 403, allowOrigin);
 
     let body;
     try { body = await request.json(); } catch { return json({ error: 'json' }, 400, allowOrigin); }
