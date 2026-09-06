@@ -10,6 +10,7 @@ import {
 import {
   settings, updateSettings, exportData, exportCsv, updateEntry, findBook,
   allBooks, statusOf, ratingOf, addBook, coverOf,
+  myUsername, isUsernameFree, claimUsername,
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
 import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
@@ -32,6 +33,9 @@ import {
 import { verifySuggestion } from './booklookup.js';
 import { recommendMine } from './taste.js';
 import { describeTaste } from './taste-core.js';
+import {
+  validateUsername, canChangeUsername, displayHandle, suggestUsername, MAX as USER_MAX,
+} from './username-core.js';
 import {
   allShelves, createShelf, renameShelf, removeShelf,
   shelfCounts, toggleBookShelf, SHELF_COLORS, SHELF_EMOJIS, SUGGESTED,
@@ -120,6 +124,99 @@ export async function forgotPassword() {
     await resetPassword(email);
     toast('Te enviamos un correo para restablecer la contraseña.');
   } catch (e) { showAuthError(humanError(e)); }
+}
+
+/* ── EL @USUARIO  ·  historia #44 ─────────────────────────────
+   El nombre con el que te encuentran. Se comprueba mientras escribes,
+   pero quien decide es el servidor: ver claimUsername en store.js. */
+
+let userProbe = null;          // el temporizador de «mientras escribes»
+let userState = null;          // { texto, libre, error } de la última comprobación
+
+export function renderUsername() {
+  const actual = myUsername();
+  const puede = canChangeUsername(settings());
+  const s = userState;
+
+  return `
+    ${actual ? `<div class="set-row" style="cursor:default">
+      <div><div class="set-row-title">${esc(displayHandle(actual))}</div>
+        <div class="set-row-sub">${puede.ok
+          ? 'Así te encuentran. Puedes cambiarlo abajo.'
+          : esc(puede.error)}</div></div>
+    </div>` : `<p class="planner-hint">
+      Todavía no tienes nombre. Es con lo que te encontrarán tus amigas.
+    </p>`}
+
+    ${puede.ok ? `
+      <div class="fg" style="margin-top:10px">
+        <label class="flabel" for="u-name">${actual ? 'Cambiarlo por' : 'Elige el tuyo'}</label>
+        <div class="uname-field">
+          <span class="uname-at">@</span>
+          <input class="finput uname-input" id="u-name" maxlength="${USER_MAX}"
+                 autocapitalize="none" autocomplete="off" spellcheck="false"
+                 placeholder="${esc(suggestUsername(currentUser()?.displayName || '', currentUser()?.email || '') || 'tunombre')}"
+                 value="${esc(s?.texto || '')}" oninput="probeUsername(this.value)">
+        </div>
+        <div class="uname-status ${s?.libre ? 'ok' : s?.error ? 'bad' : ''}">${esc(s?.mensaje || '')}</div>
+      </div>
+      <button class="btn-magic full" id="u-save" ${s?.libre ? '' : 'disabled'}
+              onclick="saveUsername()">Quedármelo</button>
+    ` : ''}`;
+}
+
+function repintarUsername() {
+  const slot = $('username-slot');
+  if (!slot) return;
+  const foco = document.activeElement?.id === 'u-name';
+  const pos = foco ? $('u-name').selectionStart : null;
+  slot.innerHTML = renderUsername();
+  if (foco) {
+    const input = $('u-name');
+    input?.focus();
+    if (pos != null) input?.setSelectionRange(pos, pos);
+  }
+}
+
+/**
+ * Comprobar mientras se escribe, pero sin castigar cada tecla: se
+ * espera a que pares. Una consulta por pulsación son treinta lecturas
+ * para escribir un nombre, y ninguna de las veintinueve primeras
+ * significaba nada.
+ */
+export function probeUsername(texto) {
+  clearTimeout(userProbe);
+  const v = validateUsername(texto);
+  userState = { texto, libre: false, error: !v.ok, mensaje: v.ok ? 'Comprobando…' : v.error };
+  repintarUsername();
+  if (!v.ok) return;
+
+  userProbe = setTimeout(async () => {
+    const r = await isUsernameFree(texto);
+    if (userState?.texto !== texto) return;      // ya escribió otra cosa
+    userState = {
+      texto,
+      libre: r.free,
+      error: !r.free,
+      mensaje: r.free ? '¡Libre! Es tuyo si lo quieres.' : r.error,
+    };
+    repintarUsername();
+  }, 400);
+}
+
+export async function saveUsername() {
+  const texto = $('u-name')?.value;
+  const btn = $('u-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Guardando…'; }
+  const r = await claimUsername(texto);
+  if (!r.ok) {
+    userState = { texto, libre: false, error: true, mensaje: r.error };
+    repintarUsername();
+    return;
+  }
+  userState = null;
+  repintarUsername();
+  toast(`Ahora eres ${displayHandle(r.username)}`);
 }
 
 /* ── ONBOARDING  ·  historia #19 ─────────────────────────────── */
@@ -416,6 +513,9 @@ export function openSettings() {
         <div class="set-row-sub">${progress.done} de ${progress.goal} · ${progress.ahead
           ? `vas ${progress.diffUnits} por delante 🎉` : `vas ${progress.diffUnits} por detrás`}</div></div>
     </div>` : ''}
+
+    <div class="section-heading"><span class="section-heading-text">Tu nombre</span></div>
+    <div id="username-slot">${renderUsername()}</div>
 
     <div class="section-heading"><span class="section-heading-text">Logros</span></div>
     <div class="ach-list">

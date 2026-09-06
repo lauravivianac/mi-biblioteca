@@ -18,6 +18,7 @@ import { db } from './firebase.js';
 import { seedBooks, pageCount } from './seed.js';
 import { publicReviewDoc, isPublicReview, publicCount } from './reviews-core.js';
 import { streakInfo, addDay } from './streak-core.js';
+import { validateUsername, canChangeUsername, normalize } from './username-core.js';
 
 const state = {
   uid: null,
@@ -95,6 +96,77 @@ export function recordReadingDay(date = new Date()) {
   if (despues === antes) return false;      // ya estaba apuntado hoy
   updateSettings({ readingDays: despues });
   return true;
+}
+
+/* ── EL @USUARIO  ·  historia #44 ─────────────────────────────
+   El nombre propio vive en los ajustes, que ya se sincronizan. El
+   ÍNDICE —quién tiene cada nombre— vive en social/usernames, fuera de
+   users/{uid}, porque tiene que poder leerlo cualquiera para saber si
+   está libre y para encontrarte. */
+
+export const myUsername = () => settings().username || null;
+
+const usernameRef = (handle) => doc(db, 'social', 'usernames', normalize(handle));
+
+/** ¿Está libre? Es una respuesta con fecha de caducidad: ver claimUsername. */
+export async function isUsernameFree(handle) {
+  const v = validateUsername(handle);
+  if (!v.ok) return { free: false, error: v.error };
+  if (v.username === myUsername()) return { free: true, mine: true };
+  if (!state.uid) return { free: false, error: 'Necesitas iniciar sesión.' };
+  try {
+    const snap = await getDoc(usernameRef(v.username));
+    return snap.exists()
+      ? { free: false, error: 'Ese nombre ya está cogido.' }
+      : { free: true };
+  } catch (e) {
+    return { free: false, error: 'No se pudo comprobar. ¿Hay conexión?' };
+  }
+}
+
+/**
+ * Quedarse un nombre.
+ *
+ * Lo que devuelve isUsernameFree es cierto en el momento de mirar y
+ * puede dejar de serlo un segundo después. Por eso quien decide de
+ * verdad es el servidor: si el documento ya existe, la regla lo
+ * rechaza —ver el `set` de abajo— y aquí se traduce ese fallo a «ya
+ * está cogido». No hay comprobación en el cliente que pueda evitar la
+ * carrera, solo disimularla.
+ *
+ * El cambio es un LOTE: se pide el nuevo y se suelta el viejo en la
+ * misma escritura. Si el nuevo falla, el viejo sigue siendo tuyo.
+ */
+export async function claimUsername(handle) {
+  const v = validateUsername(handle);
+  if (!v.ok) return { ok: false, error: v.error };
+  if (!state.uid) return { ok: false, error: 'Necesitas iniciar sesión.' };
+
+  const actual = myUsername();
+  if (v.username === actual) return { ok: true, username: actual, sinCambios: true };
+
+  const puede = canChangeUsername(settings());
+  if (!puede.ok) return { ok: false, error: puede.error };
+
+  try {
+    const batch = writeBatch(db);
+    /* Es `set` y no `create` porque el SDK del navegador no tiene
+       `create` —solo el de servidor—, y da igual: si el documento ya
+       existe, Firestore evalúa esto como un UPDATE, y la regla dice
+       `allow update: if false`. El servidor lo rechaza exactamente
+       igual. La unicidad sigue estando donde tiene que estar. */
+    batch.set(usernameRef(v.username), { uid: state.uid, at: Date.now() });
+    if (actual) batch.delete(usernameRef(actual));
+    await batch.commit();
+  } catch (e) {
+    /* El servidor dijo que no. La causa casi siempre es que alguien
+       llegó antes; el resto son reglas sin desplegar o falta de red. */
+    console.warn('No se pudo tomar el nombre:', e);
+    return { ok: false, error: 'Ese nombre ya está cogido. Prueba otro.' };
+  }
+
+  updateSettings({ username: v.username, usernameChangedAt: Date.now() });
+  return { ok: true, username: v.username };
 }
 
 /** Páginas leídas de un libro, tanto si se registró página como porcentaje. */
@@ -401,6 +473,17 @@ export async function deleteAllUserData() {
   chunks.push(batch.commit());
   await Promise.all(chunks);
   await deleteDoc(doc(db, 'reviews', state.uid)).catch(() => {});
+  /* El @usuario se libera: si no, el nombre quedaría cogido para
+     siempre por una cuenta que ya no existe. Lo pide la historia #44
+     y además es lo único decente. */
+  const mio = myUsername();
+  if (mio) {
+    /* Si esto falla en silencio, el nombre queda cogido para siempre
+       por una cuenta que ya no existe y no hay forma de reclamarlo:
+       al menos que quede dicho en la consola. */
+    await deleteDoc(usernameRef(mio))
+      .catch((e) => console.warn(`No se pudo liberar @${mio}:`, e));
+  }
   await deleteDoc(doc(db, 'users', state.uid));
   for (const k of ['entries', 'settings', 'custom']) {
     try { localStorage.removeItem(lsKey(k)); } catch {}
