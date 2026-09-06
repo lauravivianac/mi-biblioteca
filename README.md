@@ -117,6 +117,7 @@ vive en [`styles/worlds.css`](./styles/worlds.css), en un bloque por tema.
 | 🌊 Marea | La línea de marea que cruza el fondo muy despacio |
 | 🕯️ Gótico | El arco de vitral, con vela arriba y viñeteado en los bordes |
 | 🌸 Sakura | El trazo vertical junto a los encabezados. Separa el vacío |
+| 🌾 El Principito | El horizonte: la arena tibia subiendo desde el borde inferior |
 | 🖨️ Máquina | Los corchetes y las marcas de esquina, sobre líneas de barrido |
 
 ### Añadir uno nuevo

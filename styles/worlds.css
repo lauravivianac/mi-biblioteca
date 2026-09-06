@@ -264,7 +264,48 @@
 [data-theme="maquina"] .gem-num { font-weight: 700; }
 
 
+/* ═════════════════════════════════════════════════════════════
+   🌾 EL PRINCIPITO · el desierto al anochecer
+   Firma: el horizonte. La arena tibia sube desde el borde inferior
+   de la pantalla — el desierto donde cayó el aviador — bajo un
+   cielo índigo con estrellas dibujadas a mano.
+
+   Las esquinas son desiguales a propósito: trazadas, no impresas.
+   ═════════════════════════════════════════════════════════════ */
+
+/* La letra a mano necesita más aire que una imprenta para leerse bien. */
+[data-theme="principito"] .book-card-title,
+[data-theme="principito"] .lib-title {
+  font-size: 17px;
+  line-height: 1.35;
+  letter-spacing: .2px;
+}
+[data-theme="principito"] .month-name-text { font-size: 18px; }
+[data-theme="principito"] .brand-title { font-size: 22px; }
+
+/* La runa del mes es su asteroide: un planeta pequeño con halo. */
+[data-theme="principito"] .month-rune {
+  box-shadow: 0 0 0 1px rgb(235 201 107 / .3), 0 0 16px rgb(235 201 107 / .18);
+}
+
+/* Nada tiene borde duro: la acuarela no traza contornos. */
+[data-theme="principito"] .book-card,
+[data-theme="principito"] .lib-card,
+[data-theme="principito"] .tracker-card { border: 0; }
+
+/* Las estrellas titilan muy despacio. El principito le dice al aviador
+   que al mirarlas oirá reír a todas las estrellas. */
+[data-theme="principito"] .bg-canvas::after {
+  animation: estrellas 7s ease-in-out infinite alternate;
+}
+@keyframes estrellas {
+  from { opacity: .55; }
+  to   { opacity: .9; }
+}
+
+
 /* ── Nadie debería marearse por un tema. ── */
 @media (prefers-reduced-motion: reduce) {
-  [data-theme="marea"] .bg-canvas::after { animation: none; }
+  [data-theme="marea"] .bg-canvas::after,
+  [data-theme="principito"] .bg-canvas::after { animation: none; }
 }

@@ -19,6 +19,7 @@ export const FONT_SETS = {
   spectral:   'Spectral:wght@300;400;600',
   fraunces:   'Fraunces:opsz,wght@9..144,400;9..144,600',
   karla:      'Karla:wght@400;500;700',
+  patrick:    'Patrick+Hand',
   outfit:     'Outfit:wght@300;400;600',
   cinzelDeco: 'Cinzel+Decorative:wght@400;700',
   shippori:   'Shippori+Mincho:wght@400;600',
@@ -281,6 +282,60 @@ export const THEMES = [
     },
   },
 
+  {
+    id: 'principito',
+    name: 'El Principito',
+    emoji: '🌾',
+    blurb: 'El desierto al anochecer, con el oro del trigo. Acuarela y letra a mano.',
+    fonts: ['patrick', 'karla'],
+    unlock: null,
+    tokens: {
+      '--month-tint': '10%', '--rune-tint': '40%',
+      /* El cielo del desierto justo después de la puesta: índigo
+         polvoriento, nunca negro. */
+      '--void': '#17203A', '--void-rgb': '23 32 58',
+      '--deep': '#1F2A47', '--deep-rgb': '31 42 71',
+      '--dusk': '#2A3760', '--dusk-rgb': '42 55 96',
+      '--purple': '#4A6BA8', '--purple-rgb': '74 107 168',
+      '--violet': '#7FA3D4', '--violet-rgb': '127 163 212',
+      '--lilac': '#C9DAF2', '--lilac-rgb': '201 218 242',
+      /* El oro es el del trigo: «Los trigales me recordarán a ti». */
+      '--gold': '#EBC96B', '--gold-rgb': '235 201 107',
+      '--amber': '#D49A54', '--amber-rgb': '212 154 84',
+      '--parchment': '#FAF3E2',
+      /* Texto cálido, no azulado: la página debe sentirse de papel
+         aunque el cielo sea de noche. */
+      '--text': '#F2ECE0', '--text-rgb': '242 236 224',
+      '--font-display': "'Patrick Hand', 'Bradley Hand', cursive",
+      '--font-body': "'Karla', system-ui, sans-serif",
+      '--display-spacing': '.3px',
+      '--label-transform': 'none',
+      '--label-spacing': '1.5px',
+      /* Esquinas desiguales: dibujadas a mano, no impresas. */
+      '--card-radius': '18px 22px 19px 24px',
+      '--ctl-radius': '14px 11px 15px 12px',
+      '--chip-radius': '9px 7px 10px 8px',
+      '--pill-radius': '20px',
+      '--rune-radius': '50%',
+      '--sheet-radius': '26px 30px 0 0',
+      '--card-border': '0',
+      '--hairline': '1px solid rgb(201 218 242 / .14)',
+      '--card-bg': 'rgb(31 42 71 / .58)',
+      '--card-shadow': '0 6px 22px rgb(10 14 28 / .45)',
+      '--role-short': '#E4868C',
+      '--stars-opacity': '.75',
+      '--orbs-opacity': '.5',
+      '--grid-opacity': '0',
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='5'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E")`,
+      '--texture-opacity': '.09',
+      '--texture-blend': 'soft-light',
+      '--ornament': "'\\2727'",
+      '--bg-wash': 'radial-gradient(ellipse 120% 60% at 50% 108%, rgb(212 154 84 / .38) 0%, transparent 55%), linear-gradient(180deg, #141C33 0%, #1F2A47 62%, #2C3557 100%)',
+      /* LA FIRMA · el horizonte. La arena tibia subiendo desde el
+         borde inferior: el desierto donde se estrelló el aviador. */
+      '--vignette': 'linear-gradient(0deg, rgb(212 154 84 / .3) 0%, rgb(235 201 107 / .1) 11%, transparent 28%), radial-gradient(ellipse 110% 85% at 50% 45%, transparent 58%, rgb(15 20 38 / .55) 100%)',
+    },
+  },
   {
     id: 'maquina',
     name: 'Máquina',
