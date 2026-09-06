@@ -33,7 +33,7 @@ export const SECCIONES = [
   { id: 'resenas', label: 'Mis reseñas', hint: 'Solo las que ya publicaste' },
   { id: 'mascota', label: 'Mi mascota', hint: 'Tu bicho, tal y como lo tienes' },
   { id: 'actividad', label: 'Lo que voy leyendo', hint: 'Aparece en el feed de quien te sigue' },
-  { id: 'sugerible', label: 'Que me encuentren por mis libros', hint: 'Apareces sugerida a quien haya leído lo mismo que tú' },
+  { id: 'sugerible', label: 'Que me encuentren por mis libros', hint: 'Publica qué has leído y con cuántas estrellas, para que te sugieran a quien lee parecido' },
 ];
 
 export const IDS_SECCION = SECCIONES.map((s) => s.id);
@@ -191,9 +191,20 @@ export function publicProfileDoc({
      debería aparecer en las sugerencias de otra persona sin haberlo
      encendido. Solo van los identificadores, nunca lo que opinas. */
   if (ve('sugerible')) {
-    doc.librosLeidos = clavesParaBuscar(
-      books.filter((b) => b.status === 'read').map((b) => String(b.id)),
-    );
+    const leidos = books.filter((b) => b.status === 'read');
+    doc.librosLeidos = clavesParaBuscar(leidos.map((b) => String(b.id)));
+    /* Y con cuántas estrellas  ·  historia #67
+       «Se prioriza a quienes valoran parecido a mí, no solo a quienes
+       leen lo mismo», dice la historia — y sin las puntuaciones eso no
+       se puede calcular. Van solo las de los libros que ya se publican
+       aquí, y solo con este interruptor encendido, que por eso dice
+       exactamente lo que publica. Las reseñas escritas siguen sin
+       salir: una puntuación no es una reseña. */
+    doc.valorados = {};
+    for (const b of leidos) {
+      if (!doc.librosLeidos.includes(String(b.id))) continue;
+      if (Number.isFinite(b.rating) && b.rating > 0) doc.valorados[String(b.id)] = b.rating;
+    }
   }
 
   return doc;
@@ -206,7 +217,7 @@ export function publicProfileDoc({
  */
 export const CAMPOS_PUBLICOS = [
   'uid', 'username', 'name', 'nameLower', 'bio', 'city', 'secciones', 'privada',
-  'updatedAt', 'leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos',
+  'updatedAt', 'leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos', 'valorados',
 ];
 
 /**

@@ -8,7 +8,7 @@ import { MONTH_ORDER, MONTH_COLORS, MONTH_EMOJIS, pageCount } from './seed.js';
 import {
   allBooks, findBook, entry, statusOf, ratingOf, reviewOf, coverOf,
   reviewIsPublic, setReviewPublic, myStreak, recordReadingDay,
-  updateEntry, removeBook, progressPct,
+  updateEntry, removeBook, progressPct, uid,
 } from './store.js';
 import { fetchCover } from './covers.js';
 import { $, esc, initial, toast, confirmAction } from './ui.js';
@@ -23,6 +23,8 @@ import { visibilityLabel } from './reviews-core.js';
 import { gapsOf, fillableGaps, describeGap } from './gaps.js';
 import { streakLine, freezeNotice } from './streak-core.js';
 import { openShare } from './shareui.js';
+import { lectorasDe } from './social.js';
+import { alsoRead, porQueTexto, encabezado } from './alsoread-core.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -503,9 +505,16 @@ export async function openDetail(id) {
         ✦ Presumir de este libro
       </button>` : ''}
 
+      <div id="also-slot"></div>
+
       <button class="btn-delete" onclick="deleteBook('${id}')">🗑 Eliminar de la biblioteca</button>
     </div>`;
   $('detail-overlay').classList.add('open');
+
+  /* «Quien leyó esto también leyó» va DESPUÉS y sin bloquear: es una
+     consulta a la red para una sección que muchas veces no aparecerá,
+     y la ficha no tiene por qué esperarla. */
+  pintarTambienLeyeron(id);
 }
 
 /* ── PRIVADA O PÚBLICA  ·  historia #28 ───────────────────────
@@ -531,6 +540,70 @@ function privacyRow(id) {
 }
 
 /** El mismo interruptor desde el tracker, que sí repinta su lista. */
+/**
+ * «Quien leyó esto también leyó»  ·  historia #67
+ *
+ * La sección PREFIERE NO APARECER. Con poca gente las sugerencias son
+ * ruido, y una mala primera impresión cuesta más que no tenerla — así
+ * que si no hay datos suficientes no se pinta nada: ni un hueco, ni un
+ * «todavía no hay información». Quien no la ve no echa de menos algo
+ * que no sabía que existía.
+ */
+let turnoAlso = 0;
+
+async function pintarTambienLeyeron(id) {
+  const mio = ++turnoAlso;
+  const lectoras = await lectorasDe(id);
+  if (mio !== turnoAlso) return;
+  const slot = $('also-slot');
+  if (!slot) return;
+
+  /* Mis puntuaciones, para pesar más a quien valora como yo. */
+  const mias = {};
+  for (const b of allBooks()) {
+    const r = ratingOf(b.id);
+    if (r > 0) mias[b.id] = r;
+  }
+
+  const r = alsoRead({
+    bookId: id,
+    lectoras,
+    mias,
+    /* Se excluye lo que YA LEÍ, no lo que tengo. En esta app los 73
+       libros del plan están en la biblioteca de todo el mundo desde el
+       primer día, así que excluir «lo que tengo» dejaba la sección
+       vacía siempre. Y además tiene más sentido: que quienes leyeron
+       este libro también leyeran uno que tienes pendiente es justo la
+       razón para empezarlo. */
+    excluir: allBooks().filter((b) => statusOf(b.id) === 'read').map((b) => b.id),
+    miUid: uid(),
+  });
+  if (!r.suficiente) { slot.innerHTML = ''; return; }
+
+  /* Solo se enseñan los que se pueden nombrar. Los libros propios de
+     cada quien tienen un identificador distinto en cada cuenta, así
+     que solo cruzan los del catálogo compartido — y de los demás no
+     sabríamos ni el título. */
+  const conNombre = r.libros
+    .map((l) => ({ ...l, libro: findBook(l.id) }))
+    .filter((l) => l.libro);
+  if (!conNombre.length) { slot.innerHTML = ''; return; }
+
+  slot.innerHTML = `
+    <h4 class="prof-sec-title" style="margin-top:20px">${esc(encabezado(r.lectoras))}</h4>
+    ${conNombre.map((l) => `
+      <div class="pers-row" onclick="openDetail('${l.libro.id}')">
+        <div class="prof-cover prof-cover-none" style="width:34px;height:50px;font-size:15px">
+          ${esc((l.libro.title || '?').charAt(0).toUpperCase())}
+        </div>
+        <div class="pers-txt">
+          <div class="pers-name">${esc(l.libro.title)}</div>
+          <div class="pers-handle">${esc(l.libro.author)}</div>
+          <div class="pers-why">${esc(porQueTexto(l.lectoras))}</div>
+        </div>
+      </div>`).join('')}`;
+}
+
 export function toggleReviewPublicHere(id) {
   setReviewPublic(id, !reviewIsPublic(id));
   renderTracker();

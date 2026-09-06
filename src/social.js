@@ -434,3 +434,24 @@ export async function loadFeed({ antesDe = null, tope = PAGINA } = {}) {
     hayMas: todas.length > tope,
   };
 }
+
+/* ── QUIEN LEYÓ ESTO TAMBIÉN LEYÓ  ·  historia #67 ───────────
+   Solo entran quienes encendieron «que me encuentren por mis libros»:
+   el campo no existe en los demás perfiles, así que la consulta no los
+   puede devolver ni por accidente. Y las cuentas privadas tampoco
+   están aquí, porque sus libros no salen de su documento aparte. */
+
+export async function lectorasDe(bookId) {
+  if (!bookId) return [];
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'profiles'),
+      where('librosLeidos', 'array-contains', String(bookId)),
+      limit(60),
+    ));
+    return snap.docs.map((d) => d.data());
+  } catch (e) {
+    console.warn('No se pudo mirar quién leyó este libro:', e);
+    return [];
+  }
+}

@@ -423,6 +423,7 @@ function datosDelPerfil() {
          porque son aproximadas. Sin pasarlas por pageCount el perfil
          publicaba «0 páginas» con la biblioteca llena. */
       pages: pageCount(b.pages) || 0,
+      rating: ratingOf(b.id),
     })),
     racha: myStreak().actual,
   };
