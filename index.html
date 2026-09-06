@@ -187,6 +187,16 @@
   </div>
 </div>
 
+<!-- AL TERMINAR UN LIBRO -->
+<div class="overlay" id="done-overlay" onclick="closeDone(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('done-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">✦ Un libro menos en la pila</div>
+    <div id="done-body"></div>
+  </div>
+</div>
+
 <!-- MIS CITAS -->
 <div class="overlay" id="quotes-overlay" onclick="closeQuotes(event)">
   <div class="sheet">

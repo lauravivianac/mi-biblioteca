@@ -160,6 +160,23 @@ export async function recommendFrom({ read = [], pending = [] }) {
     'LEÍDOS:', ...read.slice(0, 25).map(linea),
     'PENDIENTES (no los repitas):', ...pending.slice(0, 25).map((b) => `${b.title} — ${b.author}`),
   ].join('\n');
+  return recommendWith(texto);
+}
+
+/**
+ * El mismo encargo, con el texto ya escrito por quien llama.
+ *
+ * Lo usa la pantalla de «acabo de terminar un libro» (#64), que tiene
+ * algo que decir que esta función no sabría: cuántas estrellas le
+ * acabas de dar y, si fueron pocas, que se aleje de ese estilo. Sin
+ * esto habría que meter el caso particular aquí dentro, y este módulo
+ * volvería a saber de pantallas.
+ *
+ * Lo que viaja sigue siendo lo mismo —títulos, autores y puntuaciones,
+ * nunca notas ni citas—, así que el aviso de privacidad sigue siendo
+ * cierto. Si algún día se manda algo más, WHAT_WE_SEND cambia con ello.
+ */
+export async function recommendWith(texto) {
   const out = await call('recommend', texto);
   return out.sugerencias || [];
 }
@@ -175,7 +192,8 @@ export const WHAT_WE_SEND = [
   {
     que: 'Qué leer después',
     manda: 'Hasta 25 títulos y autores que has marcado como leídos, '
-         + 'con la puntuación que les diste, y hasta 25 de los pendientes.',
+         + 'con la puntuación que les diste, y hasta 25 de los pendientes. '
+         + 'Al terminar un libro, también el que acabas de terminar y sus estrellas.',
   },
   {
     que: 'Foto de una portada',
