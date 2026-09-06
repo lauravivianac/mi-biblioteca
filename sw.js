@@ -2,14 +2,15 @@
    es una de las cosas buenas que ya tenía y que el refactor no
    puede perder (criterio de la historia #12). */
 
-const CACHE = 'bib-v3';
+const CACHE = 'bib-v4';
 const SHELL = [
   './', './index.html',
-  './styles/tokens.css', './styles/app.css', './styles/ui.css',
+  './styles/tokens.css', './styles/app.css', './styles/worlds.css', './styles/ui.css', './styles/pet.css',
   './src/main.js', './src/store.js', './src/seed.js', './src/views.js',
   './src/screens.js', './src/themes.js', './src/theme-engine.js',
   './src/planner.js', './src/plan-core.js', './src/auth.js',
   './src/firebase.js', './src/migrate.js', './src/covers.js', './src/ui.js',
+  './src/achievements.js', './src/pet.js',
 ];
 
 self.addEventListener('install', (e) => {
@@ -42,13 +43,18 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // El resto: caché primero, y se refresca por detrás
+  /* El resto: RED PRIMERO, con la caché como red de seguridad.
+     Servir de caché primero dejaba cada despliegue una recarga por
+     detrás: la primera visita mostraba la versión vieja y guardaba la
+     nueva para la siguiente. La app seguía funcionando sin conexión,
+     pero parecía que no se desplegaba nada. */
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const live = fetch(e.request)
-        .then((r) => { const c = r.clone(); caches.open(CACHE).then((ca) => ca.put(e.request, c)); return r; })
-        .catch(() => cached);
-      return cached || live;
-    })
+    fetch(e.request)
+      .then((r) => {
+        const copy = r.clone();
+        caches.open(CACHE).then((ca) => ca.put(e.request, copy));
+        return r;
+      })
+      .catch(() => caches.match(e.request).then((cached) => cached || caches.match('./index.html')))
   );
 });

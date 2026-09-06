@@ -1,0 +1,137 @@
+/* ─────────────────────────────────────────────────────────────
+   LA MASCOTA LECTORA
+   Toma sus colores del tema activo, así que encaja con los nueve
+   mundos sin necesitar una versión por tema.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* Estos dos los calcula pet.js según el pelaje: ver luminance().
+     Aquí van solo como respaldo. */
+  --pet-eye: #241C18;
+  --pet-shine: rgb(255 255 255 / .9);
+  --pet-nose: var(--amber);
+  --pet-accent: var(--gold);
+  --pet-line: var(--lilac);
+  /* El libro no puede ser del mismo color que el accesorio: con una
+     bufanda dorada, ambos se leían como una sola mancha. */
+  --pet-book: var(--violet);
+}
+
+.pet-shelf {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 16px 12px 8px;
+  margin-bottom: 14px;
+  background: var(--card-bg);
+  border: var(--hairline);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  cursor: pointer;
+  transition: transform .18s;
+}
+.pet-shelf:active { transform: scale(.985); }
+
+.pet-svg { width: 104px; height: 91px; display: block; overflow: visible; }
+
+/* Respira. Nada más: una mascota que se agita cansa. */
+.pet-body { transform-origin: 64px 100px; animation: respirar 4.2s ease-in-out infinite; }
+@keyframes respirar {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.022); }
+}
+
+.pet-tail { transform-origin: 92px 100px; animation: cola 5.5s ease-in-out infinite; }
+@keyframes cola {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(-7deg); }
+}
+
+.pet-head { transform-origin: 64px 56px; }
+[data-mood="expectante"] .pet-head { animation: atenta 3s ease-in-out infinite; }
+@keyframes atenta {
+  0%, 100% { transform: rotate(0deg); }
+  50%      { transform: rotate(-4deg); }
+}
+
+[data-mood="dormida"] .pet-body { animation-duration: 6.5s; }
+[data-mood="dormida"] .pet-tail { animation: none; }
+.pet-zzz { animation: flotar 3.4s ease-in-out infinite; }
+@keyframes flotar {
+  0%, 100% { opacity: .3; transform: translateY(2px); }
+  50%      { opacity: .75; transform: translateY(-3px); }
+}
+
+.pet-spark { animation: destello 1.6s ease-in-out infinite; transform-origin: center; }
+@keyframes destello {
+  0%, 100% { opacity: .35; }
+  50%      { opacity: 1; }
+}
+
+.pet-talk { min-width: 0; }
+.pet-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--gold);
+  letter-spacing: var(--display-spacing);
+  margin-bottom: 3px;
+}
+.pet-phrase {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 0;
+}
+
+/* ── PERSONALIZAR ────────────────────────────────────────────
+   Segundo estante de la tienda: la misma mecánica que los temas. */
+.pet-preview {
+  display: grid;
+  place-items: center;
+  padding: 10px;
+  margin-bottom: 14px;
+  background: var(--fog-soft);
+  border: var(--hairline);
+  border-radius: var(--card-radius);
+}
+.pet-preview .pet-svg { width: 128px; height: 112px; }
+
+.pet-group-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 14px 0 8px;
+}
+.pet-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.pet-opt {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px 7px 8px;
+  border: var(--hairline);
+  border-radius: var(--pill-radius);
+  background: var(--card);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .18s;
+}
+.pet-opt:hover:not(.locked) { border-color: var(--border-strong); }
+.pet-opt.on { border-color: var(--gold); color: var(--gold); }
+.pet-opt.locked { opacity: .45; cursor: not-allowed; }
+.pet-dot {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / .2);
+  flex-shrink: 0;
+}
+.pet-name-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
+  background: var(--fog-soft);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+}

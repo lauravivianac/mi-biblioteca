@@ -19,6 +19,10 @@ import { readingPace, goalFeasibility, goalProgress, stalledBooks, generatePlan,
 import { $, esc, toast, confirmAction, download, closeSheet } from './ui.js';
 import { refreshAll } from './views.js';
 import { MONTH_ORDER } from './seed.js';
+import { achievementStatus, earnedCount } from './achievements.js';
+import {
+  petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
+} from './pet.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -225,10 +229,44 @@ function renderThemeStore() {
         <button class="btn-magic" onclick="applyPreviewedTheme()">Aplicar ${esc(themes.find((t) => t.id === previewing).name)}</button>
       </div>` : ''}
 
-    <div class="store-shelf-label">Cosas de la mascota</div>
-    <div class="store-soon">
-      Aquí vivirán los accesorios de tu mascota lectora. Todo se desbloquea leyendo, nada se paga.
-    </div>`;
+    <div class="store-shelf-label">Tu mascota</div>
+    ${renderPetShelf()}`;
+}
+
+/** Segundo estante: la mascota. Nada se paga; todo se desbloquea leyendo. */
+function renderPetShelf() {
+  const cfg = petConfig();
+  const opt = (group, item, extra = '') => `
+    <button class="pet-opt ${cfg[group] === item.id ? 'on' : ''} ${item.locked ? 'locked' : ''}"
+            ${item.locked ? 'aria-disabled="true"' : `onclick="setPetPart('${group}','${item.id}')"`}
+            title="${item.locked ? 'Se desbloquea leyendo' : esc(item.name)}">
+      ${extra}${item.locked ? '🔒 ' : ''}${esc(item.name)}
+    </button>`;
+
+  return `
+    <div class="pet-preview">${petSvg(petState().mood, cfg)}</div>
+
+    <label class="pet-group-label" for="pet-name">Cómo se llama</label>
+    <input class="pet-name-input" id="pet-name" maxlength="18"
+           placeholder="Ponle un nombre" value="${esc(cfg.name)}"
+           onchange="setPetName(this.value)">
+
+    <div class="pet-group-label">Pelaje</div>
+    <div class="pet-options">
+      ${availableFurs().map((f) => opt('fur', f,
+        `<span class="pet-dot" style="background:${f.color}"></span>`)).join('')}
+    </div>
+
+    <div class="pet-group-label">Accesorio</div>
+    <div class="pet-options">${availableAccessories().map((a) => opt('accessory', a)).join('')}</div>
+
+    <div class="pet-group-label">Su rincón</div>
+    <div class="pet-options">${availableCorners().map((c) => opt('corner', c)).join('')}</div>
+
+    <p class="set-fineprint">
+      Todo se desbloquea leyendo. Un accesorio que costó terminar un libro de 900 páginas
+      significa algo; uno que costó dos dólares, no.
+    </p>`;
 }
 
 /**
@@ -276,6 +314,31 @@ export function applyPreviewedTheme() {
   toast(`Tema ${name} aplicado`);
 }
 
+export function setPetPart(group, id) {
+  updateSettings({ pet: { ...petConfig(), [group]: id } });
+  renderThemeStore();
+  refreshAll();
+}
+
+export function setPetName(name) {
+  updateSettings({ pet: { ...petConfig(), name: name.trim().slice(0, 18) } });
+  refreshAll();
+  if (name.trim()) toast(`Se llama ${name.trim()}`);
+}
+
+export function togglePet() {
+  const hidden = !petConfig().hidden;
+  updateSettings({ pet: { ...petConfig(), hidden } });
+  openSettings();
+  refreshAll();
+  toast(hidden ? 'Mascota oculta. Sigues ganando logros igual.' : 'Aquí está de vuelta.');
+}
+
+/** Tocarla responde: si no reacciona, es un dibujo, no una compañera. */
+export function pokePet() {
+  refreshAll();
+}
+
 /* ── AJUSTES  ·  historias #20, #21 ──────────────────────────── */
 
 export function openSettings() {
@@ -311,10 +374,31 @@ export function openSettings() {
           ? `vas ${progress.diffUnits} por delante 🎉` : `vas ${progress.diffUnits} por detrás`}</div></div>
     </div>` : ''}
 
+    <div class="section-heading"><span class="section-heading-text">Logros</span></div>
+    <div class="ach-list">
+      ${achievementStatus().map((a) => `
+        <div class="ach ${a.earned ? 'got' : ''}">
+          <span class="ach-icon">${a.earned ? a.icon : '🔒'}</span>
+          <div class="ach-body">
+            <div class="ach-name">${esc(a.name)}</div>
+            <div class="ach-hint">${a.earned ? 'Conseguido' : esc(a.hint)}</div>
+            ${!a.earned ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${a.pct}%"></div></div>` : ''}
+          </div>
+          ${!a.earned ? `<span class="ach-count">${a.done}/${a.need}${a.unit}</span>` : ''}
+        </div>`).join('')}
+    </div>
+
     <div class="section-heading"><span class="section-heading-text">Apariencia</span></div>
+    <div class="set-row" onclick="togglePet()">
+      <div><div class="set-row-title">Mascota lectora</div>
+        <div class="set-row-sub">${petConfig().hidden
+          ? 'Oculta · toca para traerla de vuelta'
+          : 'Visible en el inicio · toca para ocultarla'}</div></div>
+      <span class="set-chev">${petConfig().hidden ? '○' : '●'}</span>
+    </div>
     <div class="set-row" onclick="openThemeStore()">
       <div><div class="set-row-title">Tienda de temas</div>
-        <div class="set-row-sub">Ocho temas para cambiarle la cara a la app</div></div>
+        <div class="set-row-sub">Nueve temas para cambiarle la cara a la app · ${earnedCount()} logros conseguidos</div></div>
       <span class="set-chev">›</span>
     </div>
 

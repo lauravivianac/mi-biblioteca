@@ -11,6 +11,8 @@ import {
 } from './store.js';
 import { fetchCover } from './covers.js';
 import { $, esc, initial, toast, confirmAction } from './ui.js';
+import { refreshAchievements } from './achievements.js';
+import { renderPet } from './pet.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -74,6 +76,9 @@ export function setYear(y, el) {
 }
 
 export function renderPlan() {
+  const shelf = $('pet-slot');
+  if (shelf) shelf.innerHTML = renderPet();
+
   const body = $('plan-body');
   if (!body) return;
   const yearBooks = allBooks().filter((b) => b.year === curYear);
@@ -257,6 +262,11 @@ export function setStatus(id, status) {
   }
   if (status === 'pending') { patch.finishedAt = null; }
   updateEntry(id, patch);
+
+  /* Un logro que se consigue en silencio no motiva a nadie. */
+  for (const a of refreshAchievements()) {
+    toast(`${a.icon}  ${a.name}${a.unlocksTheme ? ' · desbloqueaste un tema' : ''}`);
+  }
 }
 
 export function toggleRead(id) {
