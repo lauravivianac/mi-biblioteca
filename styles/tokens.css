@@ -1,0 +1,79 @@
+/* ─────────────────────────────────────────────────────────────
+   DESIGN TOKENS  ·  historia #13
+   Ningún color se escribe a mano fuera de este archivo.
+
+   Un tema (src/themes.js) reemplaza SOLO los tokens base de
+   abajo. Todo lo derivado se recalcula solo, así que un tema
+   nuevo son ~14 valores, no 60.
+
+   Los colores base van dos veces: como hex (para usarlos
+   directos) y como tripleta RGB (para poder darles opacidad
+   con rgb(var(--x-rgb) / .3)). Es lo que permite que las
+   transparencias sigan al tema en vez de quedarse fijas.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── BASE · lo que cada tema reemplaza ───────────────────── */
+  --void: #0D0A1A;        --void-rgb: 13 10 26;        /* fondo más profundo */
+  --deep: #13102B;        --deep-rgb: 19 16 43;        /* superficie */
+  --dusk: #1E1840;        --dusk-rgb: 30 24 64;        /* superficie elevada */
+  --purple: #6C3FC5;      --purple-rgb: 108 63 197;    /* acento primario */
+  --violet: #9B6EE8;      --violet-rgb: 155 110 232;   /* acento secundario */
+  --lilac: #C4A8FF;       --lilac-rgb: 196 168 255;    /* acento claro */
+  --gold: #F0C060;        --gold-rgb: 240 192 96;      /* realce */
+  --amber: #D4943A;       --amber-rgb: 212 148 58;     /* realce secundario */
+  --parchment: #F5EDD8;
+  --text: #EDE8F5;        --text-rgb: 237 232 245;
+
+  /* estado — semánticos, no son el acento */
+  --success: #7EC8A0;     --success-rgb: 126 200 160;
+  --success-deep: #2E7D32;
+  --danger: #FF8A8A;      --danger-rgb: 255 138 138;
+
+  /* ── TIPOGRAFÍA Y FORMA · el tema también los reemplaza ──── */
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --display-spacing: 1px;
+  --display-transform: none;
+
+  /* ── ATMÓSFERA · un tema puede apagarla ──────────────────── */
+  --stars-opacity: 1;
+  --orbs-opacity: 1;
+  --grid-opacity: 1;
+  --glow-strength: 1;
+  --bg-wash:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgb(var(--purple-rgb) / .25) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 80%, rgb(var(--dusk-rgb) / .8) 0%, transparent 60%),
+    radial-gradient(ellipse 100% 80% at 50% 50%, var(--void) 40%, var(--deep) 100%);
+
+  /* ── DERIVADOS · se recalculan solos con cada tema ───────── */
+  --fog: rgb(var(--lilac-rgb) / .12);
+  --fog-soft: rgb(var(--lilac-rgb) / .06);
+  --fog-faint: rgb(var(--lilac-rgb) / .03);
+  --glow: rgb(var(--purple-rgb) / .35);
+  --muted: rgb(var(--text-rgb) / .5);
+  --muted-soft: rgb(var(--text-rgb) / .35);
+  --border: rgb(var(--lilac-rgb) / .15);
+  --border-soft: rgb(var(--lilac-rgb) / .08);
+  --border-strong: rgb(var(--lilac-rgb) / .3);
+  --card: rgb(var(--deep-rgb) / .85);
+  --card-solid: rgb(var(--deep-rgb) / .96);
+  --scrim: rgb(0 0 0 / .7);
+  --shade: rgb(0 0 0 / .5);
+  --accent-wash: linear-gradient(135deg, rgb(var(--purple-rgb) / .4), rgb(var(--violet-rgb) / .2));
+  --gold-wash: rgb(var(--gold-rgb) / .12);
+  --success-wash: rgb(var(--success-rgb) / .18);
+  --danger-wash: rgb(var(--danger-rgb) / .18);
+}
+
+/* Quien pida menos movimiento, no ve ninguno. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
