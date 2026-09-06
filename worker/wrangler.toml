@@ -1,0 +1,10 @@
+name = "mi-biblioteca-agente"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Dominios desde los que la app puede llamar. Ajusta cuando cambien.
+ALLOWED_ORIGINS = "https://lauravivianac.github.io,https://mi-biblioteca.vercel.app,http://localhost:8080"
+
+# La key de DeepSeek NO va aquí. Va como secreto:
+#   npx wrangler secret put DEEPSEEK_API_KEY

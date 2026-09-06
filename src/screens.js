@@ -24,6 +24,7 @@ import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
   availableSpecies, currentScene, SCENES,
 } from './pet.js';
+import { workerUrl, setWorkerUrl, setAgentEnabled } from './agent.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -433,6 +434,21 @@ export function openSettings() {
       <span class="set-chev">›</span>
     </div>
 
+    <div class="section-heading"><span class="section-heading-text">El agente</span></div>
+    <div class="set-row" onclick="configureAgent()">
+      <div><div class="set-row-title">Identificar portadas con IA</div>
+        <div class="set-row-sub">${workerUrl()
+          ? (settings().agentEnabled
+              ? 'Encendido · solo se usa cuando ningún catálogo reconoce la portada'
+              : 'Configurado pero apagado · toca para encenderlo')
+          : 'Sin configurar · despliega el Worker y pega aquí su dirección'}</div></div>
+      <span class="set-chev">${workerUrl() && settings().agentEnabled ? '●' : '○'}</span>
+    </div>
+    <p class="set-fineprint">
+      La clave de DeepSeek vive en el Worker, nunca en la app. Añadir libros
+      por título o por código de barras funciona igual sin el agente.
+    </p>
+
     <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
     <div class="set-row" onclick="doExportJson()">
       <div><div class="set-row-title">Exportar a JSON</div>
@@ -452,6 +468,65 @@ export function openSettings() {
       Borrar la cuenta elimina tus libros, reseñas y ajustes. No se puede deshacer.
     </p>`;
   $('settings-overlay').classList.add('open');
+}
+
+/* ── EL AGENTE ────────────────────────────────────────────────
+   Se configura desde aquí y no desde el código, porque la
+   dirección del Worker es de cada quien. Lo que NUNCA se pide
+   aquí es la clave de DeepSeek: esa vive en el Worker, y en la
+   app sería visible con F12. */
+export async function configureAgent() {
+  const current = workerUrl();
+
+  if (current) {
+    const on = settings().agentEnabled;
+    setAgentEnabled(!on);
+    toast(on ? 'Agente apagado' : 'Agente encendido');
+    openSettings();
+    return;
+  }
+
+  const url = await askText({
+    title: 'Dirección del Worker',
+    body: 'Despliega la carpeta <strong>worker/</strong> en Cloudflare y pega aquí la dirección que te dé. La clave de DeepSeek no se escribe aquí: va en el Worker con <code>wrangler secret put</code>.',
+    placeholder: 'https://mi-agente.workers.dev',
+  });
+  if (!url) return;
+
+  if (!/^https:\/\/[^\s]+$/i.test(url)) {
+    toast('La dirección tiene que empezar por https://', 'error');
+    return;
+  }
+  setWorkerUrl(url);
+  setAgentEnabled(true);
+  toast('Agente configurado');
+  openSettings();
+}
+
+/** Un campo de texto en una hoja, con el mismo aire que confirmAction. */
+function askText({ title, body, placeholder = '' }) {
+  return new Promise((resolve) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'overlay open confirm-overlay';
+    wrap.innerHTML = `
+      <div class="sheet confirm-sheet">
+        <div class="sheet-title">${esc(title)}</div>
+        <p class="confirm-body">${body}</p>
+        <input class="finput" id="ask-text" placeholder="${esc(placeholder)}" autocomplete="off">
+        <div class="confirm-actions" style="margin-top:16px">
+          <button class="btn-ghost" data-act="cancel">Cancelar</button>
+          <button class="btn-magic" data-act="ok">Guardar</button>
+        </div>
+      </div>`;
+    const done = (v) => { wrap.remove(); resolve(v); };
+    wrap.addEventListener('click', (e) => {
+      const act = e.target.dataset?.act;
+      if (act === 'ok') done($('ask-text').value.trim());
+      else if (act === 'cancel' || e.target === wrap) done(null);
+    });
+    document.body.appendChild(wrap);
+    $('ask-text').focus();
+  });
 }
 
 export const doExportJson = () => {

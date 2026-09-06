@@ -167,27 +167,11 @@
 <div class="overlay" id="add-overlay" onclick="closeAdd(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
-    <button class="sheet-close" onclick="closeSheet('add-overlay')" aria-label="Cerrar">✕</button>
+    <button class="sheet-close" onclick="closeAddSheet()" aria-label="Cerrar">✕</button>
     <div class="sheet-title">✦ Agregar libro</div>
-    <div class="fg"><label class="flabel" for="f-title">Título</label><input class="finput" id="f-title" placeholder="Título del libro"></div>
-    <div class="fg"><label class="flabel" for="f-author">Autor</label><input class="finput" id="f-author" placeholder="Nombre del autor"></div>
-    <div class="fg"><label class="flabel" for="f-genre">Género</label><select class="fselect" id="f-genre"></select></div>
-    <div class="frow">
-      <div class="fg"><label class="flabel" for="f-year">Año</label>
-        <select class="fselect" id="f-year">
-          <option value="2026">2026</option><option value="2027">2027</option>
-          <option value="2028">2028</option><option value="">Sin asignar</option>
-        </select>
-      </div>
-      <div class="fg"><label class="flabel" for="f-month">Mes</label><select class="fselect" id="f-month"><option value="">—</option></select></div>
-    </div>
-    <div class="frow">
-      <div class="fg"><label class="flabel" for="f-pages">Páginas</label><input class="finput" id="f-pages" placeholder="~300"></div>
-      <div class="fg"><label class="flabel" for="f-role">Rol</label>
-        <select class="fselect" id="f-role"><option value="⚓ Ancla">⚓ Ancla</option><option value="⚡ Corto">⚡ Corto</option></select>
-      </div>
-    </div>
-    <button class="btn-magic" onclick="submitAddBook()">✦ Agregar a mi biblioteca</button>
+    <!-- Lo pinta src/addbook.js: el formulario cambia según el camino
+         que se elija (título, cámara o a mano). -->
+    <div id="add-body"></div>
   </div>
 </div>
 

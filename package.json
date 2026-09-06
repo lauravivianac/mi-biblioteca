@@ -5,9 +5,10 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "npm run test:contrast && npm run test:planner",
+    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup",
     "test:contrast": "node scripts/check-contrast.mjs",
     "test:planner": "node scripts/test-planner.mjs",
+    "test:booklookup": "node scripts/test-booklookup.mjs",
     "serve": "python3 -m http.server 8080"
   }
 }
