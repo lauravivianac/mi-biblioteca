@@ -501,8 +501,11 @@ export async function openDetail(id) {
       <textarea class="review-txt" style="min-height:72px" placeholder="¿Qué te pareció?" onchange="setReview('${id}',this.value)">${esc(reviewOf(id))}</textarea>
       <div id="review-privacy">${privacyRow(id)}</div>
 
-      ${s === 'read' ? `<button class="btn-ghost full" onclick="shareBook('${id}')" style="margin-bottom:14px">
+      ${s === 'read' ? `<button class="btn-ghost full" onclick="shareBook('${id}')" style="margin-bottom:8px">
         ✦ Presumir de este libro
+      </button>
+      <button class="btn-ghost full" onclick="openSwap('${id}')" style="margin-bottom:14px">
+        ⇄ Ofrecerlo para intercambio
       </button>` : ''}
 
       <div id="also-slot"></div>

@@ -21,6 +21,7 @@ import { streakInfo, addDay } from './streak-core.js';
 import { validateUsername, canChangeUsername, normalize } from './username-core.js';
 import { publicProfileDoc, seccionVisible, followersOnlyDoc, esPrivada } from './profile-core.js';
 import { activityDoc, activityId } from './feed-core.js';
+import { placeDoc } from './place-core.js';
 
 const state = {
   uid: null,
@@ -124,6 +125,23 @@ export function recordReadingDay(date = new Date()) {
    Con dos segmentos, `usernames/laura` sí es un documento. */
 
 export const myUsername = () => settings().username || null;
+
+/* ── DÓNDE ESTOY  ·  historia #81 ─────────────────────────────
+   Vive en los ajustes, que ya se sincronizan, y de ahí sale al perfil
+   público SOLO la ciudad — nunca el geohash, que es para el
+   intercambio y no para que lo lea cualquiera que abra tu perfil. */
+
+export const myPlace = () => settings().place || null;
+
+export function setPlace(datos) {
+  const p = placeDoc(datos);
+  updateSettings({ place: p, city: p?.city || '' });
+  return p;
+}
+
+export function clearPlace() {
+  updateSettings({ place: null, city: '' });
+}
 
 /** ¿Mi cuenta es privada?  ·  historia #52 */
 export const soyPrivada = () => esPrivada(settings());

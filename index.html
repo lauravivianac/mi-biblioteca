@@ -211,6 +211,36 @@
   </div>
 </div>
 
+<!-- DÓNDE ESTOY -->
+<div class="overlay" id="place-overlay" onclick="closePlace(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('place-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Dónde estás</div>
+    <div id="place-body"></div>
+  </div>
+</div>
+
+<!-- OFRECER UN LIBRO -->
+<div class="overlay" id="swap-overlay" onclick="closeSwap(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('swap-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Ofrecer para intercambio</div>
+    <div id="swap-body"></div>
+  </div>
+</div>
+
+<!-- MIS PUBLICACIONES -->
+<div class="overlay" id="myswaps-overlay" onclick="closeMySwaps(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('myswaps-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Mis libros ofrecidos</div>
+    <div id="myswaps-body"></div>
+  </div>
+</div>
+
 <!-- COMENTARIOS -->
 <div class="overlay" id="comments-overlay" onclick="closeComments(event)">
   <div class="sheet">

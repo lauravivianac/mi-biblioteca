@@ -539,6 +539,16 @@ export function openSettings() {
           : 'Elige tu @usuario para tenerlo'}</div></div>
       <span class="set-chev">›</span>
     </div>
+    <div class="set-row" onclick="openPlace()">
+      <div><div class="set-row-title">Dónde estás</div>
+        <div class="set-row-sub">Para intercambiar. Solo la ciudad, nunca la dirección</div></div>
+      <span class="set-chev">›</span>
+    </div>
+    <div class="set-row" onclick="openMySwaps()">
+      <div><div class="set-row-title">Mis libros ofrecidos</div>
+        <div class="set-row-sub">Lo que tienes disponible para intercambio</div></div>
+      <span class="set-chev">›</span>
+    </div>
     <div class="set-row" onclick="openBlocked()">
       <div><div class="set-row-title">Bloqueadas y silenciadas</div>
         <div class="set-row-sub">Quién no te ve y a quién no ves</div></div>

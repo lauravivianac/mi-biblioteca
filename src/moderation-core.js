@@ -21,31 +21,28 @@
    y busca insultos DIRIGIDOS a personas, no palabrotas.
    ───────────────────────────────────────────────────────────── */
 
+import { sinTildes } from './text-core.js';
+
 /* ── NORMALIZAR ──────────────────────────────────────────────── */
 
 const SUSTITUCIONES = {
   0: 'o', 1: 'i', 3: 'e', 4: 'a', 5: 's', 7: 't', 8: 'b', $: 's', '@': 'a',
 };
 
-/* La eñe se guarda antes de quitar tildes y se devuelve después.
-   Quitar acentos con NFD parte la ñ en «n» + virgulilla y se lleva la
-   virgulilla, así que «año» acababa siendo otra palabra. En castellano
-   la ñ es una letra, no una n con adorno. */
-const MARCA_ENYE = '';
-
 /**
  * El texto tal y como hay que mirarlo para decidir.
  *
  * Nunca se guarda así: esto es solo para comparar. Lo que se publica
  * es lo que escribió la persona, con sus tildes y sus mayúsculas.
+ *
+ * La eñe sobrevive al barrido de tildes, y eso vive en text-core
+ * porque el mismo fallo se escribió DOS VECES en este repo: aquí
+ * convertía «año» en «ano», y en los nombres de ciudad convertía «La
+ * Coruña» en «La Coruna».
  */
 export function normalizar(texto) {
-  return String(texto ?? '')
-    .toLowerCase()
-    .replace(/ñ/g, MARCA_ENYE)
-    .normalize('NFD').replace(/[̀-ͯ]/g, '')   // fuera las tildes
-    .replace(new RegExp(MARCA_ENYE, 'g'), 'ñ')
-    .replace(/[0-9$@]/g, (c) => SUSTITUCIONES[c] ?? c)  // g4t0 → gato
+  return sinTildes(texto)
+  .replace(/[0-9$@]/g, (c) => SUSTITUCIONES[c] ?? c)  // g4t0 → gato
     .replace(/[^a-z\sñ]/g, '')                          // fuera puntuación y asteriscos
     /* A UNA letra, no a dos: «idiotaaaaa» tiene que quedar en «idiota»
        para que la lista lo reconozca. Las repeticiones de solo dos se
