@@ -30,8 +30,17 @@ La primera vez pregunta qué subdominio de `workers.dev` quieres. Cualquiera que
 sea tuyo sirve; el Worker acabará en
 `https://mi-biblioteca-agente.TU-SUBDOMINIO.workers.dev`.
 
-Esa dirección es la que se pega en la app: **⚙ Ajustes → El agente lector**.
-No hace falta tocar código.
+Esa dirección va en **`src/agent.js`**, en la constante `WORKER_URL`, y de ahí
+al repositorio.
+
+No va en los ajustes de cada usuaria. Es una propiedad del despliegue, no de
+quien lee: pedírsela a cada persona significaría que solo tiene agente quien
+sepa qué es un Worker de Cloudflare, y una app no debe pedir eso. En los
+ajustes solo hay un interruptor, para quien prefiera no usarlo.
+
+No es un secreto —es una dirección pública—. Lo que la protege es lo que hay
+detrás: token de Firebase válido, origen permitido, lista blanca de encargos y
+límite diario. Quien la copie no consigue nada sin una cuenta de la app.
 
 **La key no se pega en el chat, ni en un issue, ni en ningún archivo del
 repositorio.** El comando `secret put` la pide por teclado y la guarda cifrada

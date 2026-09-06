@@ -25,7 +25,7 @@ import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
   availableSpecies, currentScene, SCENES,
 } from './pet.js';
-import { workerUrl, setWorkerUrl, setAgentEnabled, recommendFrom } from './agent.js';
+import { workerUrl, agentAvailable, setAgentEnabled, recommendFrom } from './agent.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -435,21 +435,20 @@ export function openSettings() {
       <span class="set-chev">›</span>
     </div>
 
+    ${workerUrl() ? `
     <div class="section-heading"><span class="section-heading-text">El agente</span></div>
-    <div class="set-row" onclick="configureAgent()">
+    <div class="set-row" onclick="toggleAgent()">
       <div><div class="set-row-title">El agente lector</div>
-        <div class="set-row-sub">${workerUrl()
-          ? (settings().agentEnabled
-              ? 'Encendido · «¿me lo leo?», qué leer después, y portadas que ningún catálogo reconoce'
-              : 'Configurado pero apagado · toca para encenderlo')
-          : 'Sin configurar · despliega el Worker y pega aquí su dirección'}</div></div>
-      <span class="set-chev">${workerUrl() && settings().agentEnabled ? '●' : '○'}</span>
+        <div class="set-row-sub">${agentAvailable()
+          ? 'Encendido · «¿me lo leo?» y qué leer después'
+          : 'Apagado · toca para encenderlo'}</div></div>
+      <span class="set-chev">${agentAvailable() ? '●' : '○'}</span>
     </div>
     <p class="set-fineprint">
-      La clave de DeepSeek vive en el Worker, nunca en la app. Solo habla de libros,
-      y sin él la app funciona igual: añadir por título o por código de barras
-      nunca pasa por el agente.
-    </p>
+      Cuando lo usas, se envía el título y el autor del libro —nunca tus reseñas
+      ni tus notas. Apagarlo no quita nada más: añadir libros por título o por
+      código de barras nunca pasa por el agente.
+    </p>` : ''}
 
     <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
     <div class="set-row" onclick="doExportJson()">
@@ -473,111 +472,16 @@ export function openSettings() {
 }
 
 /* ── EL AGENTE ────────────────────────────────────────────────
-   Se configura desde aquí y no desde el código, porque la
-   dirección del Worker es de cada quien. Lo que NUNCA se pide
-   aquí es la clave de DeepSeek: esa vive en el Worker, y en la
-   app sería visible con F12. */
-export async function configureAgent() {
-  const current = workerUrl();
-
-  if (current) {
-    const on = settings().agentEnabled;
-    setAgentEnabled(!on);
-    toast(on ? 'Agente apagado' : 'Agente encendido');
-    openSettings();
-    return;
-  }
-
-  const url = await askText({
-    title: 'Dirección del Worker',
-    body: 'Despliega la carpeta <strong>worker/</strong> en Cloudflare y pega aquí la dirección que te dé. La clave de DeepSeek no se escribe aquí: va en el Worker con <code>wrangler secret put</code>.',
-    placeholder: 'https://mi-agente.workers.dev',
-  });
-  if (!url) return;
-
-  if (!/^https:\/\/[^\s]+$/i.test(url)) {
-    toast('La dirección tiene que empezar por https://', 'error');
-    return;
-  }
-  setWorkerUrl(url);
-  setAgentEnabled(true);
-  toast('Agente configurado');
+   Un interruptor y nada más. La dirección del Worker vive en el
+   código (src/agent.js) porque es del despliegue, no de cada quien:
+   pedírsela a la usuaria significaría que solo tiene agente quien
+   sepa qué es un Worker de Cloudflare. */
+export function toggleAgent() {
+  const estaba = agentAvailable();
+  setAgentEnabled(!estaba);
+  toast(estaba ? 'Agente apagado' : 'Agente encendido');
   openSettings();
-}
-
-/** Un campo de texto en una hoja, con el mismo aire que confirmAction. */
-function askText({ title, body, placeholder = '' }) {
-  return new Promise((resolve) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'overlay open confirm-overlay';
-    wrap.innerHTML = `
-      <div class="sheet confirm-sheet">
-        <div class="sheet-title">${esc(title)}</div>
-        <p class="confirm-body">${body}</p>
-        <input class="finput" id="ask-text" placeholder="${esc(placeholder)}" autocomplete="off">
-        <div class="confirm-actions" style="margin-top:16px">
-          <button class="btn-ghost" data-act="cancel">Cancelar</button>
-          <button class="btn-magic" data-act="ok">Guardar</button>
-        </div>
-      </div>`;
-    const done = (v) => { wrap.remove(); resolve(v); };
-    wrap.addEventListener('click', (e) => {
-      const act = e.target.dataset?.act;
-      if (act === 'ok') done($('ask-text').value.trim());
-      else if (act === 'cancel' || e.target === wrap) done(null);
-    });
-    document.body.appendChild(wrap);
-    $('ask-text').focus();
-  });
-}
-
-/* ── QUÉ LEER DESPUÉS  ·  historia #49 ────────────────────────
-   Se le manda lo LEÍDO con su puntuación —que es lo que de verdad
-   dice qué te gusta— y lo pendiente, para que no recomiende algo
-   que ya está en la pila. Nada de esto sale del Worker. */
-
-export async function openRecs() {
-  $('recs-overlay').classList.add('open');
-  $('recs-body').innerHTML = '<p class="planner-hint">Mirando lo que has leído…</p>';
-
-  const books = allBooks();
-  const read = books.filter((b) => statusOf(b.id) === 'read')
-    .map((b) => ({ ...b, rating: ratingOf(b.id) }))
-    .sort((a, b) => b.rating - a.rating);
-  const pending = books.filter((b) => statusOf(b.id) !== 'read');
-
-  if (read.length < 3) {
-    $('recs-body').innerHTML = `<p class="planner-hint">
-      Con <strong>${read.length}</strong> ${read.length === 1 ? 'libro leído' : 'libros leídos'} todavía no hay
-      de dónde sacar una recomendación que valga. Marca unos cuantos como leídos
-      —y ponles estrellas, que es lo que más dice— y vuelve.
-    </p>`;
-    return;
-  }
-
-  try {
-    const sug = await recommendFrom({ read, pending });
-    if (!sug.length) {
-      $('recs-body').innerHTML = '<p class="planner-hint">No se le ocurrió nada esta vez. Prueba otra vez más tarde.</p>';
-      return;
-    }
-    $('recs-body').innerHTML = `
-      <p class="planner-hint">A partir de tus ${read.length} libros leídos y de cómo los puntuaste.</p>
-      <div class="recs">
-        ${sug.map((r) => `
-          <div class="rec">
-            <div class="rec-title">${esc(r.titulo)}</div>
-            <div class="rec-author">${esc(r.autor || '')}</div>
-            ${r.porque ? `<p class="rec-why">${esc(r.porque)}</p>` : ''}
-          </div>`).join('')}
-      </div>
-      <p class="set-fineprint">
-        Son sugerencias de un modelo: comprueba que el libro existe antes de buscarlo.
-        Para añadir uno, usa ＋ y escribe el título — de ahí salen los datos de verdad.
-      </p>`;
-  } catch (e) {
-    $('recs-body').innerHTML = `<p class="planner-hint warn">${esc(e.message)}</p>`;
-  }
+  refreshAll();
 }
 
 export const doExportJson = () => {
