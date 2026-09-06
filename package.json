@@ -29,6 +29,13 @@
     "test:feed": "node scripts/test-feed.mjs",
     "test:moderation": "node scripts/test-moderation.mjs",
     "test:alsoread": "node scripts/test-alsoread.mjs",
-    "test:swap": "node scripts/test-swap.mjs"
+    "test:swap": "node scripts/test-swap.mjs",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-biblioteca \"node scripts/test-rules.mjs\"",
+    "test:circuito": "firebase emulators:exec --only firestore,auth --project demo-biblioteca \"node --import ./scripts/emulador/registrar.mjs scripts/test-circuito.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "firebase": "^10.14.1",
+    "firebase-tools": "^13.35.1"
   }
 }

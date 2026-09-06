@@ -13,14 +13,53 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /* Mirar si una cuenta es privada cuesta una lectura, y solo se
-       paga al crear una flecha de seguimiento — no en cada consulta. */
+       paga al crear una flecha de seguimiento — no en cada consulta.
+
+       EL `get('privada', false)` NO ES UN DETALLE. Estaba escrito
+       `.data.privada == true`, y en el motor de reglas leer un campo
+       que no está en el documento no da «falso»: da un ERROR de
+       evaluación, y una regla que revienta DENIEGA.
+
+       Consecuencia: cualquier perfil publicado sin ese campo —los de
+       antes de que la cuenta privada existiera, o cualquier escritura
+       parcial— era IMPOSIBLE DE SEGUIR. No fallaba a veces: no se podía
+       seguir a esa persona nunca, y el error que llegaba al cliente era
+       un «permiso denegado» sin más explicación.
+
+       Comprobado contra el emulador de Firestore, no de memoria:
+       perfil sin el campo → denegado; con `privada:false` → permitido.
+       Con el valor por defecto, los dos funcionan. */
     function esPrivada(userId) {
       return exists(/databases/$(database)/documents/profiles/$(userId))
-        && get(/databases/$(database)/documents/profiles/$(userId)).data.privada == true;
+        && get(/databases/$(database)/documents/profiles/$(userId)).data.get('privada', false) == true;
     }
 
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
+    }
+
+    /* BORRAR LO QUE NO EXISTE TIENE QUE PODERSE, Y ESTO NO ES UN
+       DESCUIDO.
+
+       En el motor de reglas, borrar un documento que no está deja
+       `resource` a null, y leer `resource.data.loQueSea` sobre null no
+       da «falso»: revienta la evaluación, y una regla que revienta
+       deniega.
+
+       Eso rompía BLOQUEAR, que es justo lo que nunca puede fallar.
+       `block()` borra en un mismo lote el bloqueo, las dos flechas de
+       seguimiento y el aviso — y las flechas casi nunca existen las
+       dos, porque bloqueas a gente que no te sigue. Con una sola
+       operación denegada cae el lote entero: bloquear devolvía «no se
+       pudo, inténtalo otra vez» y no se podía nunca.
+
+       Se descubrió corriendo el código real de la app contra el
+       emulador (`npm run test:circuito`), no leyendo el fichero.
+
+       Permitirlo no abre nada: donde no hay documento no hay dato que
+       proteger, y el borrado no deja nada escrito. */
+    function noHayNada() {
+      return resource == null;
     }
 
     // Cada quien manda sobre lo suyo, y solo sobre lo suyo.
@@ -159,9 +198,13 @@ service cloud.firestore {
          Cancelar puede quien pidió; rechazar, quien recibe. Los dos
          borran el mismo documento y por eso las dos pueden. */
     match /followRequests/{reqId} {
-      allow read, delete: if request.auth != null
-                          && (resource.data.de == request.auth.uid
-                              || resource.data.a == request.auth.uid);
+      allow read: if request.auth != null
+                  && (resource.data.de == request.auth.uid
+                      || resource.data.a == request.auth.uid);
+      allow delete: if request.auth != null
+                    && (noHayNada()
+                        || resource.data.de == request.auth.uid
+                        || resource.data.a == request.auth.uid);
       allow create: if request.auth != null
                     && request.resource.data.de == request.auth.uid
                     && reqId == request.resource.data.a + '_' + request.auth.uid
@@ -182,7 +225,8 @@ service cloud.firestore {
                     && nombreDeUsuarioValido(username);
 
       // Soltarlo es solo cosa de su dueña — al cambiarlo o al borrar la cuenta
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
+                    && (noHayNada() || resource.data.uid == request.auth.uid);
 
       // Nunca. Un nombre tomado no se sobrescribe, se suelta y se vuelve a pedir
       allow update: if false;
@@ -228,7 +272,8 @@ service cloud.firestore {
          una cosa que suele faltar: si lo único que puedes hacer es
          bloquear, no quitas a nadie. */
       allow delete: if request.auth != null
-                    && (resource.data.follower == request.auth.uid
+                    && (noHayNada()
+                        || resource.data.follower == request.auth.uid
                         || resource.data.following == request.auth.uid);
 
       allow update: if false;
@@ -255,18 +300,81 @@ service cloud.firestore {
     match /notifs/{userId}/items/{noticeId} {
       allow read: if isOwner(userId);
 
+      /* Dos clases de aviso, y las dos con el MISMO tope: un documento
+         por persona que avisa. Seguir mil veces deja un aviso, y
+         comentar mil veces deja un aviso — el último, que es el que
+         se quiere ver.
+
+         El aviso de comentario llevaba dentro el sitio comentado
+         (`comment_{quien}_{target}`) y el `target` es texto libre, así
+         que cualquiera podía escribir avisos distintos hasta llenar
+         una bandeja ajena. Con el identificador cerrado no se puede:
+         el precio es que dos comentarios seguidos de la misma persona
+         se ven como uno, y ese precio se paga con gusto.
+
+         Sin esta línea el aviso de comentario NO EXISTÍA: la regla solo
+         casaba con `follow_`, así que la escritura la rechazaba el
+         servidor y nadie se enteraba nunca de un comentario suyo. */
       allow create: if request.auth != null
                     && request.resource.data.from == request.auth.uid
-                    && noticeId == 'follow_' + request.auth.uid
+                    && (noticeId == 'follow_' + request.auth.uid
+                        || noticeId == 'comment_' + request.auth.uid)
                     && userId != request.auth.uid;
 
-      // Solo la dueña, y solo para marcarlo leído
-      allow update: if isOwner(userId)
-                    && request.resource.data.diff(resource.data).affectedKeys()
-                         .hasOnly(['leido']);
+      /* La dueña, para marcarlo leído; y quien lo dejó, para
+         refrescarlo. Lo segundo hace falta porque el identificador es
+         fijo: el segundo comentario de la misma persona no crea un
+         aviso nuevo, sobrescribe el suyo — y sin esto, ese segundo
+         aviso lo rechazaba el servidor y solo llegaba el primero. */
+      allow update: if (isOwner(userId)
+                        && request.resource.data.diff(resource.data).affectedKeys()
+                             .hasOnly(['leido']))
+                    || (request.auth != null
+                        && resource.data.from == request.auth.uid
+                        && request.resource.data.from == request.auth.uid
+                        && (noticeId == 'follow_' + request.auth.uid
+                            || noticeId == 'comment_' + request.auth.uid));
 
       allow delete: if isOwner(userId)
-                    || (request.auth != null && resource.data.from == request.auth.uid);
+                    || (request.auth != null
+                        && (noHayNada() || resource.data.from == request.auth.uid));
+    }
+
+    /* ── LA ACTIVIDAD DEL FEED  ·  historia #49 ───────────────
+       ESTA REGLA NO EXISTÍA. La app escribía en `activity` desde que se
+       hizo el feed y la última regla del fichero —«todo lo demás,
+       cerrado»— lo denegaba todo: ni una sola entrada llegó nunca a
+       guardarse, así que el feed estaba vacío por definición y no por
+       falta de gente. Se descubrió pasando las rutas que usa el código
+       por el emulador de Firestore, no leyendo.
+
+       Es una copia pública con lo justo, como el perfil y las reseñas
+       (ver feed-core.js): quién, qué tipo, el libro y poco más. Lo lee
+       cualquiera con sesión porque el feed se arma al vuelo leyendo la
+       actividad de a quién sigues, y filtrar por seguidoras dentro de
+       la regla exigiría una lectura por entrada.
+
+       Lo que la regla sí aprieta:
+
+       - el `uid` de dentro tiene que ser quien escribe, así que nadie
+         publica actividad firmada por otra persona — que es lo único
+         que de verdad importa aquí, porque el feed se guía por ese
+         campo;
+       - el identificador tiene que empezar por tu uid, así que cada
+         quien escribe en su propio trozo del espacio de nombres y no
+         puede pisar el de nadie. Se compara cortando la cadena y no
+         con una expresión regular, para no meter el uid dentro de un
+         patrón. */
+    match /activity/{activityId} {
+      allow read: if request.auth != null;
+
+      allow create, update: if request.auth != null
+                            && request.resource.data.uid == request.auth.uid
+                            && activityId.size() > request.auth.uid.size()
+                            && activityId[0:request.auth.uid.size()] == request.auth.uid;
+
+      allow delete: if request.auth != null
+                    && (noHayNada() || resource.data.uid == request.auth.uid);
     }
 
     /* ── BLOQUEAR Y SILENCIAR  ·  historia #51 ────────────────
@@ -284,13 +392,16 @@ service cloud.firestore {
                     && request.resource.data.de == request.auth.uid
                     && blockId == request.auth.uid + '_' + request.resource.data.a
                     && request.resource.data.a != request.auth.uid;
-      allow delete: if request.auth != null && resource.data.de == request.auth.uid;
+      allow delete: if request.auth != null
+                    && (noHayNada() || resource.data.de == request.auth.uid);
       allow update: if false;
     }
 
     match /mutes/{muteId} {
       // Silenciar no se lo cuenta a nadie, ni siquiera a quien silencias
-      allow read, delete: if request.auth != null && resource.data.de == request.auth.uid;
+      allow read: if request.auth != null && resource.data.de == request.auth.uid;
+      allow delete: if request.auth != null
+                    && (noHayNada() || resource.data.de == request.auth.uid);
       allow create: if request.auth != null
                     && request.resource.data.de == request.auth.uid
                     && muteId == request.auth.uid + '_' + request.resource.data.a;
@@ -408,7 +519,8 @@ service cloud.firestore {
                     && !('lon' in request.resource.data)
                     && !('precio' in request.resource.data);
 
-      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null
+                    && (noHayNada() || resource.data.uid == request.auth.uid);
     }
 
     /* La colección `biblioteca` era de la época sin autenticación.

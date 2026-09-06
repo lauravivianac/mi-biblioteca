@@ -1,0 +1,31 @@
+{
+  "//": [
+    "ÍNDICES COMPUESTOS. Se despliegan con:",
+    "    firebase deploy --only firestore:indexes",
+    "",
+    "HACE FALTA, Y EL EMULADOR NO LO AVISA. Firestore crea solo los",
+    "índices de un campo; en cuanto una consulta mezcla un filtro sobre",
+    "un campo con un `orderBy` sobre OTRO, hay que declararlo aquí o la",
+    "consulta falla en producción con «the query requires an index».",
+    "",
+    "El emulador los inventa al vuelo, así que una consulta puede pasar",
+    "las pruebas y romperse en el móvil de alguien. Por eso este fichero",
+    "se escribe a mano y se despliega junto a las reglas.",
+    "",
+    "El del feed (social.js · loadFeed) es el que faltaba: busca la",
+    "actividad de a quién sigues con `where('uid','in', …)` y la ordena",
+    "por fecha. Sin este índice, el feed no carga nunca — que era el",
+    "segundo motivo por el que salía vacío, además de no tener regla."
+  ],
+  "indexes": [
+    {
+      "collectionGroup": "activity",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "at", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
