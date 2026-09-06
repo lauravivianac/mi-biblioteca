@@ -75,6 +75,8 @@ export const isDenied = (e) => e?.message === DENEGADO;
 const MESSAGES = {
   'sin-sesion': 'La sesión caducó. Vuelve a entrar.',
   'limite-diario': 'Llegaste al límite de consultas de hoy. Se renueva mañana.',
+  'presupuesto-agotado': 'El agente agotó su presupuesto de este mes. Vuelve el mes que viene — '
+    + 'todo lo demás de la app sigue funcionando igual.',
   'intent-no-permitido': 'Esa consulta no está permitida.',
   'fuera-de-tema': 'El agente solo habla de libros.',
   'proveedor': 'El servicio no respondió. Inténtalo más tarde.',

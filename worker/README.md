@@ -73,8 +73,44 @@ frase—, sino capas que rechazan **antes** de gastar un token.
 | Límite de entrada | Entre 300 y 1200 caracteres según el encargo, y se limpian los intentos de inyección |
 | Regla temática | Va en cada llamada: solo libros y lectura. Cualquier otra cosa devuelve `fuera_de_tema` |
 | Comprobación a la salida | Ese `fuera_de_tema` se corta en el Worker y no llega a la app |
-| Límite diario | 60 consultas por usuaria |
+| Límite diario | 60 consultas por usuaria, contadas en KV |
+| Techo mensual | Un tope en dólares para toda la app; pasado, el agente deja de responder hasta el mes siguiente |
 | Validación de forma | Cada encargo recorta la respuesta a los campos que declaró; nada más pasa |
+
+## El techo de gasto
+
+El gasto lo paga una sola key, así que sin techo no hay techo. Hay dos frenos:
+
+- **Por usuaria y día:** 60 consultas.
+- **Por mes y en dinero, para toda la app:** `MONTHLY_BUDGET_USD` en `wrangler.toml`,
+  2 dólares por defecto. Cuando se pasa, el Worker responde `presupuesto-agotado` y la
+  app lo dice con claridad — el resto de la app sigue funcionando igual.
+
+No se estima el gasto: se apunta el que informa el propio proveedor, tokens de entrada y
+de salida por separado, con los precios de `PRICE_IN_PER_M` y `PRICE_OUT_PER_M`.
+**Compruébalos de vez en cuando**: si DeepSeek cambia precios y esto no, el techo deja de
+ser el que crees.
+
+Para hacerte una idea: con los precios de hoy, mil consultas normales caben de sobra en
+dos dólares. El techo no está para el uso normal, está para que un bucle no gaste
+doscientos dólares mientras duermes.
+
+### Hace falta KV
+
+```bash
+npx wrangler kv namespace create AGENTE
+```
+
+Luego descomenta el bloque `[[kv_namespaces]]` de `wrangler.toml` y pega el id.
+
+**Sin KV el Worker funciona igual**, pero los contadores viven en memoria y Cloudflare
+recicla el isolate cuando quiere — así que el techo mensual no frena nada de verdad. Va
+comentado porque un id inventado hace fallar el despliegue, y prefiero que el agente
+funcione con un freno flojo a que no funcione.
+
+KV no tiene incremento atómico y es consistente «a la larga», así que dos consultas
+simultáneas pueden pasarse un poco del tope. Es un freno, no una contabilidad: sirve para
+que nadie se coma la key, no para cuadrar céntimos.
 
 ## Por qué el texto del usuario es dato, no instrucción
 
