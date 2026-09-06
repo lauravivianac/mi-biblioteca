@@ -12,6 +12,9 @@ import {
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
 import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
+import { THEMES } from './themes.js';
+
+const THEME_BASE = THEMES[0].tokens;
 import { readingPace, goalFeasibility, goalProgress, stalledBooks, generatePlan, planPatches, estimateDays } from './planner.js';
 import { $, esc, toast, confirmAction, download, closeSheet } from './ui.js';
 import { refreshAll } from './views.js';
@@ -195,16 +198,19 @@ function renderThemeStore() {
   const active = previewing || s.themeId;
 
   $('store-body').innerHTML = `
+    <p class="store-lede">Cada tema cambia el material, la forma y la tipografía —
+    no solo el color. Toca uno para verlo aplicado antes de decidir.</p>
+
     <div class="store-shelf-label">Temas de la app</div>
     <div class="theme-grid">
       ${themes.map((t) => `
         <button class="theme-tile ${active === t.id ? 'active' : ''} ${t.locked ? 'locked' : ''}"
                 onclick="${t.locked ? '' : `previewThemeTile('${t.id}')`}"
-                ${t.locked ? 'aria-disabled="true"' : ''}>
-          <span class="theme-swatch" style="background:${t.tokens['--void']}">
-            <span class="sw sw-a" style="background:${t.tokens['--purple']}"></span>
-            <span class="sw sw-b" style="background:${t.tokens['--gold']}"></span>
-            <span class="sw sw-c" style="background:${t.tokens['--lilac']}"></span>
+                ${t.locked ? 'aria-disabled="true"' : ''}
+                style="${miniStyle(t)}">
+          <span class="mini">
+            <span class="mini-rune"></span>
+            <span class="mini-lines"><i></i><i></i></span>
           </span>
           <span class="theme-name">${t.emoji} ${esc(t.name)}</span>
           <span class="theme-blurb">${esc(t.blurb)}</span>
@@ -223,6 +229,27 @@ function renderThemeStore() {
     <div class="store-soon">
       Aquí vivirán los accesorios de tu mascota lectora. Todo se desbloquea leyendo, nada se paga.
     </div>`;
+}
+
+/**
+ * La miniatura de cada ficha se pinta con los tokens del propio tema,
+ * así que muestra su forma y su material de verdad — no una muestra
+ * de color que todos los temas comparten.
+ */
+function miniStyle(t) {
+  const g = THEME_BASE;
+  const k = (name) => t.tokens[name] ?? g[name] ?? '';
+  return [
+    `--m-bg:${k('--void')}`,
+    `--m-surface:${k('--deep')}`,
+    `--m-accent:${k('--purple')}`,
+    `--m-gold:${k('--gold')}`,
+    `--m-ink:${k('--text')}`,
+    `--m-radius:${k('--card-radius') || '14px'}`,
+    `--m-rune:${k('--rune-radius') || '8px'}`,
+    `--m-border:${t.tokens['--card-border'] === 'none' || t.tokens['--card-border'] === '0'
+        ? '0' : '1px solid ' + k('--lilac')}`,
+  ].join(';');
 }
 
 export function previewThemeTile(id) {

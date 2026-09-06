@@ -1,0 +1,311 @@
+/* ─────────────────────────────────────────────────────────────
+   LOS OCHO MUNDOS
+
+   Un tema no es una paleta. Es un material, una forma de cortar
+   las esquinas, una textura, un signo que separa las secciones.
+   Aquí vive todo eso: lo que un token de color no puede decir.
+
+   Los tokens (src/themes.js) se aplican como estilo en línea sobre
+   :root, así que ganan a cualquier regla de aquí. Por eso este
+   archivo NO repite colores: solo añade lo que los tokens no
+   alcanzan — seudoelementos, ornamentos, texturas y geometría.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── CAPAS DE ATMÓSFERA ──────────────────────────────────────
+   Dos capas fijas sobre el fondo y bajo el contenido: la textura
+   del material y el viñeteado. Cada tema las enciende o apaga. */
+
+.texture-layer,
+.vignette-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.texture-layer {
+  background-image: var(--texture);
+  background-size: var(--texture-size);
+  opacity: var(--texture-opacity);
+  mix-blend-mode: var(--texture-blend);
+}
+.vignette-layer { background: var(--vignette); }
+
+/* ── ORNAMENTO DE SECCIÓN ────────────────────────────────────
+   El signo que remata cada encabezado. Cambia con el mundo:
+   ❧ en el grimorio, [ ] en la terminal, nada en la obsidiana. */
+
+.section-heading::before,
+.section-heading::after {
+  background: var(--rule-line);
+  height: var(--rule-height);
+}
+.section-heading-text {
+  font-weight: var(--display-weight);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-spacing);
+}
+.section-heading-text::before {
+  content: var(--ornament);
+  color: var(--ornament-color);
+  margin-right: .5em;
+  opacity: .85;
+}
+
+/* Las tarjetas necesitan contexto para sus filos y márgenes. */
+.book-card, .lib-card, .tracker-card { position: relative; }
+
+
+/* ═════════════════════════════════════════════════════════════
+   ✨ GRIMORIO · manuscrito iluminado
+   Firma: el margen dorado. Una barra de oro degradado al filo
+   izquierdo de cada libro, como la miniatura de un códice.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="grimorio"] .book-card::before,
+[data-theme="grimorio"] .lib-card::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 12%; bottom: 12%;
+  width: 2px;
+  background: linear-gradient(180deg, transparent, var(--gold), transparent);
+  opacity: .75;
+}
+[data-theme="grimorio"] .month-rune {
+  box-shadow: 0 0 0 1px rgb(var(--gold-rgb) / .35), 0 0 14px rgb(var(--purple-rgb) / .5);
+}
+[data-theme="grimorio"] .brand-title { text-shadow: 0 0 18px rgb(var(--gold-rgb) / .35); }
+
+
+/* ═════════════════════════════════════════════════════════════
+   🌑 OBSIDIANA · vidrio volcánico
+   Firma: el filo de luz. Sin bordes, sin brillos, sin estrellas.
+   Solo una línea de luz de 1px en el canto superior, como la que
+   atrapa una piedra pulida. Todo lo demás es negro y aire.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="obsidiana"] .book-card,
+[data-theme="obsidiana"] .lib-card,
+[data-theme="obsidiana"] .tracker-card,
+[data-theme="obsidiana"] .gem,
+[data-theme="obsidiana"] .year-btn {
+  border-top: 1px solid rgb(255 255 255 / .07);
+}
+[data-theme="obsidiana"] .brand-title,
+[data-theme="obsidiana"] .month-name-text,
+[data-theme="obsidiana"] .book-card-title {
+  font-weight: 600;
+}
+[data-theme="obsidiana"] .book-card-title { font-size: 16px; letter-spacing: -.2px; }
+[data-theme="obsidiana"] .month-rune { border-radius: 0; }
+[data-theme="obsidiana"] .month-group { margin-bottom: 34px; }
+[data-theme="obsidiana"] .section-heading::before,
+[data-theme="obsidiana"] .section-heading::after { display: none; }
+[data-theme="obsidiana"] .section-heading { justify-content: flex-start; }
+
+
+/* ═════════════════════════════════════════════════════════════
+   ☀️ PERGAMINO · papel envejecido
+   Firma: el renglón. Los libros dejan de ser tarjetas y pasan a
+   ser entradas de un índice, separadas por una línea de tinta.
+   El mes va en el margen, como en un libro de verdad.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="pergamino"] .book-card,
+[data-theme="pergamino"] .lib-card {
+  border: 0;
+  border-bottom: 1px solid rgb(var(--lilac-rgb) / .22);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  margin-bottom: 0;
+}
+[data-theme="pergamino"] .book-card:hover,
+[data-theme="pergamino"] .lib-card:hover { background: rgb(var(--lilac-rgb) / .05); }
+[data-theme="pergamino"] .month-rune {
+  border-radius: 0;
+  background: none !important;
+  color: var(--parchment);
+  font-size: 20px;
+  box-shadow: none;
+}
+[data-theme="pergamino"] .month-name-text { font-size: 19px; font-style: italic; }
+[data-theme="pergamino"] .month-label {
+  border-bottom: 2px solid rgb(var(--lilac-rgb) / .3);
+  padding-bottom: 6px;
+}
+[data-theme="pergamino"] .tag,
+[data-theme="pergamino"] .detail-tag { background: none; border-color: rgb(var(--lilac-rgb) / .3); }
+[data-theme="pergamino"] .book-card-title { font-size: 16px; }
+
+
+/* ═════════════════════════════════════════════════════════════
+   🌿 HERBARIO · cuaderno de campo
+   Firma: la etiqueta de espécimen. El género cuelga como una
+   ficha atada, sobre papel cuadriculado de botánica.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="herbario"] .tag {
+  position: relative;
+  border-radius: 3px;
+  padding-left: 16px;
+  background: rgb(var(--gold-rgb) / .1);
+  border-color: rgb(var(--gold-rgb) / .35);
+}
+[data-theme="herbario"] .tag::before {
+  content: '';
+  position: absolute;
+  left: 5px; top: 50%;
+  width: 5px; height: 5px;
+  margin-top: -2.5px;
+  border-radius: 50%;
+  border: 1px solid rgb(var(--gold-rgb) / .7);
+}
+[data-theme="herbario"] .month-rune { border-radius: 3px; }
+[data-theme="herbario"] .book-card { border-left: 3px solid rgb(var(--violet-rgb) / .45); }
+
+
+/* ═════════════════════════════════════════════════════════════
+   🌊 MAREA · agua profunda
+   Firma: la línea de marea. Una banda luminosa que cruza el fondo
+   muy despacio, como luz filtrándose bajo el agua. Nada tiene
+   borde: todo flota sobre su propia sombra difusa.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="marea"] .bg-canvas::after {
+  background-image:
+    linear-gradient(180deg, transparent 44%, rgb(var(--lilac-rgb) / .16) 50%, transparent 56%);
+  background-size: 100% 220vh;
+  animation: tide 26s ease-in-out infinite alternate;
+  opacity: 1;
+}
+@keyframes tide {
+  from { background-position: 0 -40vh; }
+  to   { background-position: 0 60vh; }
+}
+[data-theme="marea"] .book-card,
+[data-theme="marea"] .lib-card,
+[data-theme="marea"] .tracker-card { backdrop-filter: blur(14px); }
+[data-theme="marea"] .month-rune { border-radius: 50%; }
+
+
+/* ═════════════════════════════════════════════════════════════
+   🕯️ GÓTICO · nave iluminada por velas
+   Firma: el arco. Las portadas y los meses rematan en arco, como
+   un vitral. La pantalla se oscurece por los bordes y una luz
+   cálida cae desde arriba.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="gotico"] .book-card-cover,
+[data-theme="gotico"] .lib-cover,
+[data-theme="gotico"] .month-rune {
+  border-radius: 50% 50% 4px 4px / 22% 22% 4px 4px;
+  overflow: hidden;
+}
+[data-theme="gotico"] .book-card { border-radius: 16px 16px 4px 4px; }
+[data-theme="gotico"] .section-heading-text::after {
+  content: ' ✦';
+  color: var(--gold);
+  opacity: .7;
+}
+[data-theme="gotico"] .brand-title { text-shadow: 0 0 24px rgb(var(--gold-rgb) / .45); }
+
+
+/* ═════════════════════════════════════════════════════════════
+   🌸 SAKURA · espacio y aire
+   Firma: la línea vertical. Los encabezados se marcan con un
+   trazo vertical a la izquierda, como escritura en tategaki.
+   Sin bordes, sin reglas horizontales: separa el vacío.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="sakura"] .section-heading::before,
+[data-theme="sakura"] .section-heading::after { display: none; }
+[data-theme="sakura"] .section-heading { justify-content: flex-start; }
+[data-theme="sakura"] .section-heading-text {
+  border-left: 2px solid var(--violet);
+  padding-left: 12px;
+  line-height: 1.9;
+}
+[data-theme="sakura"] .book-card,
+[data-theme="sakura"] .lib-card {
+  border: 0;
+  background: rgb(var(--deep-rgb) / .5);
+  margin-bottom: 14px;
+}
+[data-theme="sakura"] .month-group { margin-bottom: 40px; }
+[data-theme="sakura"] .month-label { margin-bottom: 18px; }
+[data-theme="sakura"] .month-rune { border-radius: 50%; }
+[data-theme="sakura"] .view { padding: 22px 20px; }
+
+
+/* ═════════════════════════════════════════════════════════════
+   🖨️ MÁQUINA · terminal
+   Firma: los corchetes y las marcas de esquina. Todo es dato:
+   sin curvas, sin sombras, con líneas de barrido sobre la pantalla.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="maquina"] .section-heading::before,
+[data-theme="maquina"] .section-heading::after { display: none; }
+[data-theme="maquina"] .section-heading { justify-content: flex-start; }
+[data-theme="maquina"] .section-heading-text::before { content: '['; margin-right: .4em; }
+[data-theme="maquina"] .section-heading-text::after  { content: ']'; margin-left: .4em; color: var(--ornament-color); }
+[data-theme="maquina"] .book-card::before,
+[data-theme="maquina"] .book-card::after {
+  content: '';
+  position: absolute;
+  width: 6px; height: 6px;
+  border-color: var(--gold);
+  border-style: solid;
+}
+[data-theme="maquina"] .book-card::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+[data-theme="maquina"] .book-card::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+[data-theme="maquina"] .month-rune { border-radius: 0; }
+[data-theme="maquina"] .book-card-title,
+[data-theme="maquina"] .lib-title { letter-spacing: -.3px; }
+[data-theme="maquina"] .gem-num { font-weight: 700; }
+
+
+/* ═════════════════════════════════════════════════════════════
+   🌾 EL PRINCIPITO · el desierto al anochecer
+   Firma: el horizonte. La arena tibia sube desde el borde inferior
+   de la pantalla — el desierto donde cayó el aviador — bajo un
+   cielo índigo con estrellas dibujadas a mano.
+
+   Las esquinas son desiguales a propósito: trazadas, no impresas.
+   ═════════════════════════════════════════════════════════════ */
+
+/* La letra a mano necesita más aire que una imprenta para leerse bien. */
+[data-theme="principito"] .book-card-title,
+[data-theme="principito"] .lib-title {
+  font-size: 17px;
+  line-height: 1.35;
+  letter-spacing: .2px;
+}
+[data-theme="principito"] .month-name-text { font-size: 18px; }
+[data-theme="principito"] .brand-title { font-size: 22px; }
+
+/* La runa del mes es su asteroide: un planeta pequeño con halo. */
+[data-theme="principito"] .month-rune {
+  box-shadow: 0 0 0 1px rgb(235 201 107 / .3), 0 0 16px rgb(235 201 107 / .18);
+}
+
+/* Nada tiene borde duro: la acuarela no traza contornos. */
+[data-theme="principito"] .book-card,
+[data-theme="principito"] .lib-card,
+[data-theme="principito"] .tracker-card { border: 0; }
+
+/* Las estrellas titilan muy despacio. El principito le dice al aviador
+   que al mirarlas oirá reír a todas las estrellas. */
+[data-theme="principito"] .bg-canvas::after {
+  animation: estrellas 7s ease-in-out infinite alternate;
+}
+@keyframes estrellas {
+  from { opacity: .55; }
+  to   { opacity: .9; }
+}
+
+
+/* ── Nadie debería marearse por un tema. ── */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="marea"] .bg-canvas::after,
+  [data-theme="principito"] .bg-canvas::after { animation: none; }
+}

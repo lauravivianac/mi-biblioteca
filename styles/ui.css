@@ -117,12 +117,52 @@
 .theme-tile:hover:not(.locked) { border-color: var(--border-strong); transform: translateY(-2px); }
 .theme-tile.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
 .theme-tile.locked { opacity: .55; cursor: not-allowed; }
-.theme-swatch {
-  position: relative; display: block; height: 46px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border-soft); overflow: hidden;
+/* Miniatura: una tarjeta de libro en pequeño, pintada con los tokens
+   del propio tema. Así la ficha muestra su forma y su material, no un
+   cuadro de color que todos comparten. */
+.mini {
+  position: relative;
+  display: block;
+  height: 58px;
+  padding: 9px;
+  overflow: hidden;
+  background: var(--m-bg);
+  border-radius: calc(var(--m-radius) * .6);
+  border: 1px solid rgb(255 255 255 / .06);
 }
-.sw { position: absolute; bottom: 8px; width: 14px; height: 14px; border-radius: 50%; }
-.sw-a { left: 8px; } .sw-b { left: 26px; } .sw-c { left: 44px; }
+.mini::after {
+  content: '';
+  position: absolute;
+  left: 9px; right: 9px; top: 24px; bottom: 9px;
+  background: var(--m-surface);
+  border: var(--m-border);
+  border-radius: var(--m-radius);
+  opacity: .95;
+}
+.mini-rune {
+  position: absolute;
+  left: 9px; top: 9px;
+  width: 11px; height: 11px;
+  background: var(--m-accent);
+  border-radius: var(--m-rune);
+}
+.mini-lines { position: absolute; left: 25px; top: 10px; right: 9px; }
+.mini-lines i {
+  display: block;
+  height: 3px;
+  border-radius: 1px;
+  background: var(--m-gold);
+  opacity: .8;
+}
+.mini-lines i + i {
+  margin-top: 3px;
+  width: 55%;
+  background: var(--m-ink);
+  opacity: .35;
+}
+.store-lede {
+  color: var(--muted); font-size: 12.5px; line-height: 1.6; margin-bottom: 4px;
+}
 .theme-name { font-size: 13px; font-weight: 500; }
 .theme-blurb { font-size: 11px; color: var(--muted); line-height: 1.5; }
 .theme-lock { font-size: 10px; color: var(--amber); }

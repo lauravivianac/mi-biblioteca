@@ -124,8 +124,8 @@ body {
 .gem {
   text-align: center;
   background: var(--fog);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
   padding: 6px 12px;
 }
 .gem-num {
@@ -213,8 +213,8 @@ body {
 .year-btn {
   flex: 1;
   padding: 10px 8px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
   background: var(--card);
   font-family: var(--font-display);
   font-size: 14px;
@@ -242,7 +242,10 @@ body {
 .month-rune {
   width: 28px;
   height: 28px;
-  border-radius: 8px;
+  /* Cuánto del color del mes se deja pasar lo decide el tema:
+     Grimorio quiere el arcoíris, Obsidiana no. */
+  background: color-mix(in srgb, var(--month-accent, var(--purple)) var(--rune-tint), var(--purple));
+  border-radius: var(--rune-radius);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -265,9 +268,11 @@ body {
 
 /* ── BOOK CARD (PLAN) ── */
 .book-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-color: color-mix(in srgb, var(--month-accent, transparent) var(--month-tint), var(--border));
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
   margin-bottom: 10px;
   overflow: hidden;
   cursor: pointer;
@@ -336,8 +341,11 @@ body {
   font-weight: 600;
   margin-bottom: 4px;
 }
-.role-anchor { color: var(--gold); }
-.role-short { color: var(--success); }
+/* El rol no es un estado: ⚡ Corto no es "éxito", es el libro breve
+   del mes. Por eso lleva acento propio y sigue al tema, en vez de
+   tomar prestado el verde semántico. */
+.role-anchor { color: var(--role-anchor); }
+.role-short { color: var(--role-short); }
 .book-card-title {
   font-family: var(--font-display);
   font-size: 15px;
@@ -358,8 +366,8 @@ body {
 .tag {
   font-size: 9px;
   padding: 2px 7px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  border: var(--hairline);
   color: var(--lilac);
   background: rgb(var(--lilac-rgb) / 0.08);
 }
@@ -373,8 +381,8 @@ body {
 .search-wrap input {
   width: 100%;
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
   padding: 11px 14px 11px 40px;
   font-family: var(--font-body);
   font-size: 14px;
@@ -405,8 +413,8 @@ body {
 .chip {
   flex-shrink: 0;
   padding: 5px 12px;
-  border-radius: 20px;
-  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  border: var(--hairline);
   background: var(--card);
   font-size: 10px;
   cursor: pointer;
@@ -424,8 +432,8 @@ body {
 /* Lib card */
 .lib-card {
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border: var(--hairline);
+  border-radius: var(--card-radius);
   padding: 12px;
   margin-bottom: 10px;
   display: flex;
@@ -438,7 +446,7 @@ body {
 .lib-cover {
   width: 48px;
   height: 68px;
-  border-radius: 6px;
+  border-radius: var(--chip-radius);
   overflow: hidden;
   flex-shrink: 0;
   background: linear-gradient(135deg, var(--deep), var(--dusk));
@@ -471,8 +479,8 @@ body {
 /* ── TRACKER VIEW ── */
 .tracker-orb-card {
   background: linear-gradient(135deg, rgb(var(--purple-rgb) / 0.25), rgb(var(--dusk-rgb) / 0.8));
-  border: 1px solid var(--border);
-  border-radius: 20px;
+  border: var(--hairline);
+  border-radius: var(--pill-radius);
   padding: 22px 20px;
   margin-bottom: 20px;
   text-align: center;
@@ -523,8 +531,8 @@ body {
 /* Tracker card */
 .tracker-card {
   background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  border: var(--hairline);
+  border-radius: var(--card-radius);
   padding: 14px;
   margin-bottom: 10px;
   backdrop-filter: blur(12px);
@@ -538,7 +546,7 @@ body {
 .tracker-card-cover {
   width: 44px;
   height: 60px;
-  border-radius: 6px;
+  border-radius: var(--chip-radius);
   overflow: hidden;
   flex-shrink: 0;
   background: linear-gradient(135deg, var(--deep), var(--dusk));
@@ -591,8 +599,8 @@ body {
 .review-txt {
   width: 100%;
   background: rgb(var(--lilac-rgb) / 0.05);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: var(--hairline);
+  border-radius: var(--chip-radius);
   padding: 8px 10px;
   font-family: var(--font-display);
   font-size: 13px;
@@ -639,7 +647,7 @@ body {
 .overlay.open { display: flex; }
 .sheet {
   background: linear-gradient(180deg, var(--deep) 0%, var(--void) 100%);
-  border-radius: 24px 24px 0 0;
+  border-radius: var(--sheet-radius);
   border-top: 1px solid var(--border);
   padding: 20px 20px calc(36px + env(safe-area-inset-bottom,0));
   width: 100%;
@@ -675,8 +683,8 @@ body {
   width: 100%;
   padding: 11px 14px;
   background: rgb(var(--lilac-rgb) / 0.05);
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
   font-family: var(--font-body);
   font-size: 14px;
   color: var(--text);
@@ -696,7 +704,7 @@ body {
   background: linear-gradient(135deg, var(--purple), var(--violet));
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--ctl-radius);
   font-family: var(--font-display);
   font-size: 14px;
   letter-spacing: 0.5px;
@@ -731,9 +739,9 @@ body {
 }
 .detail-cover-thumb {
   width: 60px; height: 85px;
-  border-radius: 6px;
+  border-radius: var(--chip-radius);
   overflow: hidden;
-  border: 1px solid var(--border);
+  border: var(--hairline);
   flex-shrink: 0;
   box-shadow: 0 4px 20px rgb(0 0 0 / 0.5);
 }
@@ -757,13 +765,13 @@ body {
 }
 .detail-author { font-family:'EB Garamond',serif; font-size:14px; color:var(--muted); margin-bottom:14px; }
 .detail-tags { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
-.detail-tag { font-size:10px; padding:3px 10px; border-radius:20px; border:1px solid var(--border); color:var(--lilac); background:rgb(var(--lilac-rgb) / 0.06); }
+.detail-tag { font-size:10px; padding:3px 10px; border-radius: var(--pill-radius); border: var(--hairline); color:var(--lilac); background:rgb(var(--lilac-rgb) / 0.06); }
 
 .status-row { display:flex; gap:8px; margin-bottom:18px; }
 .status-btn {
   flex:1; padding:9px 6px;
-  border-radius:10px;
-  border:1px solid var(--border);
+  border-radius: var(--ctl-radius);
+  border: var(--hairline);
   background: rgb(var(--lilac-rgb) / 0.05);
   font-size:11px;
   color:var(--muted);
@@ -776,7 +784,7 @@ body {
 
 .btn-delete {
   width:100%; padding:12px;
-  border-radius:10px;
+  border-radius: var(--ctl-radius);
   border:1px solid rgb(var(--danger-rgb) / .2);
   background:transparent;
   color:rgb(var(--danger-rgb) / .7);
