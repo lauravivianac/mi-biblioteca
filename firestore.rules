@@ -104,16 +104,36 @@ service cloud.firestore {
        El `uid` de dentro también se comprueba: si no coincidiera con
        el del camino, un perfil podría decir que es de otra persona, y
        tanto seguir como buscar se guían por ese campo. */
+    /* SE LEE SIN SESIÓN, y es una decisión, no un descuido.
+
+       La historia #48 pide que quien abra tu link SIN TENER LA APP
+       llegue a tu perfil. Un perfil «público» que exige crearse una
+       cuenta para verlo no es público: es justo la puerta cerrada que
+       hace que nadie pulse el link que acabas de mandar por WhatsApp.
+
+       Lo que hay aquí dentro es exactamente lo que su dueña decidió
+       publicar, sección por sección (ver profile-core.js), y por eso
+       se puede abrir: si no querías que se viera, no está en el
+       documento. Lo privado sigue en users/{uid}, donde no entra nadie.
+
+       El coste real es que se puede recorrer desde fuera. Es el mismo
+       trato que hace cualquier red social con los perfiles públicos, y
+       la defensa es la de siempre: que lo público lo elija cada quien.
+       Para quien no quiera nada de esto está la cuenta privada (#52). */
     match /profiles/{userId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow delete: if isOwner(userId);
       allow create, update: if isOwner(userId)
                             && request.resource.data.uid == userId;
     }
 
     match /usernames/{username} {
-      // Para poder decir «está libre» hay que poder mirar
-      allow read: if request.auth != null;
+      /* Se lee sin sesión por lo mismo que el perfil: un link
+         `#/u/laura` no se puede resolver sin traducir el nombre a un
+         uid, y quien lo abre todavía no tiene cuenta. Lo único que hay
+         aquí es esa traducción — un nombre y un uid—, que es
+         exactamente lo que ya se ve en el link. */
+      allow read: if true;
 
       allow create: if request.auth != null
                     && request.resource.data.uid == request.auth.uid

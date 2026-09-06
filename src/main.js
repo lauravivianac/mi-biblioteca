@@ -4,7 +4,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { watchAuth, completePendingSignIn } from './auth.js';
-import { loadStore, settings, onSave, flush, setDisplayName } from './store.js';
+import { loadStore, settings, onSave, flush, setDisplayName, uid } from './store.js';
 import { applyTheme, localTheme } from './theme-engine.js';
 import { seedNewAccount } from './store.js';
 import * as views from './views.js';
@@ -18,6 +18,7 @@ import * as yearui from './yearui.js';
 import * as shareui from './shareui.js';
 import * as profileui from './profileui.js';
 import * as socialui from './socialui.js';
+import * as inviteui from './inviteui.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
 
@@ -46,6 +47,8 @@ onSave((state) => {
   el.textContent = { saving: 'Guardando…', saved: '', offline: 'Sin conexión · guardado aquí' }[state] || '';
 });
 
+const show = (id, on) => $(id)?.classList.toggle('visible', on);
+
 /* ── EXPONER AL DOM ──────────────────────────────────────────── */
 // Los onclick del marcado necesitan estas funciones en window,
 // porque un <script type="module"> no comparte ámbito global.
@@ -57,7 +60,7 @@ setConsentPrompt(screens.ensureAgentConsent);
 Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
-  ...profileui, ...socialui,
+  ...profileui, ...socialui, ...inviteui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
@@ -65,11 +68,14 @@ Object.assign(window, {
   ...views, ...screens,
 });
 window.deleteBook = views.deleteBook;
+/* Para quien está mirando un perfil sin cuenta y decide crearse una. */
+window.openAuthScreen = () => {
+  closeSheet('profile-overlay');
+  show('auth-screen', true);
+};
 window.closeThemeStore = screens.closeThemeStore;
 
 /* ── CICLO DE VIDA ───────────────────────────────────────────── */
-
-const show = (id, on) => $(id)?.classList.toggle('visible', on);
 
 watchAuth(async (user) => {
   const loading = $('loading-screen');
@@ -79,6 +85,24 @@ watchAuth(async (user) => {
     document.body.classList.remove('signed-in');
     if (loading) loading.style.display = 'none';
     screens.renderAuth();
+
+    /* QUIEN LLEGA POR UNA INVITACIÓN VE EL PERFIL, NO LA PUERTA (#48).
+       Un link de perfil que abre una pantalla de «crea tu cuenta» es
+       un link que nadie pulsa dos veces. Se le enseña a quién venía a
+       ver, y se le ofrece la app desde ahí; el perfil público se lee
+       sin sesión precisamente para esto (ver firestore.rules).
+
+       Se apunta además de quién era el perfil, para poder ofrecerle
+       seguirla si acaba creándose la cuenta. */
+    const invitada = profileui.openProfileFromHash();
+    if (invitada) {
+      inviteui.rememberInviter(invitada);
+      /* Y la puerta se aparta: la pantalla de acceso va por encima de
+         todo, así que dejarla puesta tapaba el perfil que se acaba de
+         abrir. Quien llega por una invitación ve primero a quien venía
+         a ver; la puerta la abre el botón del final del perfil. */
+      show('auth-screen', false);
+    }
     /* Si venías de Google o Apple y la vuelta falló, aquí es donde se
        sabe: sin esto la pantalla de acceso se pinta otra vez como si no
        hubieras hecho nada, sin decir por qué. */
@@ -113,20 +137,33 @@ watchAuth(async (user) => {
   views.refreshAll();
   if (loading) loading.style.display = 'none';
 
-  /* Un link de perfil (#/u/laura) se abre en cuanto hay sesión: leer
-     un perfil ajeno necesita estar dentro. Si la ruta era esa, el
-     onboarding espera — quien llega desde una invitación viene a ver a
-     alguien, no a configurar su plan lector. */
-  /* El punto de avisos, en cuanto hay sesión. No bloquea nada. */
+  /* El punto de avisos. No bloquea nada. */
   socialui.refreshNotices().catch(() => {});
 
+  /* Un link de perfil también manda estando dentro, y el onboarding
+     espera: quien llega desde una invitación viene a ver a alguien, no
+     a configurar su plan lector. */
   if (profileui.openProfileFromHash()) return;
+
+  /* Si llegó por la invitación de alguien y acaba de crear la cuenta,
+     se le ofrece seguirla. Ofrecer, no seguir sola. */
+  await inviteui.maybeOfferInviter();
 
   await screens.maybeOnboard();
 });
 
-/* Cambiar de link sin recargar (volver atrás, pegar otro) también abre. */
-window.addEventListener('hashchange', () => { profileui.openProfileFromHash(); });
+/* Cambiar de link sin recargar (volver atrás, pegar otro) también abre.
+   Y también apunta por quién se entró, si aún no hay cuenta: llegar por
+   un link y navegar un poco antes de decidirse es lo normal. */
+window.addEventListener('hashchange', () => {
+  const quien = profileui.openProfileFromHash();
+  if (!quien || uid()) return;
+  inviteui.rememberInviter(quien);
+  /* Y también aquí se aparta la puerta: pegar un link de perfil
+     estando en la pantalla de acceso tiene que enseñar el perfil, no
+     dejarlo abierto detrás de un formulario. */
+  show('auth-screen', false);
+});
 
 /* ── SERVICE WORKER ──────────────────────────────────────────── */
 

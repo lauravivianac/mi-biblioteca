@@ -84,12 +84,18 @@ export function closeProfile(e) {
   closeSheet('profile-overlay');
 }
 
-/** Lo que se abre desde `#/u/laura`. Devuelve true si la ruta era esa. */
+/**
+ * Lo que se abre desde `#/u/laura`.
+ *
+ * Devuelve el @usuario abierto, o null si la ruta no era esa. Devolver
+ * el nombre y no un sí/no es lo que permite recordar por quién entró
+ * alguien que todavía no tiene cuenta (#48).
+ */
 export function openProfileFromHash(hash = location.hash) {
   const nombre = usernameFromHash(hash);
-  if (!nombre) return false;
+  if (!nombre) return null;
   openProfile(nombre);
-  return true;
+  return nombre;
 }
 
 function pintarSinNombre() {
@@ -133,7 +139,16 @@ function pintar() {
     ${ve('estanterias') && p.estanterias?.length ? bloqueEstanterias(p.estanterias) : ''}
     ${ve('resenas') ? bloqueResenas() : ''}
 
-    ${visto.mio ? `
+    ${!myUid() ? `
+      <div class="prof-mine">
+        <p class="set-fineprint">
+          Esto es Mi Biblioteca: un plan lector, tus reseñas y tu progreso.
+          Puedes tener el tuyo.
+        </p>
+        <button class="btn-magic full" onclick="openAuthScreen()">
+          ✦ Crear mi biblioteca
+        </button>
+      </div>` : visto.mio ? `
       <div class="prof-mine">
         <p class="set-fineprint">Esto es exactamente lo que ve quien abre tu link.</p>
         <button class="btn-ghost full" onclick="copyProfileLink()">🔗 Copiar mi link</button>
