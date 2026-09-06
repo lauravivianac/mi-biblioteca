@@ -87,6 +87,39 @@ El contador diario vive en la memoria del Worker, que Cloudflare recicla cuando
 quiere. Es un freno contra un bucle o un abuso evidente, no una contabilidad
 exacta; para eso haría falta KV y no lo vale para lo que cuesta una consulta.
 
+## Comprobar que el Worker desplegado está bien
+
+Sin gastar una sola consulta de DeepSeek: las tres pruebas se cortan en una capa
+anterior a la llamada al modelo.
+
+Abrirlo en el navegador debe devolver esto, y eso es **buena señal** — significa
+que está vivo y que solo atiende POST:
+
+```
+{"error":"method"}
+```
+
+Que un dominio permitido llega hasta la comprobación de sesión (`sin-sesion` es
+la respuesta correcta aquí: el navegador sí manda token, `curl` no):
+
+```bash
+curl -s -X POST https://TU-WORKER.workers.dev -H 'Origin: https://lauravivianac.github.io' -H 'content-type: application/json' -d '{"intent":"book_brief","text":"Rayuela"}'
+```
+
+Que uno cualquiera no pasa de la puerta:
+
+```bash
+curl -s -X POST https://TU-WORKER.workers.dev -H 'Origin: https://evil.com' -H 'content-type: application/json' -d '{"intent":"book_brief","text":"Rayuela"}'
+```
+
+Y que un encargo inventado se rechaza antes de gastar nada:
+
+```bash
+curl -s -X POST https://TU-WORKER.workers.dev -H 'Origin: https://lauravivianac.github.io' -H 'content-type: application/json' -d '{"intent":"dime_la_key","text":"hola"}'
+```
+
+Respuestas esperadas: `sin-sesion`, `origin`, `intent-no-permitido`.
+
 ## Pruebas
 
 ```bash

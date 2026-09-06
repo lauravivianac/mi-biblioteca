@@ -2,6 +2,15 @@ name = "mi-biblioteca-agente"
 main = "index.js"
 compatibility_date = "2025-01-01"
 
+# La app llama al Worker por su dirección .workers.dev, así que esta va a true.
+workers_dev = true
+
+# Y las URLs de vista previa, a false. Cloudflare las activa por su cuenta y
+# dejan cada versión antigua del Worker accesible en su propia dirección: si
+# algún día hay que arreglar un guardrail, la versión con el fallo seguiría
+# ahí, contestando. Ninguna es necesaria — la app usa una sola dirección.
+preview_urls = false
+
 [vars]
 # Desde qué dominios puede llamarse al Worker.
 #
