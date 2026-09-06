@@ -116,7 +116,12 @@ export async function maybeOnboard() {
   const s = settings();
   if (s.onboarded) return;
 
-  const legacy = await findLegacyData();
+  /* La migración se ofrecía a TODA cuenta nueva sin mirar quién era,
+     así que cualquiera que se registrara podía llevarse la biblioteca
+     de otra persona. La migración ya ocurrió y las reglas cerraron la
+     colección antigua; aquí se cierra también del lado del cliente,
+     para no volver a ofrecer lo que no es de quien pregunta. */
+  const legacy = null;
   const legacyBlock = legacy ? `
     <div class="onb-legacy">
       <div class="onb-legacy-title">Encontramos tu biblioteca anterior</div>
@@ -160,8 +165,15 @@ export async function runMigration() {
                result.librosPropios ? `, más <strong>${result.librosPropios}</strong> libros tuyos` : ''}.`,
       confirmLabel: 'Entendido',
     });
-    // Ya migrado: el documento antiguo deja de hacer falta y se cierra esa puerta
-    dropLegacy().catch(() => {});
+    /* Ya migrado: el documento antiguo deja de hacer falta. Si el borrado
+       falla hay que SABERLO — tragárselo en silencio fue justo lo que dejó
+       la biblioteca vieja visible para otras cuentas. */
+    try {
+      await dropLegacy();
+    } catch (e) {
+      console.error('No se pudo borrar el documento antiguo:', e);
+      toast('Se migró, pero no se pudo borrar la copia antigua. Avísame.', 'error');
+    }
     window.__legacy = null;
     finishOnboarding(true);
   } catch (e) {
