@@ -39,16 +39,38 @@ const WORKER_URL = 'https://mi-biblioteca-agente.iafactory.workers.dev';
 
 export const workerUrl = () => WORKER_URL;
 
-/**
- * ¿Se puede usar el agente ahora mismo?
- *
- * Encendido salvo que la usuaria lo apague a propósito: para ella es
- * una función de la app, no una pieza de infraestructura que deba
- * configurar antes de poder usarla.
- */
-export const agentAvailable = () => Boolean(WORKER_URL) && settings().agentEnabled !== false;
+/* ── EL CONSENTIMIENTO  ·  historia #61 ───────────────────────
+   Tres estados, no dos: sin decidir, sí y no.
 
-export const setAgentEnabled = (on) => updateSettings({ agentEnabled: !!on });
+   La diferencia importa. Antes el agente venía encendido, y eso
+   significaba que alguien empezaba a usar la app mandando datos suyos
+   a un servicio de terceros sin haber dicho que sí. Que sea cómodo no
+   lo vuelve consentido.
+
+   Sin decidir NO es que sí: los botones se ven —si no, nadie
+   descubriría la función— pero no se manda nada hasta que hay un sí
+   explícito. Se pregunta al tocar el botón, que es cuando se entiende
+   para qué es, y no al registrarse, que es cuando nadie lee. */
+
+/** ¿Se le enseña el agente a esta persona? Sí, salvo que dijera que no. */
+export const agentOffered = () => Boolean(WORKER_URL) && settings().agentConsent !== 'no';
+
+/** ¿Se le puede MANDAR algo? Solo con un sí explícito. */
+export const agentAvailable = () => Boolean(WORKER_URL) && settings().agentConsent === 'si';
+
+/** ¿Ya contestó alguna vez? */
+export const agentDecided = () => ['si', 'no'].includes(settings().agentConsent);
+
+export const setAgentConsent = (si) => updateSettings({ agentConsent: si ? 'si' : 'no' });
+
+/* Quién pregunta. Lo enchufa main.js con la pantalla de screens.js,
+   para no atar este módulo a la interfaz. */
+let askConsent = async () => false;
+export const setConsentPrompt = (fn) => { askConsent = fn; };
+
+/** Se lanza cuando no hay permiso. No es un error que haya que enseñar. */
+const DENEGADO = 'agente-no-autorizado';
+export const isDenied = (e) => e?.message === DENEGADO;
 
 const MESSAGES = {
   'sin-sesion': 'La sesión caducó. Vuelve a entrar.',
@@ -62,6 +84,14 @@ const MESSAGES = {
 async function call(intent, text) {
   const url = workerUrl();
   if (!url) throw new Error('El agente no está configurado.');
+
+  /* La puerta, y una sola. Ponerla aquí y no en cada pantalla
+     significa que un encargo nuevo no puede saltársela por descuido:
+     todo lo que sale de la app pasa por esta función. */
+  if (!agentAvailable()) {
+    if (agentDecided()) throw new Error(DENEGADO);   // ya dijo que no
+    if (!await askConsent()) throw new Error(DENEGADO);
+  }
 
   const user = currentUser();
   if (!user) throw new Error('Necesitas iniciar sesión.');
@@ -119,6 +149,10 @@ export async function bookBrief(book) {
  * recomiende algo que ya está en la pila.
  */
 export async function recommendFrom({ read = [], pending = [] }) {
+  /* OJO al cambiar esto: lo que se manda aquí está descrito palabra
+     por palabra en el aviso de privacidad (WHAT_WE_SEND). Si cambia
+     lo uno, cambia lo otro — un aviso desactualizado es peor que no
+     tenerlo, porque promete. */
   const linea = (b) => `${b.title} — ${b.author}${b.rating ? ` (${b.rating}/5)` : ''}`;
   const texto = [
     'LEÍDOS:', ...read.slice(0, 25).map(linea),
@@ -127,3 +161,23 @@ export async function recommendFrom({ read = [], pending = [] }) {
   const out = await call('recommend', texto);
   return out.sugerencias || [];
 }
+
+/* ── QUÉ SE MANDA, EXACTAMENTE ────────────────────────────────
+   Vive aquí, al lado del código que lo manda, para que no se separen.
+   Lo pinta la pantalla de consentimiento y también los ajustes. */
+export const WHAT_WE_SEND = [
+  {
+    que: '¿Me lo leo?',
+    manda: 'El título y el autor de ese libro. Nada más.',
+  },
+  {
+    que: 'Qué leer después',
+    manda: 'Hasta 25 títulos y autores que has marcado como leídos, '
+         + 'con la puntuación que les diste, y hasta 25 de los pendientes.',
+  },
+  {
+    que: 'Foto de una portada',
+    manda: 'El texto que el móvil lee de la portada, y solo cuando ningún '
+         + 'catálogo reconoce el libro. Nunca la foto.',
+  },
+];

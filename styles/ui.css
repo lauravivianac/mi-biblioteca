@@ -447,3 +447,23 @@ body:not(.signed-in) .fab { display: none; }
 .rec-info { min-width: 0; }
 .rec-add { width: 100%; margin-top: 11px; font-size: 12.5px; }
 .rec-add:disabled { color: var(--success); border-color: rgb(var(--success-rgb) / .4); cursor: default; }
+
+/* ── QUÉ SE ENVÍA ─────────────────────────────────────────────
+   El aviso del agente. Cada fila dice una cosa que sale de la app,
+   en una tabla y no en un párrafo, porque un párrafo largo sobre
+   privacidad no lo lee nadie. */
+.notice-sheet { max-width: 420px; }
+.notice-list {
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 14px 0 16px; overflow: hidden;
+  border: var(--card-border); border-radius: var(--radius-sm);
+  background: var(--border-soft);
+}
+.notice-row { padding: 11px 13px; background: var(--card-solid); }
+.notice-what {
+  font-size: 10px; letter-spacing: var(--label-spacing); text-transform: uppercase;
+  color: var(--lilac); margin-bottom: 4px;
+}
+.notice-sends { font-size: 12.5px; line-height: 1.6; color: var(--text); }
+/* «No, gracias» partía en dos líneas y quedaba como un botón dudoso. */
+.confirm-actions button { white-space: nowrap; }
