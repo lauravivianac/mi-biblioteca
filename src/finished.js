@@ -23,6 +23,7 @@ import {
 import { suggestOwn, promptFor, dismissKey } from './suggest-core.js';
 import { recommendWith, agentAvailable, isDenied } from './agent.js';
 import { verifySuggestion } from './booklookup.js';
+import { myTaste, scoreByTaste } from './taste.js';
 import { MONTH_ORDER } from './seed.js';
 import { $, esc, toast, closeSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
@@ -86,8 +87,13 @@ async function cargar() {
 
   /* De lo tuyo, al instante: sin red, sin agente, sin esperar. */
   const conEstado = allBooks().map((b) => ({ ...b, status: statusOf(b.id) }));
+  /* Lo que dice este libro, más lo que ya se sabía de tu gusto (#62):
+     así «de tus pendientes» deja de ser el porqué de la mitad de las
+     sugerencias cuando hay historia de la que tirar. */
+  const perfil = myTaste();
   propias = suggestOwn(conEstado, {
     finished: libro, rating, dismissed: descartadas(), limit: 3,
+    taste: (b) => scoreByTaste(b, perfil),
   });
   pintar();
 

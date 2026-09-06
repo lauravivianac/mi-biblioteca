@@ -106,6 +106,38 @@ grupo('TODA SUGERENCIA SE EXPLICA');
 ok('ninguna sale sin porqué',
   suggestOwn(TODOS, { finished: RULFO_1, rating: 4, limit: 9 }).every((b) => b.porque && b.porque.length > 3));
 
+/* ── EL GUSTO GENERAL, DE FONDO  ·  historia #62 ─────────────── */
+
+grupo('LO QUE SE SABE DE TU GUSTO DESEMPATA, NO DECIDE');
+
+/* Un gusto que empuja fuerte hacia el terror. */
+const gustoTerror = (b) => (b.genre === 'Terror / Misterio'
+  ? { score: 60, porque: 'Terror es lo que más lees' }
+  : { score: 0, porque: null });
+
+const sinGusto = suggestOwn(TODOS, { finished: RULFO_1, rating: 5, limit: 9 });
+const conGusto = suggestOwn(TODOS, { finished: RULFO_1, rating: 5, limit: 9, taste: gustoTerror });
+
+igual('el libro que acabas de terminar SIGUE mandando: el mismo autor va primero',
+  conGusto[0].id, 'r2');
+ok('pero el género que te encanta sube en la lista',
+  conGusto.findIndex((b) => b.id === 't1') < sinGusto.findIndex((b) => b.id === 't1'),
+  `con gusto ${conGusto.findIndex((b) => b.id === 't1')}, sin gusto ${sinGusto.findIndex((b) => b.id === 't1')}`);
+ok('y con cuatro huecos, entra en la lista corta cuando antes no entraba',
+  suggestOwn(TODOS, { finished: RULFO_1, rating: 5, taste: gustoTerror }).some((b) => b.id === 't1')
+  && !suggestOwn(TODOS, { finished: RULFO_1, rating: 5 }).some((b) => b.id === 't1'));
+
+const conPorque = suggestOwn([TERROR], { finished: null, rating: 0, taste: gustoTerror });
+igual('el porqué del gusto sustituye al genérico «de tus pendientes»',
+  conPorque[0].porque, 'Terror es lo que más lees');
+
+const conAmbos = suggestOwn([RULFO_2], { finished: RULFO_1, rating: 5, taste: () => ({ score: 90, porque: 'Del perfil' }) });
+igual('pero no pisa un porqué que sí explicaba algo',
+  conAmbos[0].porque, 'Del mismo autor que Pedro Páramo');
+
+ok('un perfil que devuelve basura no rompe nada',
+  suggestOwn(TODOS, { finished: RULFO_1, rating: 4, taste: () => null }).length === 4);
+
 /* ── LO QUE SE LE PIDE AL AGENTE ─────────────────────────────── */
 
 grupo('EL ENCARGO AL AGENTE');

@@ -92,13 +92,36 @@ export function scoreOwn(cand, { finished, rating, longFinished }) {
 }
 
 /**
+ * Suma lo que se sabe de tu gusto en general (#62) a lo que dice el
+ * libro que acabas de terminar (#64).
+ *
+ * El de acabar de terminar MANDA, y por eso pesa la mitad: si le diste
+ * una estrella hace diez segundos, eso es más fresco y más concreto que
+ * «suele leer thriller». El gusto general desempata; no decide.
+ *
+ * `taste` es una función (libro) → {score, porque}. Se pasa como
+ * función y no como perfil para que este módulo no tenga que importar
+ * taste-core.js, que a su vez importa de aquí.
+ */
+function conGusto(base, libro, taste) {
+  if (!taste) return base;
+  const extra = taste(libro) || {};
+  return {
+    score: base.score + Math.round((extra.score || 0) * 0.5),
+    /* El porqué del gusto general solo se usa cuando el otro no tenía
+       nada que decir: «de tus pendientes» no explica nada. */
+    porque: base.porque === 'De tus pendientes' && extra.porque ? extra.porque : base.porque,
+  };
+}
+
+/**
  * Las mejores sugerencias entre TUS libros.
  *
  * Se descarta lo leído, lo abandonado, lo que estás leyendo, el libro
  * que acabas de terminar y lo que ya descartaste alguna vez.
  */
 export function suggestOwn(books = [], {
-  finished = null, rating = 0, dismissed = [], limit = 4,
+  finished = null, rating = 0, dismissed = [], limit = 4, taste = null,
 } = {}) {
   const fuera = new Set(dismissed);
   const longFinished = (pagesOf(finished?.pages) || 0) >= 450;
@@ -107,7 +130,7 @@ export function suggestOwn(books = [], {
     .filter((b) => PROPONIBLE.has(b.status))
     .filter((b) => b.id !== finished?.id)
     .filter((b) => !fuera.has(dismissKey(b)))
-    .map((b) => ({ ...b, ...scoreOwn(b, { finished, rating, longFinished }) }))
+    .map((b) => ({ ...b, ...conGusto(scoreOwn(b, { finished, rating, longFinished }), b, taste) }))
     /* Un candidato con puntuación negativa es uno que el criterio
        «si valoré mal, no me des más de lo mismo» está rechazando
        activamente. Enseñarlo sería ignorar lo que acabas de decir. */
