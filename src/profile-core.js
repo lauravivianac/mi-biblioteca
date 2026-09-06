@@ -32,6 +32,7 @@ export const SECCIONES = [
   { id: 'estanterias', label: 'Mis estanterías', hint: 'Solo las que marques como públicas' },
   { id: 'resenas', label: 'Mis reseñas', hint: 'Solo las que ya publicaste' },
   { id: 'mascota', label: 'Mi mascota', hint: 'Tu bicho, tal y como lo tienes' },
+  { id: 'actividad', label: 'Lo que voy leyendo', hint: 'Aparece en el feed de quien te sigue' },
   { id: 'sugerible', label: 'Que me encuentren por mis libros', hint: 'Apareces sugerida a quien haya leído lo mismo que tú' },
 ];
 

@@ -19,6 +19,7 @@ import * as shareui from './shareui.js';
 import * as profileui from './profileui.js';
 import * as socialui from './socialui.js';
 import * as inviteui from './inviteui.js';
+import * as feedui from './feedui.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
 
@@ -36,6 +37,7 @@ function nav(view, el) {
   if (view === 'plan') views.renderPlan();
   if (view === 'biblioteca') views.renderLib();
   if (view === 'tracker') views.renderTracker();
+  if (view === 'feed') feedui.renderFeed();
 }
 
 /* ── INDICADOR DE GUARDADO ───────────────────────────────────── */
@@ -60,7 +62,7 @@ setConsentPrompt(screens.ensureAgentConsent);
 Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
-  ...profileui, ...socialui, ...inviteui,
+  ...profileui, ...socialui, ...inviteui, ...feedui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),

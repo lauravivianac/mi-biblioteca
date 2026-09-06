@@ -19,7 +19,8 @@ import { seedBooks, pageCount } from './seed.js';
 import { publicReviewDoc, isPublicReview, publicCount } from './reviews-core.js';
 import { streakInfo, addDay } from './streak-core.js';
 import { validateUsername, canChangeUsername, normalize } from './username-core.js';
-import { publicProfileDoc } from './profile-core.js';
+import { publicProfileDoc, seccionVisible } from './profile-core.js';
+import { activityDoc, activityId } from './feed-core.js';
 
 const state = {
   uid: null,
@@ -38,6 +39,9 @@ const state = {
      nadie necesita que tu perfil se reescriba porque pasaste de la 40
      a la 41. */
   profileDirty: false,
+  /* Los hechos que hay que publicar en el feed (#49). Es una cola y no
+     una bandera porque cada uno es un documento distinto. */
+  activityQueue: [],
   settingsDirty: false,
 };
 
@@ -206,8 +210,19 @@ export function progressPct(id) {
 /* ── ESCRITURA ───────────────────────────────────────────────── */
 
 export function updateEntry(id, patch) {
-  state.entries[id] = { ...(state.entries[id] || {}), ...patch };
+  const antes = state.entries[id] || {};
+  state.entries[id] = { ...antes, ...patch };
   state.dirty.add(id);
+
+  /* ── EL FEED  ·  historia #49 ──────────────────────────────
+     Solo cuando el estado CAMBIA de verdad. Sin comparar con lo que
+     había, cada anotación de página volvería a publicar «empezó a
+     leer» y el feed de quien te sigue sería una sola persona
+     repitiendo el mismo libro. */
+  if ('status' in patch && patch.status !== antes.status) {
+    if (patch.status === 'reading') encolarActividad({ tipo: 'empezo', bookId: id });
+    if (patch.status === 'read') encolarActividad({ tipo: 'termino', bookId: id });
+  }
   /* Cambiar el texto también puede despublicar: si lo borras, la copia
      pública tiene que irse contigo, sin acordarte del interruptor. */
   if ('review' in patch || 'reviewPublic' in patch) state.reviewDirty.add(id);
@@ -259,6 +274,9 @@ export function removeBook(id) {
      sería lo contrario de lo que acabas de pedir, y no habría dónde
      ir a quitarla: la ficha con el interruptor ya no existe. */
   state.reviewDirty.add(id);
+  /* Y su rastro en el feed: dejar «terminó Pedro Páramo» de un libro
+     que ya no está en tu biblioteca es contar algo que ya no es cierto. */
+  borrarActividadDe(id);
   if (book.custom) {
     state.books = state.books.filter((b) => b.id !== id);
     writeLS('custom', state.books.filter((b) => b.custom));
@@ -327,6 +345,7 @@ export async function flush() {
 
   await flushPublicReviews(reviewIds);
   if (hadProfile) await flushProfile();
+  await flushActivity();
 }
 
 /**
@@ -351,8 +370,12 @@ async function flushPublicReviews(ids) {
         uid: state.uid, book: findBook(id), entry: state.entries[id],
       });
       const ref = publicReviewRef(state.uid, id);
-      if (copia) batch.set(ref, copia);
-      else batch.delete(ref);
+      if (copia) {
+        batch.set(ref, copia);
+        encolarActividad({ tipo: 'resena', bookId: id });
+      } else {
+        batch.delete(ref);
+      }
     }
     await batch.commit();
   } catch (e) {
@@ -400,6 +423,79 @@ function datosDelPerfil() {
     })),
     racha: myStreak().actual,
   };
+}
+
+/* ── LA ACTIVIDAD DEL FEED  ·  historia #49 ──────────────────
+   Mismo trato que el perfil y las reseñas: una COPIA con lo justo, en
+   su propia colección y en su propia escritura.
+
+   No hay reparto a las seguidoras, y es a propósito: la nota de la
+   historia dice que con pocas usuarias leer al vuelo es más simple y
+   más barato que repartir copias, y tiene razón. Cuando repartir haga
+   falta se notará; adelantarlo sería pagar complejidad por un problema
+   que todavía no existe. */
+
+function encolarActividad(evento) {
+  state.activityQueue.push(evento);
+}
+
+/** Publicar un logro conseguido. Lo llama achievements. */
+export function recordAchievement(nombre) {
+  if (!nombre) return;
+  encolarActividad({ tipo: 'logro', logro: nombre });
+  schedulePersist();
+}
+
+async function flushActivity() {
+  const cola = state.activityQueue;
+  state.activityQueue = [];
+  if (!cola.length || !state.uid) return;
+
+  /* Apagado el interruptor, no se escribe NADA. No es que se oculte
+     luego: es que no llega a existir. */
+  if (!seccionVisible(settings(), 'actividad')) return;
+
+  try {
+    const batch = writeBatch(db);
+    for (const ev of cola) {
+      const libro = ev.bookId ? findBook(ev.bookId) : null;
+      const copia = activityDoc({
+        uid: state.uid,
+        username: myUsername() || '',
+        name: currentDisplayName,
+        tipo: ev.tipo,
+        logro: ev.logro,
+        book: libro ? { ...libro, cover: coverOf(ev.bookId) } : null,
+        rating: ratingOf(ev.bookId),
+        review: ev.tipo === 'resena' ? reviewOf(ev.bookId) : '',
+      });
+      if (!copia) continue;
+      batch.set(
+        doc(db, 'activity', activityId(state.uid, ev.tipo, ev.bookId || ev.logro)),
+        copia,
+      );
+    }
+    await batch.commit();
+  } catch (e) {
+    /* No se reintenta: una entrada de feed que llega tarde es ruido, y
+       perderla no rompe nada de lo que la usuaria tiene guardado. Lo
+       suyo sigue a salvo en users/{uid}. */
+    console.warn('No se pudo publicar en el feed:', e);
+  }
+}
+
+/** Borrar del feed lo que ya no debería estar. */
+async function borrarActividadDe(bookId) {
+  if (!state.uid || !bookId) return;
+  try {
+    const batch = writeBatch(db);
+    for (const tipo of ['empezo', 'termino', 'resena']) {
+      batch.delete(doc(db, 'activity', activityId(state.uid, tipo, bookId)));
+    }
+    await batch.commit();
+  } catch (e) {
+    console.warn('No se pudo retirar la actividad del feed:', e);
+  }
 }
 
 async function flushProfile() {

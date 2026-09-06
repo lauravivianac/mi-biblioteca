@@ -749,3 +749,40 @@ body:not(.signed-in) .fab { display: none; }
   border: 2px solid var(--gold); border-radius: var(--radius-sm);
   box-shadow: 0 0 0 100vmax rgb(0 0 0 / .35);
 }
+
+/* ── EL FEED  ·  historia #49 ────────────────────────────────── */
+.feed-card {
+  border: var(--card-border); border-radius: var(--radius);
+  background: var(--card); padding: 13px 14px; margin-bottom: 10px;
+}
+.feed-head { display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 11px; }
+.feed-avatar { width: 34px; height: 34px; font-size: 15px; }
+.feed-who { min-width: 0; }
+.feed-line { font-size: 13px; color: var(--text); line-height: 1.35; }
+.feed-when { font-size: 11px; color: var(--muted-soft); margin-top: 2px; }
+.feed-book { display: flex; gap: 11px; align-items: center; }
+.feed-book-txt { min-width: 0; flex: 1; }
+.feed-stars { color: var(--gold); font-size: 12px; margin-top: 4px; letter-spacing: .06em; }
+.feed-review {
+  font-size: 12.5px; line-height: 1.6; color: var(--lilac);
+  margin: 10px 0 0; font-style: italic;
+}
+.feed-logro {
+  font-family: var(--font-display); font-size: 15px; color: var(--gold);
+  padding: 10px 12px; border-radius: var(--radius-sm); background: var(--accent-wash);
+}
+.feed-add { width: 100%; margin-top: 11px; }
+.feed-add.tengo { color: var(--success); border-color: rgb(var(--success-rgb) / .35); opacity: 1; }
+
+/* El punto de avisos usa `display:grid`, y una clase gana a `[hidden]`
+   por especificidad: sin esto, el punto se quedaba puesto enseñando un
+   0 rojo permanente. */
+.notice-dot[hidden] { display: none; }
+
+/* Con cuatro botones en la cabecera la marca se partía en dos líneas.
+   Las gemas son un resumen que el Tracker ya da entero, así que en
+   pantallas estrechas ceden el sitio antes que el nombre de la app. */
+.brand-title { white-space: nowrap; }
+@media (max-width: 460px) {
+  .header-gems { display: none; }
+}
