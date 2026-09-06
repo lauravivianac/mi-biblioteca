@@ -1180,3 +1180,17 @@ body {
 .uname-status { font-size: 11px; color: var(--muted); margin-top: 6px; min-height: 15px; }
 .uname-status.ok { color: var(--success); }
 .uname-status.bad { color: var(--danger); }
+
+/* ── PRESUMIR  ·  historias #90–#93 ──
+   La vista previa a tamaño real no cabe en un móvil, así que se
+   escala. Lo que se comparte son 1080×1920 de verdad. */
+.share-preview {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 14px auto 0;
+  border-radius: var(--card-radius);
+  border: var(--hairline);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.45);
+}
