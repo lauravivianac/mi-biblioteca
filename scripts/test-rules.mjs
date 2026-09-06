@@ -119,14 +119,42 @@ async function no(nombre, fn) {
 }
 
 /* ═══ SEGUIR  ·  #46 #52 ══════════════════════════════════════
-   El caso de abajo es el que estuvo roto: el perfil de Ana existe y NO
-   tiene el campo `privada`, que es como lo publica cualquiera que no
-   haya tocado ese ajuste. Antes del arreglo, seguirla era imposible. */
+   El primer caso de abajo es el que estuvo roto: el perfil de Ana
+   existe y NO tiene el campo `privada`, que es como lo publica
+   cualquiera que no haya tocado ese ajuste. Antes del arreglo,
+   seguirla era imposible.
+
+   SOBRE EL «evaluation error» QUE SALE AL DENEGAR. Al denegar el
+   seguimiento a una cuenta privada, el motor imprime un «evaluation
+   error» en la traza en vez de un «false» limpio. Se acotó con el
+   fichero de reglas real, quitando una pieza cada vez:
+
+     reglas tal cual .................. error de evaluación
+     sin la rama de «aceptar» ......... error de evaluación
+     esPrivada sin get(), constante ... denegado limpio
+
+   O sea: aparece cuando la condición que deniega pasó por un `get()`,
+   y desaparece al quitarlo dejando la misma decisión. NO CAMBIA LA
+   DECISIÓN — en Firestore una regla que revienta deniega, y denegar es
+   justo lo que toca aquí. Lo que sí importa es que ninguna de las
+   formas que SÍ deben dejar seguir se vea afectada, y por eso están
+   las tres probadas abajo. */
 {
   const b = ctx(BEA).firestore();
   const c = ctx(CRIS).firestore();
   await ok('seguir · a una cuenta pública SIN el campo privada', () =>
     setDoc(doc(c, 'follows', `${CRIS}_${ANA}`), { follower: CRIS, following: ANA, at: 1 }));
+
+  /* Las tres formas que puede tener un perfil, porque las tres existen
+     ahí fuera y la rota era solo una: sin el campo (perfiles viejos y
+     escrituras parciales), con `privada: false` (lo que publica el
+     código de hoy) y sin perfil ninguno. Las tres tienen que dejar
+     seguir; probar solo una dejaba pasar el fallo. */
+  await seed((db) => setDoc(doc(db, 'profiles', 'dana'), { uid: 'dana', privada: false }));
+  await ok('seguir · a una cuenta con privada:false', () =>
+    setDoc(doc(c, 'follows', `${CRIS}_dana`), { follower: CRIS, following: 'dana', at: 1 }));
+  await ok('seguir · a quien no ha publicado perfil', () =>
+    setDoc(doc(c, 'follows', `${CRIS}_efe`), { follower: CRIS, following: 'efe', at: 1 }));
   await no('seguir · no fabrico la flecha de otra', () =>
     setDoc(doc(c, 'follows', `${BEA}_${ANA}`), { follower: BEA, following: ANA }));
   await ok('seguir · se leen las flechas', () =>

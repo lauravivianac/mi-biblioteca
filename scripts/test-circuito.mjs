@@ -40,7 +40,10 @@ globalThis.document = { visibilityState: 'visible', addEventListener() {} };
 const store = await import('../src/store.js');
 const social = await import('../src/social.js');
 const moderation = await import('../src/moderation.js');
+const swap = await import('../src/swap.js');
 const auth = await import('../src/auth.js');
+const { db } = await import('../src/firebase.js');
+const { collection, getDocs, query, where, limit } = await import('firebase/firestore');
 
 let pasan = 0;
 const fallos = [];
@@ -64,6 +67,37 @@ async function entrarComo(email, password, nombre) {
   store.setDisplayName(nombre);
   await store.loadStore(user.uid);
   return user.uid;
+}
+
+/**
+ * Verificar el correo POR EL CAMINO DE VERDAD.
+ *
+ * Publicar en intercambio exige correo verificado, y eso no lo decide
+ * la app: lo comprueba la regla con el token firmado por Google
+ * (`request.auth.token.email_verified`). Así que no vale con fingirlo
+ * en el cliente — hay que pedir el correo, sacar el código que el
+ * emulador guarda en vez de mandarlo, y aplicarlo.
+ *
+ * Y después hay que refrescar el token: la verificación cambia la
+ * cuenta, pero el token que lleva la sesión en la mano sigue diciendo
+ * lo de antes hasta que se pide otro.
+ */
+async function verificarCorreo(email) {
+  const { sendEmailVerification } = await import('firebase/auth');
+  const proyecto = process.env.GCLOUD_PROJECT || 'demo-biblioteca';
+  const emulador = process.env.FIREBASE_AUTH_EMULATOR_HOST || '127.0.0.1:9099';
+
+  await sendEmailVerification(auth.currentUser());
+
+  const r = await fetch(`http://${emulador}/emulator/v1/projects/${proyecto}/oobCodes`);
+  const { oobCodes = [] } = await r.json();
+  const codigo = [...oobCodes].reverse()
+    .find((c) => c.email === email && c.requestType === 'VERIFY_EMAIL');
+  if (!codigo) throw new Error(`sin código de verificación para ${email}`);
+
+  await fetch(codigo.oobLink);
+  await auth.currentUser().reload();
+  await auth.currentUser().getIdToken(true);
 }
 
 const ANA = { email: 'ana@ejemplo.test', pass: 'secreto123', nombre: 'Ana' };
@@ -168,6 +202,99 @@ await entrarComo(BEA.email, BEA.pass, BEA.nombre);
 const trasBloqueo = await moderation.addComment(`${uidAna}_${LIBRO_B}`, uidAna, 'Otro comentario');
 comprobar('bloqueo · Bea ya no puede comentarle', trasBloqueo.ok === false,
   JSON.stringify(trasBloqueo));
+
+/* ═══ 8 · CUENTA PRIVADA  ·  #52 ══════════════════════════════
+   El circuito entero de la cuenta privada, que tampoco había tocado
+   nunca un servidor: no me puedes seguir → te lo pido → aceptas → y
+   solo entonces se lee mi parte reservada. */
+await moderation.unblock(uidBea).then(() => {}, () => {});
+await entrarComo(ANA.email, ANA.pass, ANA.nombre);
+await moderation.unblock(uidBea);
+
+store.updateSettings({ privada: true });
+await store.flush();
+await store.publishProfile();
+comprobar('privada · queda marcada', store.soyPrivada() === true);
+
+/* La parte reservada tiene que EXISTIR: si la cuenta privada no
+   escribiera nada en profiles/{uid}/full/data, no habría nada que
+   proteger y tampoco nada que enseñar a quien te sigue. */
+const cris = { email: 'cris@ejemplo.test', pass: 'secreto123', nombre: 'Cris' };
+const uidCris = await entrarComo(cris.email, cris.pass, cris.nombre);
+await store.claimUsername('crisita');
+
+const intentoDirecto = await social.follow(uidAna);
+comprobar('privada · seguirla directamente NO se puede', intentoDirecto.ok === false,
+  JSON.stringify(intentoDirecto));
+
+const nadaTodavia = await social.fetchFullProfile(uidAna);
+comprobar('privada · sin seguirla no se lee su parte reservada', !nadaTodavia,
+  JSON.stringify(nadaTodavia));
+
+const pedida = await social.pedirSeguir(uidAna);
+comprobar('privada · le pido seguirla', pedida.ok === true, JSON.stringify(pedida));
+comprobar('privada · la solicitud queda pendiente', (await social.haySolicitud(uidAna)) === true);
+
+await entrarComo(ANA.email, ANA.pass, ANA.nombre);
+const solicitudes = await social.misSolicitudes();
+comprobar('privada · Ana ve la solicitud', solicitudes.some((s) => s.de === uidCris),
+  `n=${solicitudes.length}`);
+
+const aceptada = await social.aceptarSolicitud(uidCris);
+comprobar('privada · Ana la acepta', aceptada.ok === true, JSON.stringify(aceptada));
+
+await entrarComo(cris.email, cris.pass, cris.nombre);
+comprobar('privada · ahora sí la sigo', (await social.isFollowing(uidAna)) === true);
+const yaSePuede = await social.fetchFullProfile(uidAna);
+comprobar('privada · ahora sí se lee su parte reservada', Boolean(yaSePuede),
+  JSON.stringify(yaSePuede).slice(0, 120));
+
+/* ═══ 9 · INTERCAMBIO  ·  #81 #82 #89 ═════════════════════════
+   Publicar exige correo verificado, y eso lo comprueba el SERVIDOR con
+   el token firmado. Se verifica por el camino de verdad: se pide el
+   correo y se aplica el código que da el emulador. */
+await entrarComo(BEA.email, BEA.pass, BEA.nombre);
+await verificarCorreo(BEA.email);
+
+store.setPlace({ country: 'Colombia', city: 'Bogotá', area: 'Chapinero', lat: 4.65, lon: -74.06 });
+await store.flush();
+const sitio = store.myPlace();
+comprobar('intercambio · la ciudad se guarda', sitio?.city === 'Bogotá', JSON.stringify(sitio));
+comprobar('intercambio · NO se guardan las coordenadas',
+  !('lat' in sitio) && !('lon' in sitio), JSON.stringify(sitio));
+comprobar('intercambio · el geohash va recortado a 6', sitio?.geohash?.length === 6,
+  String(sitio?.geohash));
+
+store.updateEntry(LIBRO_A, { status: 'read' });
+await store.flush();
+const publicado = await swap.publicar(store.findBook(LIBRO_A), {
+  estado: 'bueno', nota: 'Subrayado a lápiz', suelto: true,
+});
+comprobar('intercambio · se publica', publicado.ok === true, JSON.stringify(publicado).slice(0, 160));
+comprobar('intercambio · la publicación no lleva ubicación exacta',
+  publicado.publicacion && !('lat' in publicado.publicacion) && !('lon' in publicado.publicacion));
+comprobar('intercambio · y no lleva precio',
+  publicado.publicacion && !('precio' in publicado.publicacion));
+
+const mias = await swap.misPublicaciones();
+comprobar('intercambio · la veo entre las mías', mias.some((p) => p.id === publicado.id),
+  `n=${mias.length}`);
+
+const retirado = await swap.retirar(publicado.id);
+comprobar('intercambio · la retiro', retirado.ok === true, JSON.stringify(retirado));
+const trasRetirar = await swap.misPublicaciones();
+comprobar('intercambio · retirar MARCA, no borra',
+  trasRetirar.some((p) => p.id === publicado.id && p.activa === false));
+comprobar('intercambio · la vuelvo a ofrecer',
+  (await swap.volverAPublicar(publicado.id)).ok === true);
+
+/* Y que otra persona la encuentre, que es para lo que existe. */
+await entrarComo(cris.email, cris.pass, cris.nombre);
+const enBogota = await getDocs(query(
+  collection(db, 'swaps'), where('cityKey', '==', 'bogota'), limit(20),
+));
+comprobar('intercambio · otra persona la encuentra por ciudad',
+  enBogota.docs.some((d) => d.id === publicado.id), `n=${enBogota.size}`);
 
 /* ═══ RESULTADO ═══════════════════════════════════════════════ */
 await auth.logOut().catch(() => {});
