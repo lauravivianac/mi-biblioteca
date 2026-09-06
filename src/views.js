@@ -11,6 +11,7 @@ import {
 } from './store.js';
 import { fetchCover } from './covers.js';
 import { $, esc, initial, toast, confirmAction } from './ui.js';
+import { refreshAchievements } from './achievements.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -257,6 +258,11 @@ export function setStatus(id, status) {
   }
   if (status === 'pending') { patch.finishedAt = null; }
   updateEntry(id, patch);
+
+  /* Un logro que se consigue en silencio no motiva a nadie. */
+  for (const a of refreshAchievements()) {
+    toast(`${a.icon}  ${a.name}${a.unlocksTheme ? ' · desbloqueaste un tema' : ''}`);
+  }
 }
 
 export function toggleRead(id) {

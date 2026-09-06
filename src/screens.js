@@ -19,6 +19,7 @@ import { readingPace, goalFeasibility, goalProgress, stalledBooks, generatePlan,
 import { $, esc, toast, confirmAction, download, closeSheet } from './ui.js';
 import { refreshAll } from './views.js';
 import { MONTH_ORDER } from './seed.js';
+import { achievementStatus, earnedCount } from './achievements.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -311,10 +312,24 @@ export function openSettings() {
           ? `vas ${progress.diffUnits} por delante 🎉` : `vas ${progress.diffUnits} por detrás`}</div></div>
     </div>` : ''}
 
+    <div class="section-heading"><span class="section-heading-text">Logros</span></div>
+    <div class="ach-list">
+      ${achievementStatus().map((a) => `
+        <div class="ach ${a.earned ? 'got' : ''}">
+          <span class="ach-icon">${a.earned ? a.icon : '🔒'}</span>
+          <div class="ach-body">
+            <div class="ach-name">${esc(a.name)}</div>
+            <div class="ach-hint">${a.earned ? 'Conseguido' : esc(a.hint)}</div>
+            ${!a.earned ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${a.pct}%"></div></div>` : ''}
+          </div>
+          ${!a.earned ? `<span class="ach-count">${a.done}/${a.need}${a.unit}</span>` : ''}
+        </div>`).join('')}
+    </div>
+
     <div class="section-heading"><span class="section-heading-text">Apariencia</span></div>
     <div class="set-row" onclick="openThemeStore()">
       <div><div class="set-row-title">Tienda de temas</div>
-        <div class="set-row-sub">Ocho temas para cambiarle la cara a la app</div></div>
+        <div class="set-row-sub">Nueve temas para cambiarle la cara a la app · ${earnedCount()} logros conseguidos</div></div>
       <span class="set-chev">›</span>
     </div>
 
