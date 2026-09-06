@@ -42,10 +42,19 @@ correo y contraseña, que no depende del dominio.
 ### 2. Desplegar las reglas de seguridad ⚠️
 
 ```bash
-npm i -g firebase-tools
-firebase login
-firebase deploy --only firestore:rules,firestore:indexes
+npx firebase-tools login
+npx firebase-tools deploy --only firestore:rules,firestore:indexes
 ```
+
+**`npx` y no una instalación global, a propósito.** Aquí decía `npm i -g
+firebase-tools` y luego `firebase …`, y eso falla con `zsh: command not found:
+firebase` en cuanto la instalación global no está hecha o el `PATH` de npm no está
+en el shell — que es lo normal en un Mac recién estrenado. `npx firebase-tools` se
+lo baja al vuelo y funciona sin tocar nada del sistema.
+
+El proyecto ya está fijado en [`.firebaserc`](./.firebaserc), así que no hay que
+pasarlo por parámetro. **Y hay que hacerlo desde la raíz del repositorio**, no desde
+`worker/`: ahí es donde están `firebase.json`, las reglas y los índices.
 
 **Los índices van en el mismo comando y no son opcional.** Firestore crea solo
 índices de un campo; en cuanto una consulta filtra por un campo y ordena por otro,
