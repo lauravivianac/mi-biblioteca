@@ -5,12 +5,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:worker",
+    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:worker",
     "test:contrast": "node scripts/check-contrast.mjs",
     "test:planner": "node scripts/test-planner.mjs",
     "test:booklookup": "node scripts/test-booklookup.mjs",
     "serve": "python3 -m http.server 8080",
     "test:worker": "node scripts/test-worker.mjs",
-    "test:ean": "node scripts/test-ean.mjs"
+    "test:ean": "node scripts/test-ean.mjs",
+    "test:shelves": "node scripts/test-shelves.mjs"
   }
 }

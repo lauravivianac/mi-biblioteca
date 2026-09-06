@@ -14,6 +14,7 @@ import { $, esc, initial, toast, confirmAction } from './ui.js';
 import { refreshAchievements } from './achievements.js';
 import { renderPet } from './pet.js';
 import { agentOffered, bookBrief, isDenied } from './agent.js';
+import { allShelves, shelvesOfBook, shelfCounts, toggleBookShelf } from './shelves.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -27,6 +28,7 @@ const STATUS_DOT = {
 let curYear = 2026;
 let filterGenre = 'all';
 let filterStatus = 'all';
+let filterShelf = 'all';
 let searchQ = '';
 let detailId = null;
 
@@ -140,6 +142,7 @@ export function renderPlan() {
 
 export function setGenre(g) { filterGenre = g; renderLib(); }
 export function setStatusFilter(s) { filterStatus = s; renderLib(); }
+export function setShelfFilter(s) { filterShelf = s; renderLib(); }
 export function searchLib(q) { searchQ = q; renderLib(); }
 
 export function renderLib() {
@@ -162,6 +165,23 @@ export function renderLib() {
     ).join('');
   }
 
+  /* Los chips de estantería solo aparecen si hay estanterías: una
+     fila de filtros vacía es ruido para quien no las usa. */
+  const shelfChips = $('shelf-chips');
+  if (shelfChips) {
+    const shelves = allShelves();
+    const cuenta = shelfCounts();
+    shelfChips.innerHTML = shelves.length
+      ? [`<div class="chip ${filterShelf === 'all' ? 'active' : ''}" onclick="setShelfFilter('all')">Todas</div>`,
+         ...shelves.map((sh) => `
+           <div class="chip chip-shelf ${filterShelf === sh.id ? 'active' : ''}"
+                style="--shelf-rgb: var(--${sh.color}-rgb)" onclick="setShelfFilter('${sh.id}')">
+             ${sh.emoji} ${esc(sh.name)}
+             <span class="chip-count">${cuenta[sh.id] || 0}</span>
+           </div>`)].join('')
+      : '';
+  }
+
   /* El agente solo aparece si está configurado. Un botón que siempre
      falla es peor que no tener botón. */
   const agentSlot = $('lib-agent');
@@ -174,6 +194,7 @@ export function renderLib() {
   let filtered = allBooks();
   if (filterGenre !== 'all') filtered = filtered.filter((b) => b.genre === filterGenre);
   if (filterStatus !== 'all') filtered = filtered.filter((b) => statusOf(b.id) === filterStatus);
+  if (filterShelf !== 'all') filtered = filtered.filter((b) => shelvesOfBook(b.id).includes(filterShelf));
   if (searchQ) {
     const q = searchQ.toLowerCase();
     filtered = filtered.filter((b) =>
@@ -361,6 +382,16 @@ export async function openDetail(id) {
         ${pinned ? '📌 Fijado a ' + pinned + ' · toca para soltar' : '📌 Fijar a ' + book.month + ' para que el plan no lo mueva'}
       </button>` : ''}
 
+      <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Estanterías</span></div>
+      <div class="shelf-picker">
+        ${allShelves().map((sh) => `
+          <button class="chip chip-shelf ${shelvesOfBook(id).includes(sh.id) ? 'active' : ''}"
+                  style="--shelf-rgb: var(--${sh.color}-rgb)" onclick="toggleShelf('${id}','${sh.id}')">
+            ${sh.emoji} ${esc(sh.name)}
+          </button>`).join('')}
+        <button class="chip chip-new" onclick="newShelfFor('${id}')">＋ Nueva</button>
+      </div>
+
       ${agentOffered() ? renderBrief(id) : ''}
 
       <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Calificación</span></div>
@@ -428,6 +459,12 @@ export async function askBrief(id, again = false) {
      reabrimos en la cara: la respuesta ya quedó guardada y estará
      ahí la próxima vez que abras el libro. */
   if (detailId === id) await openDetail(id);
+}
+
+/** Meter o sacar el libro de una estantería, sin cerrar la ficha. */
+export function toggleShelf(bookId, shelfId) {
+  toggleBookShelf(bookId, shelfId);
+  openDetail(bookId);
 }
 
 export function detailStatus(s) { setStatus(detailId, s); openDetail(detailId); updateStats(); }

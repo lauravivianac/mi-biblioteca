@@ -467,3 +467,59 @@ body:not(.signed-in) .fab { display: none; }
 .notice-sends { font-size: 12.5px; line-height: 1.6; color: var(--text); }
 /* «No, gracias» partía en dos líneas y quedaba como un botón dudoso. */
 .confirm-actions button { white-space: nowrap; }
+
+/* ── ESTANTERÍAS  ·  historia #22 ─────────────────────────────
+   Cada una tiene su color, pero el color sale de un token del tema
+   (`--shelf-rgb`), no de un hex suelto: así una estantería se ve bien
+   en los nueve mundos sin revisar el contraste por cada una. */
+
+.chip-shelf { border-color: rgb(var(--shelf-rgb) / .35); color: rgb(var(--shelf-rgb) / .95); }
+.chip-shelf.active {
+  background: rgb(var(--shelf-rgb) / .18);
+  border-color: rgb(var(--shelf-rgb) / .7);
+  color: rgb(var(--shelf-rgb));
+}
+.chip-count {
+  margin-left: 5px; opacity: .6;
+  font-variant-numeric: tabular-nums;
+}
+.chip-new { border-style: dashed; }
+
+/* En la ficha del libro, donde se meten y se sacan. */
+.shelf-picker {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px;
+}
+.shelf-picker .chip { font-family: var(--font-body); }
+
+/* Elegir símbolo y color al crear una. */
+.shelf-emojis { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.shelf-emoji {
+  width: 38px; height: 38px; font-size: 17px; cursor: pointer;
+  border: var(--hairline); border-radius: var(--radius-sm);
+  background: var(--card); transition: all .18s;
+}
+.shelf-emoji.on { border-color: var(--gold); background: var(--gold-wash); }
+
+.shelf-colors { display: flex; gap: 8px; margin-bottom: 10px; }
+.shelf-color {
+  width: 32px; height: 32px; cursor: pointer;
+  border-radius: 50%; border: 2px solid transparent;
+  background: rgb(var(--shelf-rgb) / .85);
+  transition: all .18s;
+}
+.shelf-color.on { border-color: var(--text); transform: scale(1.12); }
+
+/* Gestionarlas, en Ajustes. */
+.shelf-manage { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.shelf-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgb(var(--shelf-rgb) / .3);
+  border-left: 3px solid rgb(var(--shelf-rgb) / .8);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+.shelf-row-emoji { font-size: 17px; }
+.shelf-row-info { flex: 1; min-width: 0; }
+.shelf-row-name { font-size: 13.5px; color: var(--text); }
+.shelf-row-count { font-size: 11px; color: var(--muted); margin-top: 2px; }
