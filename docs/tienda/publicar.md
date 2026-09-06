@@ -117,6 +117,10 @@ más rápida de que se desactiven todas.
 
 ---
 
+> **Cómo se crean las cuentas, paso a paso:** [`cuentas.md`](./cuentas.md).
+> Léelo antes de pagar nada — hay una decisión (personal o empresa) que cambia
+> si tienes que esperar 14 días y si tu dirección acaba publicada.
+
 ## 3 · Google Play · #99
 
 Es la más fácil de las dos tiendas y conviene hacerla primero.
