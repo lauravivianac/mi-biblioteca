@@ -187,6 +187,31 @@
   </div>
 </div>
 
+<!-- MIS CITAS -->
+<div class="overlay" id="quotes-overlay" onclick="closeQuotes(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('quotes-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">❞ Mis citas</div>
+    <div class="search-wrap" style="margin-bottom:14px">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="quote-search" placeholder="Buscar una frase, un libro, un autor..."
+             oninput="searchMyQuotes(this.value)" aria-label="Buscar entre mis citas">
+    </div>
+    <div id="quotes-body"></div>
+  </div>
+</div>
+
+<!-- CAPTURAR UNA CITA -->
+<div class="overlay" id="qcap-overlay" onclick="closeQuoteCapture(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeQuoteCaptureSheet()" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">❞ Nueva cita</div>
+    <div id="qcap-body"></div>
+  </div>
+</div>
+
 <!-- DETALLE -->
 <div class="overlay" id="detail-overlay" onclick="closeDetail(event)">
   <div class="sheet" id="detail-sheet" style="padding-top:0"></div>

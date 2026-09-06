@@ -15,7 +15,7 @@ import { lookupByIsbn, lookupByTitle, lookupByCoverText } from './booklookup.js'
 import { identifyFromCoverText, agentAvailable } from './agent.js';
 import {
   openCamera, closeCamera, scanBarcode, grabFrame, frameToDataUrl,
-  readCoverText,
+  readText,
 } from './scan.js';
 import { addBook, updateEntry } from './store.js';
 import { GENRES, MONTH_ORDER } from './seed.js';
@@ -267,7 +267,7 @@ export async function shootCover() {
 
   let text = '';
   try {
-    text = await readCoverText(canvas, (p) => {
+    text = await readText(canvas, (p) => {
       if (hint) hint.textContent = `Leyendo la portada… ${Math.round(p * 100)}%`;
     });
   } catch {

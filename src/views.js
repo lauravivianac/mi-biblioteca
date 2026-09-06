@@ -15,6 +15,8 @@ import { refreshAchievements } from './achievements.js';
 import { renderPet } from './pet.js';
 import { agentOffered, bookBrief, isDenied } from './agent.js';
 import { allShelves, shelvesOfBook, shelfCounts, toggleBookShelf } from './shelves.js';
+import { renderQuotes } from './quotesui.js';
+import { quoteCount } from './quotes.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -186,9 +188,11 @@ export function renderLib() {
      falla es peor que no tener botón. */
   const agentSlot = $('lib-agent');
   if (agentSlot) {
-    agentSlot.innerHTML = agentOffered()
-      ? '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>'
-      : '';
+    const cuantas = quoteCount();
+    agentSlot.innerHTML = [
+      cuantas ? `<button class="btn-ghost full" onclick="openQuotes()">❞ Mis citas · ${cuantas}</button>` : '',
+      agentOffered() ? '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>' : '',
+    ].join('');
   }
 
   let filtered = allBooks();
@@ -391,6 +395,8 @@ export async function openDetail(id) {
           </button>`).join('')}
         <button class="chip chip-new" onclick="newShelfFor('${id}')">＋ Nueva</button>
       </div>
+
+      ${renderQuotes(id)}
 
       ${agentOffered() ? renderBrief(id) : ''}
 
