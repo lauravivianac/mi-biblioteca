@@ -9,7 +9,7 @@ import {
 } from './auth.js';
 import {
   settings, updateSettings, exportData, exportCsv, updateEntry, findBook,
-  allBooks, statusOf, ratingOf,
+  allBooks, statusOf, ratingOf, addBook,
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
 import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
@@ -25,7 +25,11 @@ import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
   availableSpecies, currentScene, SCENES,
 } from './pet.js';
-import { workerUrl, agentAvailable, setAgentEnabled, recommendFrom } from './agent.js';
+import {
+  workerUrl, agentAvailable, agentOffered, agentDecided, setAgentConsent,
+  recommendFrom, isDenied, WHAT_WE_SEND,
+} from './agent.js';
+import { verifySuggestion } from './booklookup.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -439,15 +443,16 @@ export function openSettings() {
     <div class="section-heading"><span class="section-heading-text">El agente</span></div>
     <div class="set-row" onclick="toggleAgent()">
       <div><div class="set-row-title">El agente lector</div>
-        <div class="set-row-sub">${agentAvailable()
-          ? 'Encendido · «¿me lo leo?» y qué leer después'
-          : 'Apagado · toca para encenderlo'}</div></div>
-      <span class="set-chev">${agentAvailable() ? '●' : '○'}</span>
+        <div class="set-row-sub">${
+          !agentDecided() ? 'Sin decidir · te preguntaremos la primera vez que lo uses'
+          : agentAvailable() ? 'Encendido · «¿me lo leo?» y qué leer después'
+          : 'Apagado · no se envía nada'}</div></div>
+      <span class="set-chev">${!agentDecided() ? '·' : agentAvailable() ? '●' : '○'}</span>
     </div>
+    <button class="link-btn" onclick="showAgentNotice()">Ver exactamente qué se envía</button>
     <p class="set-fineprint">
-      Cuando lo usas, se envía el título y el autor del libro —nunca tus reseñas
-      ni tus notas. Apagarlo no quita nada más: añadir libros por título o por
-      código de barras nunca pasa por el agente.
+      Apagarlo no quita nada más: añadir libros por título o por código de barras
+      nunca pasa por el agente.
     </p>` : ''}
 
     <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
@@ -471,16 +476,213 @@ export function openSettings() {
   $('settings-overlay').classList.add('open');
 }
 
-/* ── EL AGENTE ────────────────────────────────────────────────
-   Un interruptor y nada más. La dirección del Worker vive en el
-   código (src/agent.js) porque es del despliegue, no de cada quien:
-   pedírsela a la usuaria significaría que solo tiene agente quien
-   sepa qué es un Worker de Cloudflare. */
-export function toggleAgent() {
+/* ── EL AGENTE  ·  historia #61 ───────────────────────────────
+   El consentimiento se pide al TOCAR el botón, no al registrarse.
+   Al registrarse nadie lee, y además todavía no sabe qué es esto; al
+   tocar «¿me lo leo?» ya sabe para qué sirve y la pregunta tiene
+   sentido. Mientras no diga que sí, no se manda nada. */
+
+/** El aviso, palabra por palabra. Lo comparten las dos pantallas. */
+function agentNotice() {
+  return `
+    <p class="confirm-body">
+      Para esto, la app le manda tus datos a <strong>DeepSeek</strong>, un servicio de
+      inteligencia artificial. Es una empresa china y sus servidores están en China.
+    </p>
+    <div class="notice-list">
+      ${WHAT_WE_SEND.map((x) => `
+        <div class="notice-row">
+          <div class="notice-what">${esc(x.que)}</div>
+          <div class="notice-sends">${esc(x.manda)}</div>
+        </div>`).join('')}
+    </div>
+    <p class="confirm-body">
+      <strong>Nunca se envían</strong> tus reseñas, tus notas, tu nombre ni tu correo.
+      La consulta viaja sin tu identidad: el servidor comprueba que tu sesión es válida,
+      pero no le dice a DeepSeek quién eres.
+    </p>
+    <p class="confirm-body">
+      Las respuestas se guardan en tu biblioteca para no volver a preguntar lo mismo.
+      Puedes cambiar de opinión cuando quieras, en Ajustes.
+    </p>`;
+}
+
+/**
+ * Pregunta si se puede usar el agente. Devuelve true solo con un sí.
+ * Si ya contestó antes, no vuelve a molestar.
+ */
+export function ensureAgentConsent() {
+  if (agentAvailable()) return Promise.resolve(true);
+  if (agentDecided()) return Promise.resolve(false);   // dijo que no
+
+  return new Promise((resolve) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'overlay open confirm-overlay';
+    wrap.innerHTML = `
+      <div class="sheet confirm-sheet notice-sheet">
+        <div class="sheet-title">¿Le preguntamos a la IA?</div>
+        ${agentNotice()}
+        <div class="confirm-actions">
+          <button class="btn-ghost" data-act="no">No, gracias</button>
+          <button class="btn-magic" data-act="si">Sí, úsalo</button>
+        </div>
+      </div>`;
+    const done = (v) => {
+      wrap.remove();
+      if (v !== null) { setAgentConsent(v); refreshAll(); }
+      resolve(v === true);
+    };
+    wrap.addEventListener('click', (e) => {
+      const act = e.target.dataset?.act;
+      if (act === 'si') done(true);
+      else if (act === 'no') done(false);
+      else if (e.target === wrap) done(null);   // cerrar sin contestar no es un no
+    });
+    document.body.appendChild(wrap);
+  });
+}
+
+/** El mismo aviso, para releerlo desde Ajustes sin decidir nada. */
+export function showAgentNotice() {
+  const wrap = document.createElement('div');
+  wrap.className = 'overlay open confirm-overlay';
+  wrap.innerHTML = `
+    <div class="sheet confirm-sheet notice-sheet">
+      <div class="sheet-title">Qué se envía</div>
+      ${agentNotice()}
+      <div class="confirm-actions">
+        <button class="btn-ghost" data-act="ok">Entendido</button>
+      </div>
+    </div>`;
+  wrap.addEventListener('click', (e) => {
+    if (e.target.dataset?.act === 'ok' || e.target === wrap) wrap.remove();
+  });
+  document.body.appendChild(wrap);
+}
+
+/** Desde Ajustes: sin decidir abre la pregunta; decidido, cambia. */
+export async function toggleAgent() {
+  if (!agentDecided()) { await ensureAgentConsent(); openSettings(); return; }
   const estaba = agentAvailable();
-  setAgentEnabled(!estaba);
+  setAgentConsent(!estaba);
   toast(estaba ? 'Agente apagado' : 'Agente encendido');
   openSettings();
+  refreshAll();
+}
+
+/* ── QUÉ LEER DESPUÉS  ·  historias #49, #63 ──────────────────
+   Se le manda lo LEÍDO con su puntuación —que es lo que de verdad
+   dice qué te gusta— y lo pendiente, para que no repita algo que ya
+   está en la pila.
+
+   Y TODA sugerencia pasa por los catálogos antes de aparecer. Un
+   modelo inventa libros plausibles con total confianza; pintarlos tal
+   cual convierte una recomendación en una mentira bien escrita. La
+   que ningún catálogo reconoce, no se muestra. */
+
+let sugeridos = [];
+
+export async function openRecs() {
+  // Antes de abrir nada: nada sale de aquí sin un sí.
+  if (!await ensureAgentConsent()) return;
+
+  $('recs-overlay').classList.add('open');
+  $('recs-body').innerHTML = '<p class="planner-hint">Mirando lo que has leído…</p>';
+  sugeridos = [];
+
+  const books = allBooks();
+  const read = books.filter((b) => statusOf(b.id) === 'read')
+    .map((b) => ({ ...b, rating: ratingOf(b.id) }))
+    .sort((a, b) => b.rating - a.rating);
+  const pending = books.filter((b) => statusOf(b.id) !== 'read');
+
+  if (read.length < 3) {
+    $('recs-body').innerHTML = `<p class="planner-hint">
+      Con <strong>${read.length}</strong> ${read.length === 1 ? 'libro leído' : 'libros leídos'} todavía no hay
+      de dónde sacar una recomendación que valga. Marca unos cuantos como leídos
+      —y ponles estrellas, que es lo que más dice— y vuelve.
+    </p>`;
+    return;
+  }
+
+  try {
+    const crudas = await recommendFrom({ read, pending });
+    if (!crudas.length) {
+      $('recs-body').innerHTML = '<p class="planner-hint">No se le ocurrió nada esta vez. Prueba otra vez más tarde.</p>';
+      return;
+    }
+
+    $('recs-body').innerHTML = '<p class="planner-hint">Comprobando que los libros existan…</p>';
+
+    /* En paralelo: son cinco consultas a catálogos, no cinco al modelo. */
+    const yaTengo = new Set(books.map((b) => `${b.title} ${b.author}`.toLowerCase()));
+    const verificadas = (await Promise.all(crudas.map(async (r) => {
+      const real = await verifySuggestion(r).catch(() => null);
+      if (!real) return null;
+      if (yaTengo.has(`${real.title} ${real.author}`.toLowerCase())) return null;
+      return { ...real, porque: r.porque };
+    }))).filter(Boolean);
+
+    sugeridos = verificadas;
+
+    if (!verificadas.length) {
+      $('recs-body').innerHTML = `<p class="planner-hint warn">
+        El agente propuso ${crudas.length} libros y <strong>ningún catálogo reconoció ninguno</strong>.
+        Suele significar que se los inventó, así que no te los muestro. Inténtalo otra vez.
+      </p>`;
+      return;
+    }
+
+    const descartadas = crudas.length - verificadas.length;
+    $('recs-body').innerHTML = `
+      <p class="planner-hint">
+        A partir de tus ${read.length} libros leídos y de cómo los puntuaste.
+        ${descartadas ? `Se ${descartadas === 1 ? 'descartó 1 sugerencia' : `descartaron ${descartadas} sugerencias`} porque ningún catálogo ${descartadas === 1 ? 'la' : 'las'} reconoció.` : ''}
+      </p>
+      <div class="recs">
+        ${verificadas.map((r, i) => `
+          <div class="rec">
+            <div class="rec-head">
+              ${r.cover
+                ? `<img class="rec-cover" src="${esc(r.cover)}" alt="" loading="lazy">`
+                : '<div class="rec-cover rec-cover-ph">📕</div>'}
+              <div class="rec-info">
+                <div class="rec-title">${esc(r.title)}</div>
+                <div class="rec-author">${esc(r.author)}${r.year ? ' · ' + r.year : ''}${r.pages !== '—' ? ' · ' + esc(r.pages) + ' págs.' : ''}</div>
+              </div>
+            </div>
+            ${r.porque ? `<p class="rec-why">${esc(r.porque)}</p>` : ''}
+            <button class="btn-ghost rec-add" id="rec-add-${i}" onclick="addSuggestion(${i})">
+              ＋ Añadir a mis deseados
+            </button>
+          </div>`).join('')}
+      </div>
+      <p class="set-fineprint">
+        Los datos —portada, autor, páginas— salen de OpenLibrary y Google Books, no del agente.
+        Lo único suyo es el porqué.
+      </p>`;
+  } catch (e) {
+    if (isDenied(e)) { closeSheet('recs-overlay'); return; }
+    $('recs-body').innerHTML = `<p class="planner-hint warn">${esc(e.message)}</p>`;
+  }
+}
+
+/** Un toque y el libro entra en la biblioteca, con su portada. */
+export function addSuggestion(i) {
+  const r = sugeridos[i];
+  if (!r) return;
+  const saved = addBook({
+    title: r.title, author: r.author, genre: r.genre,
+    year: null, month: null, pages: r.pages, role: '⚓ Ancla',
+  });
+  updateEntry(saved.id, {
+    status: 'wished',
+    ...(r.cover ? { cover: r.cover } : {}),
+    ...(r.isbn ? { isbn: r.isbn } : {}),
+  });
+  const btn = $(`rec-add-${i}`);
+  if (btn) { btn.textContent = '✓ En tus deseados'; btn.disabled = true; }
+  toast(`«${r.title}» añadido a deseados`);
   refreshAll();
 }
 

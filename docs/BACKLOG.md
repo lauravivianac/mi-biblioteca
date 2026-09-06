@@ -22,39 +22,39 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 
 | Épica | Issue | Módulo | Historias | Prioridad |
 |---|---|---|---:|---|
-| E0 | #1 | Fundación: auth, datos y refactor | 10 | P0 |
+| E0 | #1 ✅ | Fundación: auth, datos y refactor | 10 | P0 |
 | E1 | #2 | Biblioteca mejorada | 8 | P1 |
 | E2 | #3 | Social: perfil, amigas y comentarios | 9 | P2 |
 | E3 | #4 | Agente IA con DeepSeek | 9 | P1 |
 | E4 | #5 | Recomendaciones | 6 | P1 |
 | E5 | #6 | Rachas, hábito y blog | 7 | P2 |
-| E6 | #7 | Tienda de temas | 6 | P1 |
+| E6 | #7 ✅ | Tienda de temas | 6 | P1 |
 | E7 | #8 | Intercambio de libros | 9 | P3 |
 | E8 | #9 | Compartir a Instagram | 4 | P2 |
 | E9 | #10 | Empaquetado y tiendas | 7 | P3 |
-| E10 | #30 | Plan lector inteligente | 6 | P1 |
-| E11 | #31 | Mascota lectora customizable | 6 | P2 |
+| E10 | #30 ✅ | Plan lector inteligente | 6 | P1 |
+| E11 | #31 ✅ | Mascota lectora customizable | 6 | P2 |
 | | | **Total** | **87** | |
 
 ---
 
-## E0 · Fundación — auth, datos y refactor `P0` · #1
+## E0 · Fundación — auth, datos y refactor `P0` · #1 ✅
 
 > Bloquea todo lo demás. Hoy el ID de usuaria está escrito a mano en el código y no hay
 > autenticación: cualquiera que abra la app escribe sobre los datos de Laura.
 
 | # | Issue | Historia | Tam |
 |---|---|---|---|
-| 0.1 | #12 | Migrar el proyecto a Vite y partir `index.html` en módulos | L |
-| 0.2 | #13 | Extraer todos los colores del CSS a design tokens | M |
-| 0.3 | #14 | Registro e inicio de sesión con email y contraseña | M |
-| 0.4 | #15 | Inicio de sesión con Google | S |
-| 0.5 | #16 | Inicio de sesión con Apple | M |
-| 0.6 | #17 | Migrar `biblioteca/laura` a `users/{uid}` sin perder datos | M |
-| 0.7 | #18 | Reglas de seguridad de Firestore | M |
-| 0.8 | #19 | Onboarding de primera vez | S |
-| 0.9 | #20 | Borrar mi cuenta y todos mis datos desde la app | M |
-| 0.10 | #21 | Exportar mis datos a JSON | S |
+| 0.1 | #12 ✅ | Migrar el proyecto a Vite y partir `index.html` en módulos | L |
+| 0.2 | #13 ✅ | Extraer todos los colores del CSS a design tokens | M |
+| 0.3 | #14 ✅ | Registro e inicio de sesión con email y contraseña | M |
+| 0.4 | #15 ✅ | Inicio de sesión con Google | S |
+| 0.5 | #16 ✅ | Inicio de sesión con Apple | M |
+| 0.6 | #17 ✅ | Migrar `biblioteca/laura` a `users/{uid}` sin perder datos | M |
+| 0.7 | #18 ✅ | Reglas de seguridad de Firestore | M |
+| 0.8 | #19 ✅ | Onboarding de primera vez | S |
+| 0.9 | #20 ✅ | Borrar mi cuenta y todos mis datos desde la app | M |
+| 0.10 | #21 ✅ | Exportar mis datos a JSON | S |
 
 ## E1 · Biblioteca mejorada `P1` · #2
 
@@ -64,11 +64,11 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 | # | Issue | Historia | Tam |
 |---|---|---|---|
 | 1.1 | #22 | Crear estanterías propias y meter libros en ellas | M |
-| 1.2 | #23 | Estados extendidos: abandonado y deseado | S |
-| 1.3 | #24 | Registrar progreso por página o porcentaje | M |
-| 1.4 | #25 | Añadir un libro con la cámara: código de barras o foto de la portada | L |
-| 1.5 | #26 | Google Books como respaldo de metadatos y portadas | M |
-| 1.6 | #27 | Añadir un libro escribiendo solo el título | M |
+| 1.2 | #23 ✅ | Estados extendidos: abandonado y deseado | S |
+| 1.3 | #24 ✅ | Registrar progreso por página o porcentaje | M |
+| 1.4 | #25 ✅ | Añadir un libro con la cámara: código de barras o foto de la portada | L |
+| 1.5 | #26 ✅ | Google Books como respaldo de metadatos y portadas | M |
+| 1.6 | #27 ✅ | Añadir un libro escribiendo solo el título | M |
 | 1.7 | #28 | Marcar cada reseña como privada o pública | S |
 | 1.8 | #29 | Guardar citas favoritas con su página | M |
 
@@ -90,25 +90,25 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 
 | # | Issue | Historia | Tam |
 |---|---|---|---|
-| 3.1 | #53 | Worker de Cloudflare con la key de DeepSeek como secreto | M |
-| 3.2 | #54 | El Worker verifica el token de Firebase antes de responder | M |
-| 3.3 | #55 | Guardrails: lista blanca de intents y prompt restrictivo | L |
-| 3.4 | #56 | Límite por usuaria y presupuesto mensual con corte | M |
-| 3.5 | #57 | Caché compartida de respuestas por libro | M |
-| 3.6 | #58 | Resumen del libro sin spoilers | M |
-| 3.7 | #59 | «¿Lo leo o no?» con pros y contras personalizados | M |
+| 3.1 | #53 ✅ | Worker de Cloudflare con la key de DeepSeek como secreto | M |
+| 3.2 | #54 ✅ | El Worker verifica el token de Firebase antes de responder | M |
+| 3.3 | #55 ✅ | Guardrails: lista blanca de intents y prompt restrictivo | L |
+| 3.4 | #56 ◐ | Límite por usuaria y presupuesto mensual con corte | M |
+| 3.5 | #57 ◐ | Caché compartida de respuestas por libro | M |
+| 3.6 | #58 ✅ | Resumen del libro sin spoilers | M |
+| 3.7 | #59 ✅ | «¿Lo leo o no?» con pros y contras personalizados | M |
 | 3.8 | #60 | Comparar dos libros pendientes | S |
-| 3.9 | #61 | El agente es opt-in, con aviso de privacidad | S |
+| 3.9 | #61 ◐ | El agente es opt-in, con aviso de privacidad | S |
 
 ## E4 · Recomendaciones `P1` · #5
 
 | # | Issue | Historia | Tam |
 |---|---|---|---|
 | 4.1 | #62 | Motor local de recomendación por género, autor y longitud | L |
-| 4.2 | #63 | Traer candidatos reales de OpenLibrary y Google Books | M |
+| 4.2 | #63 ◐ | Traer candidatos reales de OpenLibrary y Google Books | M |
 | 4.3 | #64 | Sugerencias al terminar un libro | M |
 | 4.4 | #65 | Sugerir libros para llenar los huecos del plan lector | M |
-| 4.5 | #66 | El agente explica por qué recomienda cada libro | S |
+| 4.5 | #66 ✅ | El agente explica por qué recomienda cada libro | S |
 | 4.6 | #67 | «Quien leyó esto también leyó» | M |
 
 ## E5 · Rachas, hábito y blog `P2` · #6
@@ -119,22 +119,22 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 |---|---|---|---|
 | 5.1 | #68 | Racha diaria de lectura con congelaciones | M |
 | 5.2 | #69 | Recordatorio de lectura a mi hora habitual | M |
-| 5.3 | #70 | Logros por hitos de lectura | M |
+| 5.3 | #70 ✅ | Logros por hitos de lectura | M |
 | 5.4 | #71 | Resumen anual «Tu año en libros» | M |
 | 5.5 | #72 | Escribir entradas de blog y notas de lectura | L |
 | 5.6 | #73 | Elegir la visibilidad de cada entrada | S |
 | 5.7 | #74 | El agente ordena mis notas en un borrador | M |
 
-## E6 · Tienda de temas `P1` · #7
+## E6 · Tienda de temas `P1` · #7 ✅
 
 | # | Issue | Historia | Tam |
 |---|---|---|---|
-| 6.1 | #75 | Motor de temas que aplica un JSON de design tokens | M |
-| 6.2 | #76 | Pantalla de tienda con vista previa en vivo | M |
-| 6.3 | #77 | Los ocho temas iniciales | L |
-| 6.4 | #78 | El tema elegido me sigue entre dispositivos | S |
-| 6.5 | #79 | Todos los temas pasan contraste AA | M |
-| 6.6 | #80 | Temas de temporada que se desbloquean con logros | M |
+| 6.1 | #75 ✅ | Motor de temas que aplica un JSON de design tokens | M |
+| 6.2 | #76 ✅ | Pantalla de tienda con vista previa en vivo | M |
+| 6.3 | #77 ✅ | Los ocho temas iniciales | L |
+| 6.4 | #78 ✅ | El tema elegido me sigue entre dispositivos | S |
+| 6.5 | #79 ✅ | Todos los temas pasan contraste AA | M |
+| 6.6 | #80 ✅ | Temas de temporada que se desbloquean con logros | M |
 
 ## E7 · Intercambio de libros `P3` · #8
 
@@ -171,7 +171,7 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 | 9.6 | #99 | Publicar en Google Play | M |
 | 9.7 | #100 | Publicar en la App Store con cuenta de demo | L |
 
-## E10 · Plan lector inteligente `P1` · #30
+## E10 · Plan lector inteligente `P1` · #30 ✅
 
 > El plan lector actual está **escrito a mano en el código**: 70+ libros repartidos por mes
 > entre 2026 y 2028. Esta épica lo convierte en algo vivo, generado a partir del tiempo
@@ -179,26 +179,26 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 
 | # | Issue | Historia | Tam |
 |---|---|---|---|
-| 10.1 | #32 | Decirle a la app cuánto tiempo tengo para leer | M |
-| 10.2 | #33 | Establecer mi objetivo de lectura | M |
-| 10.3 | #34 | Calcular mi ritmo real de lectura | M |
-| 10.4 | #35 | Generar el plan mensual automáticamente | L |
-| 10.5 | #36 | Rescatar los libros represados | M |
-| 10.6 | #37 | Ajustar el plan a mano y regenerarlo cuando cambie mi vida | M |
+| 10.1 | #32 ✅ | Decirle a la app cuánto tiempo tengo para leer | M |
+| 10.2 | #33 ✅ | Establecer mi objetivo de lectura | M |
+| 10.3 | #34 ✅ | Calcular mi ritmo real de lectura | M |
+| 10.4 | #35 ✅ | Generar el plan mensual automáticamente | L |
+| 10.5 | #36 ✅ | Rescatar los libros represados | M |
+| 10.6 | #37 ✅ | Ajustar el plan a mano y regenerarlo cuando cambie mi vida | M |
 
-## E11 · Mascota lectora customizable `P2` · #31
+## E11 · Mascota lectora customizable `P2` · #31 ✅
 
 > Una compañera que reacciona a cómo vas leyendo y se personaliza con lo que ganas leyendo.
 > **Nunca castiga**: si no has leído, te espera; no te reclama.
 
 | # | Issue | Historia | Tam |
 |---|---|---|---|
-| 11.1 | #38 | Tener una mascota con nombre en el inicio | L |
-| 11.2 | #39 | La mascota reacciona a mi hábito de lectura | M |
-| 11.3 | #40 | Personalizar la apariencia de mi mascota y su rincón | L |
-| 11.4 | #41 | Desbloquear accesorios leyendo | M |
-| 11.5 | #42 | La mascota comenta mis lecturas | M |
-| 11.6 | #43 | Poder ocultar la mascota | S |
+| 11.1 | #38 ✅ | Tener una mascota con nombre en el inicio | L |
+| 11.2 | #39 ✅ | La mascota reacciona a mi hábito de lectura | M |
+| 11.3 | #40 ✅ | Personalizar la apariencia de mi mascota y su rincón | L |
+| 11.4 | #41 ✅ | Desbloquear accesorios leyendo | M |
+| 11.5 | #42 ✅ | La mascota comenta mis lecturas | M |
+| 11.6 | #43 ✅ | Poder ocultar la mascota | S |
 
 ---
 
@@ -221,3 +221,45 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 - **La tienda tiene dos estantes:** temas (E6) y cosas de la mascota (E11). Todo se
   desbloquea leyendo, nada se paga — lo que además evita la compra integrada de Apple y
   su 15–30 %.
+
+---
+
+## Estado · 6 sep 2026
+
+**40 de 87 historias cerradas.** Cuatro épicas completas: E0 (fundación), E6 (temas),
+E10 (plan lector) y E11 (mascota).
+
+✅ cerrada · ◐ a medias, con lo que falta escrito en el issue
+
+| Épica | Hechas | Estado |
+|---|---:|---|
+| E0 · Fundación | 10/10 | ✅ completa |
+| E1 · Biblioteca mejorada | 5/8 | faltan estanterías, reseña privada y citas |
+| E2 · Social | 0/9 | sin empezar |
+| E3 · Agente IA | 5/9 | el agente funciona; falta presupuesto, caché compartida y consentimiento |
+| E4 · Recomendaciones | 1/6 | recomienda, pero **sin comprobar que los libros existan** |
+| E5 · Rachas y blog | 1/7 | solo los logros |
+| E6 · Tienda de temas | 6/6 | ✅ completa, con nueve temas |
+| E7 · Intercambio | 0/9 | sin empezar |
+| E8 · Instagram | 0/4 | sin empezar |
+| E9 · Tiendas | 0/7 | sin empezar |
+| E10 · Plan lector | 6/6 | ✅ completa |
+| E11 · Mascota | 6/6 | ✅ completa, con seis especies |
+
+### Lo que hay que arreglar antes de seguir añadiendo
+
+1. **#63 · Las recomendaciones no se comprueban.** El agente propone títulos y la app los
+   pinta sin verificar que el libro exista. Un modelo inventa libros plausibles con total
+   confianza. Es un fallo de calidad en algo que ya está en producción.
+2. **#61 · El agente es opt-out, y la historia pide opt-in.** Requisito de tienda, y
+   discutible aunque no lo fuera: hoy alguien empieza a usar la app con el agente
+   encendido sin haber dicho que sí.
+3. **#56 · No hay techo real de gasto.** El contador diario vive en la memoria del Worker,
+   que Cloudflare recicla. Con una usuaria da igual; abierto a más gente, no.
+
+### Historias que aparecieron construyendo, y no estaban en el backlog
+
+- Lector propio de códigos de barras EAN-13, porque `BarcodeDetector` no existe en Safari
+  de iPhone y ahí ese camino estaba muerto
+- Géneros más anchos que el plan: romance, aventura, ciencia ficción, novela histórica…
+- Pruebas de los guardrails del Worker (34) y del lector de códigos (28)

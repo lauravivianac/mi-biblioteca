@@ -4,6 +4,7 @@
    Uso:  node scripts/test-booklookup.mjs */
 
 import {
+  looksLikeSame, titleSimilarity,
   cleanIsbn, isValidIsbn, fold, guessGenre, scoreCandidate, mergeCandidates,
 } from '../src/booklookup.js';
 
@@ -64,6 +65,30 @@ console.log('\nMEZCLA DE FUENTES');
 
   ok(mergeCandidates([[{ title: '', author: 'X' }], []]).length === 0, 'descarta candidatos sin título');
 }
+
+console.log('\nCOMPROBAR UNA SUGERENCIA DEL AGENTE');
+ok(looksLikeSame('Rayuela', 'Rayuela'), 'el mismo título, igual');
+ok(looksLikeSame('Cien Años de Soledad', 'cien anos de soledad'), 'no le importan tildes ni mayúsculas');
+ok(looksLikeSame('Los detectives salvajes', 'Los detectives salvajes: novela'),
+  'acepta un subtítulo añadido');
+ok(looksLikeSame('El nombre de la rosa: edición anotada', 'El nombre de la rosa'),
+  'acepta que falte el subtítulo');
+
+ok(!looksLikeSame('Rayuela', 'La vuelta al día en ochenta mundos'),
+  'rechaza otro libro del mismo autor');
+ok(!looksLikeSame('La casa de los espíritus', 'La casa de Bernarda Alba'),
+  'rechaza un libro que solo comparte parte del nombre');
+ok(!looksLikeSame('', 'Rayuela'), 'rechaza un título vacío');
+
+/* El caso que importa: el agente se inventa un libro, el catálogo
+   devuelve otro real que comparte una palabra, y hay que descartarlo. */
+ok(!looksLikeSame('El jardín de las mareas perdidas', 'El jardín secreto'),
+  'un libro inventado no se cuela por compartir una palabra');
+ok(!looksLikeSame('Memorias del fuego azul', 'Memorias de una geisha'),
+  'ni por compartir la primera palabra');
+
+ok(titleSimilarity('Rayuela', 'rayuela') === 1, 'el parecido es 1 cuando son iguales');
+ok(titleSimilarity('Rayuela', 'Ficciones') === 0, 'el parecido es 0 sin nada en común');
 
 console.log(`\n${pass} pruebas pasaron, ${fail} fallaron.`);
 process.exit(fail ? 1 : 0);

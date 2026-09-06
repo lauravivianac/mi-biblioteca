@@ -433,3 +433,37 @@ body:not(.signed-in) .fab { display: none; }
 .rec-title { font-family: var(--font-display); font-size: 15px; color: var(--gold); line-height: 1.3; }
 .rec-author { font-size: 12px; color: var(--muted); margin-top: 3px; }
 .rec-why { font-size: 12.5px; line-height: 1.6; color: var(--muted); margin-top: 9px; }
+
+/* Una sugerencia comprobada: portada y datos del catálogo, y el
+   porqué del agente debajo, separado — para que se vea de un vistazo
+   qué es dato y qué es opinión. */
+.rec-head { display: flex; gap: 12px; align-items: flex-start; }
+.rec-cover {
+  width: 46px; height: 68px; flex-shrink: 0; object-fit: cover;
+  border-radius: calc(var(--radius-sm) * .7);
+  border: var(--card-border); box-shadow: var(--cover-frame);
+}
+.rec-cover-ph { display: grid; place-items: center; background: var(--fog); font-size: 18px; }
+.rec-info { min-width: 0; }
+.rec-add { width: 100%; margin-top: 11px; font-size: 12.5px; }
+.rec-add:disabled { color: var(--success); border-color: rgb(var(--success-rgb) / .4); cursor: default; }
+
+/* ── QUÉ SE ENVÍA ─────────────────────────────────────────────
+   El aviso del agente. Cada fila dice una cosa que sale de la app,
+   en una tabla y no en un párrafo, porque un párrafo largo sobre
+   privacidad no lo lee nadie. */
+.notice-sheet { max-width: 420px; }
+.notice-list {
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 14px 0 16px; overflow: hidden;
+  border: var(--card-border); border-radius: var(--radius-sm);
+  background: var(--border-soft);
+}
+.notice-row { padding: 11px 13px; background: var(--card-solid); }
+.notice-what {
+  font-size: 10px; letter-spacing: var(--label-spacing); text-transform: uppercase;
+  color: var(--lilac); margin-bottom: 4px;
+}
+.notice-sends { font-size: 12.5px; line-height: 1.6; color: var(--text); }
+/* «No, gracias» partía en dos líneas y quedaba como un botón dudoso. */
+.confirm-actions button { white-space: nowrap; }

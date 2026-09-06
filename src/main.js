@@ -10,6 +10,7 @@ import { seedNewAccount } from './store.js';
 import * as views from './views.js';
 import * as screens from './screens.js';
 import * as addbook from './addbook.js';
+import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
 
 /* ── TEMA ────────────────────────────────────────────────────── */
@@ -40,6 +41,11 @@ onSave((state) => {
 /* ── EXPONER AL DOM ──────────────────────────────────────────── */
 // Los onclick del marcado necesitan estas funciones en window,
 // porque un <script type="module"> no comparte ámbito global.
+/* El agente pregunta antes de mandar nada, y quien pregunta es la
+   pantalla de screens.js. Se enchufa aquí para que src/agent.js no
+   dependa de la interfaz. */
+setConsentPrompt(screens.ensureAgentConsent);
+
 Object.assign(window, {
   nav, closeSheet,
   ...addbook,

@@ -13,7 +13,7 @@ import { fetchCover } from './covers.js';
 import { $, esc, initial, toast, confirmAction } from './ui.js';
 import { refreshAchievements } from './achievements.js';
 import { renderPet } from './pet.js';
-import { agentAvailable, bookBrief } from './agent.js';
+import { agentOffered, bookBrief, isDenied } from './agent.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -166,7 +166,7 @@ export function renderLib() {
      falla es peor que no tener botón. */
   const agentSlot = $('lib-agent');
   if (agentSlot) {
-    agentSlot.innerHTML = agentAvailable()
+    agentSlot.innerHTML = agentOffered()
       ? '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>'
       : '';
   }
@@ -361,7 +361,7 @@ export async function openDetail(id) {
         ${pinned ? '📌 Fijado a ' + pinned + ' · toca para soltar' : '📌 Fijar a ' + book.month + ' para que el plan no lo mueva'}
       </button>` : ''}
 
-      ${agentAvailable() ? renderBrief(id) : ''}
+      ${agentOffered() ? renderBrief(id) : ''}
 
       <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Calificación</span></div>
       <div class="stars-row" style="margin-bottom:16px">${stars}</div>
@@ -421,7 +421,8 @@ export async function askBrief(id, again = false) {
     const brief = await bookBrief(book);
     updateEntry(id, { brief });
   } catch (e) {
-    toast(e.message, 'error');
+    // Decir que no es una respuesta, no un fallo: no se enseña como error.
+    if (!isDenied(e)) toast(e.message, 'error');
   }
   /* Si cerraste la ficha mientras el agente pensaba, no te la
      reabrimos en la cara: la respuesta ya quedó guardada y estará

@@ -44,12 +44,10 @@ export const DEFAULT_SETTINGS = {
   goalValue: null,
   goalYear: new Date().getFullYear(),
   onboarded: false,
-  /* El agente viene encendido: para quien usa la app es una función
-     más, no algo que haya que configurar antes de poder usarla. La
-     dirección del Worker está en src/agent.js, que es donde va una
-     propiedad del despliegue. Aquí solo vive la decisión de quien
-     prefiera no usarlo. */
-  agentEnabled: true,
+  /* El consentimiento del agente: undefined = sin preguntar todavía,
+     'si', 'no'. Ausente a propósito de esta lista: que el valor por
+     defecto sea «sin decidir» es el punto de la historia #61, y
+     ponerlo aquí como 'si' sería volver al problema. */
 };
 
 /* ── LECTURA ─────────────────────────────────────────────────── */

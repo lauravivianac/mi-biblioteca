@@ -239,3 +239,62 @@ export async function lookupByCoverText(ocrText) {
 }
 
 export { GENRES };
+
+/* ── COMPROBAR UNA SUGERENCIA  ·  historia #63 ────────────────
+   Un modelo de lenguaje inventa libros plausibles con total
+   confianza: autor real, título creíble, editorial verosímil. Pintar
+   eso tal cual convierte una recomendación en una mentira bien
+   escrita, y deja en la usuaria el trabajo de comprobarlo.
+
+   Así que toda sugerencia pasa por los catálogos antes de aparecer,
+   y la que nadie reconoce no aparece. */
+
+/* Los artículos y preposiciones no dicen nada de qué libro es, y
+   contarlos hacía que «La casa de los espíritus» y «La casa de
+   Bernarda Alba» se parecieran un 60 % — suficiente para colar un
+   libro por otro. */
+const VACIAS = new Set([
+  'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'de', 'del',
+  'al', 'a', 'y', 'e', 'o', 'u', 'en', 'con', 'por', 'para', 'que',
+  'the', 'a', 'an', 'of', 'and', 'or', 'in', 'on', 'to', 'for',
+]);
+
+const palabrasClave = (s) => fold(s).split(' ').filter((w) => w && !VACIAS.has(w));
+
+/** Cuánto se parecen dos títulos, de 0 a 1, por palabras con contenido. */
+export function titleSimilarity(a, b) {
+  const pa = palabrasClave(a);
+  const pb = palabrasClave(b);
+  if (!pa.length || !pb.length) return 0;
+  const enB = new Set(pb);
+  const comunes = pa.filter((w) => enB.has(w)).length;
+  return comunes / Math.max(pa.length, pb.length);
+}
+
+/**
+ * ¿El candidato del catálogo es de verdad el libro que se pidió?
+ *
+ * Se exige parecido de VERDAD y no solo que el buscador devolviera
+ * algo: pedir un libro inventado casi siempre devuelve otro libro
+ * real que comparte una palabra, y aceptarlo sería cambiar una
+ * mentira por otra.
+ */
+export function looksLikeSame(pedido, encontrado) {
+  const a = fold(pedido);
+  const b = fold(encontrado);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  // Uno contenido en el otro cubre subtítulos y ediciones
+  if (a.length > 6 && (b.includes(a) || a.includes(b))) return true;
+  return titleSimilarity(pedido, encontrado) >= 0.6;
+}
+
+/**
+ * Comprueba una sugerencia contra los catálogos.
+ * Devuelve el libro real —con su portada y sus páginas— o null.
+ */
+export async function verifySuggestion({ titulo, autor }) {
+  if (!titulo) return null;
+  const found = await lookupByTitle(`${titulo} ${autor || ''}`.trim());
+  return found.find((c) => looksLikeSame(titulo, c.title)) || null;
+}
