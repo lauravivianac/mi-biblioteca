@@ -613,6 +613,100 @@ body {
 .review-txt::placeholder { color: var(--muted); }
 .review-txt:focus { border-color: var(--violet); }
 
+/* ── ¿CUÁL PRIMERO?  ·  historia #60 ── */
+.duel-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  text-align: left;
+  background: transparent;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.duel-pick.on {
+  border-color: var(--violet);
+  background: rgb(var(--purple-rgb) / 0.18);
+}
+.duel-cover {
+  flex: none;
+  width: 30px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 4px;
+  background: rgb(var(--lilac-rgb) / 0.08);
+}
+.duel-cover-ph { display: grid; place-items: center; font-size: 15px; }
+.duel-info { flex: 1; min-width: 0; display: block; }
+.duel-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duel-meta {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.duel-check { flex: none; color: var(--violet); font-size: 14px; width: 14px; }
+
+.duel-verdict {
+  font-family: var(--font-display);
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+.duel-reasons {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--text);
+}
+.duel-reasons li { margin-bottom: 3px; }
+.duel-against {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--ctl-radius);
+  border: var(--hairline);
+  background: transparent;
+}
+.duel-against-title {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: var(--label-transform);
+  letter-spacing: var(--label-spacing);
+}
+.duel-against .duel-reasons { color: var(--muted); }
+
+/* El empate reñido: los dos lados, uno al lado del otro */
+.duel-sides { display: grid; gap: 10px; }
+.duel-side {
+  padding: 12px;
+  border-radius: var(--card-radius);
+  border: var(--hairline);
+}
+.duel-side-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.duel-side-none { font-size: 11px; color: var(--muted); margin: 6px 0; }
+
 /* ── LOS HUECOS DEL PLAN  ·  historia #65 ──
    Un mes vacío tiene que verse, pero no puede competir con los meses
    que sí tienen libros: por eso va en trazo discontinuo y apagado.

@@ -229,6 +229,7 @@ export function renderLib() {
       /* Ya no depende del agente: desde #62 la primera respuesta sale
          de tus propios libros, sin red y sin gastar nada. */
       '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>',
+      '<button class="btn-ghost full" onclick="openDuel()">⚖ ¿Cuál primero?</button>',
     ].join('');
   }
 
