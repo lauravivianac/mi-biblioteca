@@ -54,6 +54,52 @@ service cloud.firestore {
       }
     }
 
+    /* ── EL @USUARIO  ·  historia #44 ─────────────────────────
+       Un documento por nombre: social/usernames/{nombre} → {uid}.
+
+       AQUÍ ES DONDE VIVE LA UNICIDAD, y no en el cliente. Comprobar
+       si está libre y escribirlo son dos momentos distintos, y entre
+       uno y otro cabe perfectamente otra persona. Por eso solo se
+       permite `create`: en Firestore un create sobre un documento que
+       YA EXISTE falla, sin carrera posible. Y `update` está prohibido
+       del todo, así que nadie puede escribir encima del nombre de
+       otra persona ni por error ni a propósito.
+
+       El {nombre} del camino va siempre en minúsculas y la regla lo
+       exige: si «Laura» y «laura» fueran dos documentos, serían dos
+       cuentas distintas para quien te busca, que es la suplantación
+       más barata que existe.
+
+       Los reservados también se comprueban aquí. Una lista que solo
+       vive en el cliente la salta cualquiera con la consola abierta,
+       y quien se llame «soporte» puede pedir contraseñas. */
+    function nombreDeUsuarioValido(u) {
+      return u.matches('^[a-z0-9_.]{3,20}$')
+        && !u.matches('^[.].*')
+        && !u.matches('.*[.]$')
+        && !u.matches('.*[.][.].*')
+        && !(u in ['admin', 'administrador', 'soporte', 'support', 'ayuda', 'help',
+                   'root', 'sistema', 'system', 'oficial', 'staff', 'moderador',
+                   'mibiblioteca', 'biblioteca', 'app', 'api', 'www', 'about', 'acerca',
+                   'ajustes', 'settings', 'perfil', 'profile', 'buscar', 'search',
+                   'nuevo', 'new', 'null', 'undefined', 'anonimo', 'anonymous']);
+    }
+
+    match /social/usernames/{username} {
+      // Para poder decir «está libre» hay que poder mirar
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && nombreDeUsuarioValido(username);
+
+      // Soltarlo es solo cosa de su dueña — al cambiarlo o al borrar la cuenta
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+
+      // Nunca. Un nombre tomado no se sobrescribe, se suelta y se vuelve a pedir
+      allow update: if false;
+    }
+
     /* La colección `biblioteca` era de la época sin autenticación.
        Estuvo abierta a cualquier cuenta con sesión para poder migrarla
        una vez — lo que significaba que CUALQUIER usuaria podía leer y

@@ -1165,3 +1165,18 @@ body {
 }
 .streak-year:hover { color: var(--gold); border-color: rgb(var(--gold-rgb) / 0.5); }
 .streak-card { position: relative; }
+
+/* ── EL @USUARIO  ·  historia #44 ── */
+.uname-field { position: relative; }
+.uname-at {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+.uname-input { padding-left: 26px; }
+.uname-status { font-size: 11px; color: var(--muted); margin-top: 6px; min-height: 15px; }
+.uname-status.ok { color: var(--success); }
+.uname-status.bad { color: var(--danger); }
