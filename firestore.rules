@@ -3,8 +3,12 @@ rules_version = '2';
 /* ─────────────────────────────────────────────────────────────
    REGLAS DE SEGURIDAD  ·  historia #18
 
-   PARA DESPLEGARLAS:
-     npx firebase-tools deploy --only firestore:rules
+   PARA DESPLEGARLAS, desde la raíz del repositorio:
+     npx firebase-tools deploy --only firestore:rules,firestore:indexes
+
+   Los índices van en el mismo comando: el feed mezcla un filtro por un
+   campo con un orden por otro, y eso necesita un índice declarado a
+   mano en firestore.indexes.json o la consulta falla en producción.
 
    Mientras no se desplieguen, la base queda como esté ahora.
    ───────────────────────────────────────────────────────────── */
