@@ -3,7 +3,7 @@
    Une el acceso, los datos por usuaria, el tema y las vistas.
    ───────────────────────────────────────────────────────────── */
 
-import { watchAuth } from './auth.js';
+import { watchAuth, completePendingSignIn } from './auth.js';
 import { loadStore, settings, onSave, flush } from './store.js';
 import { applyTheme, localTheme } from './theme-engine.js';
 import { seedNewAccount } from './store.js';
@@ -72,6 +72,10 @@ watchAuth(async (user) => {
     document.body.classList.remove('signed-in');
     if (loading) loading.style.display = 'none';
     screens.renderAuth();
+    /* Si venías de Google o Apple y la vuelta falló, aquí es donde se
+       sabe: sin esto la pantalla de acceso se pinta otra vez como si no
+       hubieras hecho nada, sin decir por qué. */
+    completePendingSignIn().then((msg) => { if (msg) screens.showAuthError(msg); });
     return;
   }
 
