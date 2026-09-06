@@ -20,6 +20,7 @@ import { renderQuotes } from './quotesui.js';
 import { quoteCount } from './quotes.js';
 import { celebrateFinished } from './finished.js';
 import { visibilityLabel } from './reviews-core.js';
+import { gapsOf, fillableGaps, describeGap } from './gaps.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -106,10 +107,33 @@ export function renderPlan() {
     return;
   }
 
+  /* Los huecos, que hasta ahora no se veían  ·  historia #65
+     Esta pantalla pintaba solo los meses CON libros, así que un mes
+     vacío era invisible: no es que no se pudiera llenar, es que no
+     sabías que estaba ahí. Un plan con agujeros no es un plan a
+     medias, es un plan que te falla en marzo. */
+  const huecos = new Map(fillableGaps(gapsOf(curYear)).map((g) => [g.month, g]));
+
   let html = '';
-  for (const [month, books] of Object.entries(byMonth)) {
+  for (const month of MONTH_ORDER) {
+    const books = byMonth[month];
     const col = MONTH_COLORS[month] || '#888888';
     const emoji = MONTH_EMOJIS[month] || '✦';
+
+    if (!books) {
+      const h = huecos.get(month);
+      if (!h) continue;                    // mes pasado o fuera del plan: no es un hueco
+      html += `<div class="month-gap" onclick="openGap('${month}')">
+        <div class="month-rune gap-rune" style="--month-accent:${col}">${emoji}</div>
+        <div class="gap-text">
+          <div class="gap-month">${month}</div>
+          <div class="gap-hint">${esc(describeGap(h))}</div>
+        </div>
+        <div class="gap-add">＋</div>
+      </div>`;
+      continue;
+    }
+
     const readCount = books.filter((b) => statusOf(b.id) === 'read').length;
     html += `<div class="month-group">
       <div class="month-label">
@@ -136,6 +160,14 @@ export function renderPlan() {
         </div>
         ${isRead ? '<div class="book-card-read-badge">✓</div>' : ''}
       </div>`;
+    }
+    /* Un mes con libros pero con tiempo de sobra también es un hueco,
+       solo que más pequeño: se ofrece sin gritar. */
+    const resto = huecos.get(month);
+    if (resto) {
+      html += `<button class="gap-inline" onclick="openGap('${month}')">
+        ＋ ${esc(describeGap(resto))}
+      </button>`;
     }
     html += '</div>';
   }

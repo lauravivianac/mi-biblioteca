@@ -197,6 +197,16 @@
   </div>
 </div>
 
+<!-- LLENAR UN HUECO DEL PLAN -->
+<div class="overlay" id="gap-overlay" onclick="closeGap(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('gap-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title" id="gap-title">✦ Llenar el hueco</div>
+    <div id="gap-body"></div>
+  </div>
+</div>
+
 <!-- MIS CITAS -->
 <div class="overlay" id="quotes-overlay" onclick="closeQuotes(event)">
   <div class="sheet">
