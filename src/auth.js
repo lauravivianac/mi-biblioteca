@@ -10,6 +10,7 @@ import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
   sendPasswordResetEmail, sendEmailVerification, onAuthStateChanged,
   GoogleAuthProvider, OAuthProvider, signInWithPopup, signInWithRedirect,
+  getRedirectResult,
   updateProfile, deleteUser, linkWithCredential, EmailAuthProvider,
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { auth } from './firebase.js';
@@ -62,13 +63,57 @@ export async function signInWithEmail(email, password) {
 
 export const resetPassword = (email) => sendPasswordResetEmail(auth, email.trim());
 
-/** En móvil el popup falla a menudo; ahí se usa redirect. */
-const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+/* ── ENTRAR CON GOOGLE O APPLE ────────────────────────────────
+
+   Esto era «en móvil el popup falla a menudo, así que redirect». Era
+   verdad hace años y hoy es justo al revés: desde Safari 16.1 y desde
+   que Chrome separa el almacenamiento por sitio, el redirect se rompe
+   cuando la app NO se sirve del mismo dominio que el manejador de
+   Firebase (…firebaseapp.com). La nuestra vive en vercel.app, así que
+   se rompía: ibas a Google, elegías cuenta, volvías… y nada. En el
+   móvil de Laura entraba desde el escritorio y no desde el teléfono, y
+   esa era la razón.
+
+   Ahora el popup es el camino en todas partes —en los navegadores
+   móviles de hoy funciona— y el redirect queda solo de refuerzo para
+   cuando el popup no se puede ni abrir.  */
+
+/** Errores que significan «el popup no era posible», no «falló el acceso». */
+const SIN_POPUP = new Set([
+  'auth/popup-blocked',
+  'auth/operation-not-supported-in-this-environment',
+  'auth/web-storage-unsupported',
+]);
 
 async function signInWithProvider(provider) {
-  if (isMobile()) return signInWithRedirect(auth, provider);
-  const cred = await signInWithPopup(auth, provider);
-  return cred.user;
+  try {
+    const cred = await signInWithPopup(auth, provider);
+    return cred.user;
+  } catch (e) {
+    if (!SIN_POPUP.has(e?.code)) throw e;
+    /* La página se va a Google y vuelve; quien recoge el resultado es
+       completePendingSignIn(), al arrancar. */
+    await signInWithRedirect(auth, provider);
+    return null;
+  }
+}
+
+/**
+ * Recoger el acceso que quedó a medias al volver de Google o Apple.
+ *
+ * Sin esto, un redirect que falla no dice absolutamente nada: vuelves a
+ * la pantalla de acceso como si no hubieras hecho nada, y no hay error
+ * en ninguna parte que explique por qué. Devuelve el mensaje para que
+ * la pantalla lo enseñe, o null si no había nada pendiente.
+ */
+export async function completePendingSignIn() {
+  try {
+    await getRedirectResult(auth);
+    return null;
+  } catch (e) {
+    console.warn('El acceso por redirección no se completó:', e);
+    return humanError(e);
+  }
 }
 
 export function signInWithGoogle() {

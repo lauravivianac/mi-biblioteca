@@ -79,7 +79,7 @@ export function renderAuth() {
 
 export function setAuthMode(mode) { authMode = mode; renderAuth(); }
 
-const showAuthError = (msg) => { const el = $('auth-error'); if (el) el.textContent = msg; };
+export const showAuthError = (msg) => { const el = $('auth-error'); if (el) el.textContent = msg; };
 
 export async function submitAuth(event) {
   event.preventDefault();
