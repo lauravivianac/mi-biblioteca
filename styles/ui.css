@@ -680,3 +680,48 @@ body:not(.signed-in) .fab { display: none; }
   color: var(--success); background: var(--success-wash);
   border-color: rgb(var(--success-rgb) / .4);
 }
+
+/* ── SEGUIR Y ENCONTRAR  ·  historias #46 y #47 ──────────────── */
+.rel-counts { display: flex; gap: 8px; margin: 0 0 12px; }
+.rel-count {
+  flex: 1; padding: 9px 6px; text-align: center; cursor: pointer;
+  border: var(--card-border); border-radius: var(--radius-sm);
+  background: var(--card); color: inherit; font: inherit;
+}
+.rel-count b { display: block; font-family: var(--font-display); font-size: 17px; color: var(--gold); }
+.rel-count span { display: block; font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+.rel-actions { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+/* Siguiendo se ve distinto de Seguir: si los dos estados se parecen,
+   nadie sabe si el toque funcionó. */
+.btn-magic.is-following {
+  background: transparent; color: var(--muted);
+  border: 1px solid var(--border-strong); box-shadow: none;
+}
+.rel-badge {
+  flex-shrink: 0; font-size: 11px; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--lilac); background: var(--fog);
+}
+
+.pers-row {
+  display: flex; align-items: center; gap: 11px; cursor: pointer;
+  padding: 10px 0; border-bottom: 1px solid var(--border-soft);
+}
+.pers-row:last-child { border-bottom: 0; }
+.pers-row.nuevo { background: var(--accent-wash); margin: 0 -6px; padding-inline: 6px; }
+.pers-avatar {
+  width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent-wash); border: 1px solid var(--border-strong);
+  font-family: var(--font-display); font-size: 18px; color: var(--gold);
+}
+.pers-txt { min-width: 0; flex: 1; }
+.pers-name { font-size: 14px; color: var(--text); line-height: 1.35; }
+.pers-handle { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.pers-why { font-size: 11.5px; color: var(--lilac); margin-top: 3px; font-style: italic; }
+
+/* El punto de avisos sin leer */
+.notice-dot {
+  position: absolute; top: -4px; right: -6px; min-width: 17px; height: 17px;
+  padding: 0 4px; border-radius: 999px; display: grid; place-items: center;
+  background: var(--danger); color: var(--void); font-size: 10px; font-weight: 700;
+}

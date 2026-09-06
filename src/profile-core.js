@@ -22,6 +22,8 @@
    Ocultar en la pantalla no es ocultar.
    ───────────────────────────────────────────────────────────── */
 
+import { clavesParaBuscar } from './search-core.js';
+
 /** Las secciones que se pueden encender y apagar. */
 export const SECCIONES = [
   { id: 'leyendo', label: 'Qué estoy leyendo', hint: 'Los libros que tienes empezados' },
@@ -30,6 +32,7 @@ export const SECCIONES = [
   { id: 'estanterias', label: 'Mis estanterías', hint: 'Solo las que marques como públicas' },
   { id: 'resenas', label: 'Mis reseñas', hint: 'Solo las que ya publicaste' },
   { id: 'mascota', label: 'Mi mascota', hint: 'Tu bicho, tal y como lo tienes' },
+  { id: 'sugerible', label: 'Que me encuentren por mis libros', hint: 'Apareces sugerida a quien haya leído lo mismo que tú' },
 ];
 
 export const IDS_SECCION = SECCIONES.map((s) => s.id);
@@ -160,6 +163,17 @@ export function publicProfileDoc({
     };
   }
 
+  /* «Quizá conozcas» (#47) cruza los libros que habéis leído las dos, y
+     para cruzarlos hay que publicar CUÁLES. Es más concreto que un
+     recuento de géneros, así que lleva su propio interruptor: nadie
+     debería aparecer en las sugerencias de otra persona sin haberlo
+     encendido. Solo van los identificadores, nunca lo que opinas. */
+  if (ve('sugerible')) {
+    doc.librosLeidos = clavesParaBuscar(
+      books.filter((b) => b.status === 'read').map((b) => String(b.id)),
+    );
+  }
+
   return doc;
 }
 
@@ -170,7 +184,7 @@ export function publicProfileDoc({
  */
 export const CAMPOS_PUBLICOS = [
   'uid', 'username', 'name', 'nameLower', 'bio', 'city', 'secciones', 'updatedAt',
-  'leyendo', 'numeros', 'generos', 'estanterias', 'mascota',
+  'leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos',
 ];
 
 /** El link del perfil, que es lo que se pega en WhatsApp. */

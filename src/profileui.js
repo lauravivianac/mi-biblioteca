@@ -28,6 +28,7 @@ import {
   SECCIONES, seccionVisible, toggleSeccion, limpiarBio, limpiarCiudad,
   inicial, profileUrl, usernameFromHash, resumenCorto,
 } from './profile-core.js';
+import { relationSlot, loadRelation } from './socialui.js';
 import { petSvg } from './pet.js';
 import { $, esc, toast, closeSheet } from './ui.js';
 
@@ -63,6 +64,10 @@ export async function openProfile(handle) {
 
   visto = { ...r, resenas: null };
   pintar();
+
+  /* La relación (seguir, contadores) va aparte y DESPUÉS: son tres
+     consultas más y el perfil no tiene por qué esperarlas. */
+  loadRelation(r.uid);
 
   /* Las reseñas vienen de otra colección y pueden tardar. Se pintan
      cuando lleguen en vez de retrasar todo el perfil. */
@@ -119,6 +124,8 @@ function pintar() {
 
     ${p.bio ? `<p class="prof-bio">${esc(p.bio)}</p>` : ''}
     <p class="prof-resumen">${esc(resumenCorto(p))}</p>
+
+    ${relationSlot()}
 
     ${ve('numeros') && p.numeros ? bloqueNumeros(p.numeros) : ''}
     ${ve('leyendo') ? bloqueLeyendo(p.leyendo) : ''}
