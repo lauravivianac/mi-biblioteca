@@ -20,7 +20,7 @@ import { MONTH_ORDER, pageCount } from './seed.js';
 const PAGES_PER_MINUTE = 250 / 300;
 
 /** Géneros que piden más calma. 1 = ritmo normal. */
-const GENRE_FRICTION = {
+export const GENRE_FRICTION = {
   'Clásico universal': 1.35,
   'No ficción / Desarrollo': 1.25,
   'Historia / Mitología': 1.3,
@@ -46,8 +46,15 @@ const GENRE_FRICTION = {
   'Ensayo / Filosofía': 1.45,
 };
 
-/** Afinidades de temporada que ya estaban en el plan escrito a mano. */
-const SEASON = {
+/**
+ * Afinidades de temporada que ya estaban en el plan escrito a mano.
+ *
+ * Se exporta para que quien propone libros sueltos para un hueco (#65)
+ * use EXACTAMENTE el mismo criterio que el generador. Dos tablas de
+ * temporada acabarían contradiciéndose, y la app diría una cosa al
+ * repartir el año y otra al rellenar un mes.
+ */
+export const SEASON = {
   Octubre: ['Terror / Misterio'],
   Noviembre: ['Historia / Mitología', 'Clásico universal'],
   Diciembre: ['Historia / Mitología', 'Clásico universal'],
@@ -218,7 +225,7 @@ export function stalledBooks(ctx, today = new Date()) {
 
 /* ── GENERACIÓN DEL PLAN  ·  historia #35 ────────────────────── */
 
-const isAnchor = (b) => (b.role || '').includes('Ancla');
+export const isAnchor = (b) => (b.role || '').includes('Ancla');
 
 /**
  * Reparte los pendientes mes a mes.

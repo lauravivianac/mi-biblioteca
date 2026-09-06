@@ -613,6 +613,55 @@ body {
 .review-txt::placeholder { color: var(--muted); }
 .review-txt:focus { border-color: var(--violet); }
 
+/* ── LOS HUECOS DEL PLAN  ·  historia #65 ──
+   Un mes vacío tiene que verse, pero no puede competir con los meses
+   que sí tienen libros: por eso va en trazo discontinuo y apagado.
+   Se lee como «aquí falta algo», no como «aquí hay algo». */
+.month-gap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: var(--card-radius);
+  border: 1px dashed var(--border);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.month-gap:hover { border-color: var(--violet); background: rgb(var(--lilac-rgb) / 0.05); }
+.gap-rune { opacity: 0.5; }
+.gap-text { flex: 1; min-width: 0; }
+.gap-month {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: var(--display-spacing);
+}
+.gap-hint { font-size: 11px; color: var(--muted); opacity: 0.8; margin-top: 2px; }
+.gap-add {
+  font-size: 20px;
+  color: var(--violet);
+  flex: none;
+  line-height: 1;
+}
+
+/* El de un mes que ya tiene libros: más callado todavía */
+.gap-inline {
+  display: block;
+  width: 100%;
+  margin: -4px 0 14px;
+  padding: 8px 12px;
+  font-size: 11px;
+  text-align: left;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: var(--ctl-radius);
+  cursor: pointer;
+}
+.gap-inline:hover { color: var(--lilac); border-color: var(--violet); }
+
 /* ── TU GUSTO, EN UNA FRASE  ·  historia #62 ──
    Va arriba del todo y con aire: es lo que hace auditable al motor.
    Si dice que te encanta la poesía y es mentira, quieres verlo tú. */

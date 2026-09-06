@@ -244,6 +244,28 @@ window.addEventListener('visibilitychange', () => {
 
 /* ── CARGA ───────────────────────────────────────────────────── */
 
+/**
+ * Devolver a cada libro el mes al que lo movió el plan.
+ *
+ * Los 73 libros semilla viven en el código con su año y su mes de
+ * fábrica, y por usuaria solo se guarda lo que cambia. Mover un libro
+ * a otro mes escribía `plannedMonth` en la entrada... y nadie lo leía
+ * nunca: al recargar, el libro volvía a su mes de fábrica y el plan
+ * que acababas de aplicar desaparecía sin decir nada.
+ *
+ * Es de las peores formas de fallar que hay —la app te da la razón, y
+ * al día siguiente hace como si no hubiera pasado—, y se veía solo si
+ * recargabas. Aquí es donde el plan guardado vuelve a mandar.
+ */
+function applyPlannedMonths() {
+  for (const b of state.books) {
+    const e = state.entries[b.id];
+    if (!e) continue;
+    if (e.plannedMonth) b.month = e.plannedMonth;
+    if (e.plannedYear) b.year = e.plannedYear;
+  }
+}
+
 /** Pinta primero con lo local (instantáneo, funciona sin red) y luego sincroniza. */
 export async function loadStore(userId) {
   state.uid = userId;
@@ -251,6 +273,7 @@ export async function loadStore(userId) {
   state.settings = readLS('settings', {});
   const localCustom = readLS('custom', []);
   state.books = [...seedBooks(), ...localCustom];
+  applyPlannedMonths();
 
   if (!userId) return { source: 'local' };
 
@@ -272,6 +295,7 @@ export async function loadStore(userId) {
     if (booksSnap.size || userSnap.exists()) {
       state.entries = entries;
       state.books = [...seedBooks(), ...custom];
+      applyPlannedMonths();
       state.settings = userSnap.data()?.settings || {};
       writeLS('entries', state.entries);
       writeLS('settings', state.settings);
