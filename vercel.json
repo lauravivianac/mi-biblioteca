@@ -1,0 +1,24 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": null,
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "comment": "El service worker y el HTML nunca se cachean en el CDN: si se cachean, un despliegue tarda horas en verse. Es el mismo problema que teníamos en el service worker.",
+      "source": "/(sw.js|index.html|manifest.webmanifest)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
+      "comment": "El código sí se cachea, pero se revalida en cada carga.",
+      "source": "/(src|styles)/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
+      "comment": "Los iconos no cambian nunca.",
+      "source": "/(.*).png",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    }
+  ]
+}
