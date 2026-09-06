@@ -55,7 +55,13 @@ service cloud.firestore {
     }
 
     /* ── EL @USUARIO  ·  historia #44 ─────────────────────────
-       Un documento por nombre: social/usernames/{nombre} → {uid}.
+       Un documento por nombre: usernames/{nombre} → {uid}.
+
+       Estuvo en `social/usernames/{nombre}`, que no era un documento
+       sino una colección: en Firestore las rutas alternan colección y
+       documento, así que un documento tiene siempre un número PAR de
+       segmentos, y aquél tenía tres. Ni el cliente podía escribirlo ni
+       esta regla podía casar con nada.
 
        AQUÍ ES DONDE VIVE LA UNICIDAD, y no en el cliente. Comprobar
        si está libre y escribirlo son dos momentos distintos, y entre
@@ -85,7 +91,27 @@ service cloud.firestore {
                    'nuevo', 'new', 'null', 'undefined', 'anonimo', 'anonymous']);
     }
 
-    match /social/usernames/{username} {
+    /* ── EL PERFIL PÚBLICO  ·  historia #45 ───────────────────
+       Otra vez lo mismo, y por lo mismo: users/{uid} lleva dentro tus
+       ajustes, tus metas, tus días de lectura y tus reseñas privadas.
+       Abrirlo para que se vea tu nombre lo abriría entero.
+
+       Así que el perfil público es una COPIA aquí, con lo justo (ver
+       profile-core.js). Lo lee cualquiera con sesión; lo escribe solo
+       su dueña, y el {userId} del camino tiene que ser el de quien
+       escribe — igual que en las reseñas.
+
+       El `uid` de dentro también se comprueba: si no coincidiera con
+       el del camino, un perfil podría decir que es de otra persona, y
+       tanto seguir como buscar se guían por ese campo. */
+    match /profiles/{userId} {
+      allow read: if request.auth != null;
+      allow delete: if isOwner(userId);
+      allow create, update: if isOwner(userId)
+                            && request.resource.data.uid == userId;
+    }
+
+    match /usernames/{username} {
       // Para poder decir «está libre» hay que poder mirar
       allow read: if request.auth != null;
 

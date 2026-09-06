@@ -4,7 +4,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { watchAuth, completePendingSignIn } from './auth.js';
-import { loadStore, settings, onSave, flush } from './store.js';
+import { loadStore, settings, onSave, flush, setDisplayName } from './store.js';
 import { applyTheme, localTheme } from './theme-engine.js';
 import { seedNewAccount } from './store.js';
 import * as views from './views.js';
@@ -16,6 +16,7 @@ import * as gapsui from './gapsui.js';
 import * as duel from './duel.js';
 import * as yearui from './yearui.js';
 import * as shareui from './shareui.js';
+import * as profileui from './profileui.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
 
@@ -55,6 +56,7 @@ setConsentPrompt(screens.ensureAgentConsent);
 Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
+  ...profileui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
@@ -86,6 +88,11 @@ watchAuth(async (user) => {
   show('auth-screen', false);
   document.body.classList.add('signed-in');
 
+  /* El nombre visible sale de Auth, y el perfil público lo necesita.
+     Se le pasa al store antes de cargar para que la primera publicación
+     ya salga con nombre en vez de con el @usuario a secas. */
+  setDisplayName(user.displayName || '');
+
   const result = await loadStore(user.uid);
 
   // Cuenta nueva: deja constancia del perfil
@@ -105,8 +112,17 @@ watchAuth(async (user) => {
   views.refreshAll();
   if (loading) loading.style.display = 'none';
 
+  /* Un link de perfil (#/u/laura) se abre en cuanto hay sesión: leer
+     un perfil ajeno necesita estar dentro. Si la ruta era esa, el
+     onboarding espera — quien llega desde una invitación viene a ver a
+     alguien, no a configurar su plan lector. */
+  if (profileui.openProfileFromHash()) return;
+
   await screens.maybeOnboard();
 });
+
+/* Cambiar de link sin recargar (volver atrás, pegar otro) también abre. */
+window.addEventListener('hashchange', () => { profileui.openProfileFromHash(); });
 
 /* ── SERVICE WORKER ──────────────────────────────────────────── */
 

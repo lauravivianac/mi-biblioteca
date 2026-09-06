@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:taste && npm run test:gaps && npm run test:duel && npm run test:streak && npm run test:year && npm run test:username && npm run test:cards && npm run test:worker",
+    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:taste && npm run test:gaps && npm run test:duel && npm run test:streak && npm run test:year && npm run test:username && npm run test:cards && npm run test:profile && npm run test:worker",
     "test:contrast": "node scripts/check-contrast.mjs",
     "test:planner": "node scripts/test-planner.mjs",
     "test:booklookup": "node scripts/test-booklookup.mjs",
@@ -22,6 +22,7 @@
     "test:streak": "node scripts/test-streak.mjs",
     "test:year": "node scripts/test-year.mjs",
     "test:username": "node scripts/test-username.mjs",
-    "test:cards": "node scripts/test-cards.mjs"
+    "test:cards": "node scripts/test-cards.mjs",
+    "test:profile": "node scripts/test-profile.mjs"
   }
 }
