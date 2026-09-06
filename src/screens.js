@@ -549,6 +549,11 @@ export function openSettings() {
         <div class="set-row-sub">Lo que tienes disponible para intercambio</div></div>
       <span class="set-chev">›</span>
     </div>
+    <div class="set-row" onclick="openPosts()">
+      <div><div class="set-row-title">Lo que escribo</div>
+        <div class="set-row-sub">Tus notas de lectura, reseñas y listas</div></div>
+      <span class="set-chev">›</span>
+    </div>
     <div class="set-row" onclick="openBlocked()">
       <div><div class="set-row-title">Bloqueadas y silenciadas</div>
         <div class="set-row-sub">Quién no te ve y a quién no ves</div></div>

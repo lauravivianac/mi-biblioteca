@@ -261,6 +261,33 @@
 </div>
 
 <!-- COMENTARIOS -->
+<div class="overlay" id="posts-overlay" onclick="closePosts(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Lo que escribo</div>
+    <button class="sheet-close" onclick="closeSheet('posts-overlay')" aria-label="Cerrar">✕</button>
+    <div id="posts-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="editor-overlay" onclick="closeEditor(event)">
+  <div class="sheet sheet-alta">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Escribir</div>
+    <button class="sheet-close" onclick="closeEditor()" aria-label="Cerrar">✕</button>
+    <div id="editor-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="citapick-overlay" onclick="closeCitaPick(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Meter una cita</div>
+    <button class="sheet-close" onclick="closeSheet('citapick-overlay')" aria-label="Cerrar">✕</button>
+    <div id="citapick-body"></div>
+  </div>
+</div>
+
 <div class="overlay" id="chat-overlay" onclick="closeChat(event)">
   <div class="sheet sheet-alta">
     <div class="sheet-handle"></div>

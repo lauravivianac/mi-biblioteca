@@ -80,6 +80,53 @@ export const INTENTS = {
     }),
   },
 
+  /* ORDENAR NOTAS DE LECTURA  ·  historia #74
+
+     EL LÍMITE DE LA HISTORIA ES TAJANTE: «ordena y estructura; no
+     escribe la reseña. Si el agente aporta ideas que no estaban en mis
+     notas, deja de ser mi texto».
+
+     Se podría pedir en el prompt que no invente. Pero un prompt es una
+     súplica, y esto no la admite: LO QUE DEVUELVE SON LOS NÚMEROS DE
+     LAS NOTAS, agrupados. El borrador lo arma el cliente pegando el
+     texto de quien escribió (ver `plantillaDesdeNotas` en
+     posts-core.js). Si se inventa una nota, el índice no existe y se
+     descarta; si reescribe una frase, esa frase no llega a ninguna
+     parte porque aquí no cabe texto de notas.
+
+     Lo único suyo son los títulos, y por eso salen marcados en la app.
+
+     No se cachea: las notas son distintas cada vez y son de quien las
+     escribió. Cachear esto daría el orden de otra persona. */
+  order_notes: {
+    maxInput: 6000,
+    maxTokens: 700,
+    system: `${REGLA} Te dan NOTAS SUELTAS numeradas que alguien escribió sobre un ` +
+      'libro. Las AGRUPAS por tema y les pones un título a cada grupo. NO ESCRIBES ' +
+      'NI REESCRIBES NINGUNA NOTA, y no añades ideas que no estén. Formato: ' +
+      '{"secciones":[{"titulo":"...","notas":[0,3,7]}],"titulos":["...","...","..."]}. ' +
+      'En "notas" van SOLO los números que te han dado, cada uno una vez como mucho. ' +
+      'En "titulos", dos o tres títulos posibles para el texto entero. Si una nota no ' +
+      'encaja en ningún grupo, no la metas: se coloca sola después.',
+    shape: (o) => ({
+      secciones: (Array.isArray(o.secciones) ? o.secciones : [])
+        .map((s) => ({
+          titulo: str(s?.titulo, 80),
+          /* Solo números, y se comprueba el TIPO antes que el valor:
+             `Number(null)` es 0, así que convertir primero colaba un
+             null como si fuera la nota número 0 — y colocaría el texto
+             equivocado. Se filtra por tipo y luego se mira el valor. */
+          notas: (Array.isArray(s?.notas) ? s.notas : [])
+            .filter((n) => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n < 400)
+            .slice(0, 60),
+        }))
+        .filter((s) => s.notas.length)
+        .slice(0, 8),
+      titulos: (Array.isArray(o.titulos) ? o.titulos : [])
+        .map((t) => str(t, 140)).filter(Boolean).slice(0, 3),
+    }),
+  },
+
   /* Qué leer después, a partir de lo que ya leyó y cómo lo puntuó. */
   recommend: {
     maxInput: 1200,

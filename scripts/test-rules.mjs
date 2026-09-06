@@ -500,6 +500,62 @@ async function no(nombre, fn) {
     deleteDoc(doc(b, 'swapRatings', `${BEA}_sX_${ANA}`)));
 }
 
+/* ═══ LAS ENTRADAS DEL BLOG  ·  #72 y #73 ═════════════════════
+   La historia lo pide con estas palabras: «las reglas de Firestore
+   hacen cumplir cada nivel, no solo la interfaz». Esto es esa
+   comprobación. */
+{
+  const a = ctx(ANA).firestore();
+  const b = ctx(BEA).firestore();
+  const c = ctx(CRIS).firestore();
+
+  const base = {
+    uid: ANA, tipo: 'nota', titulo: 'Sobre Rulfo', cuerpo: 'El narrador miente',
+    libros: [], pagina: null, ayudaDelAgente: false, at: 1, editado: null,
+  };
+
+  await ok('entrada · lo mío en mi cuenta', () =>
+    setDoc(doc(a, 'users', ANA, 'posts', 'p1'), { ...base, visibilidad: 'privada' }));
+  await no('entrada · nadie más entra en mi cuenta', () =>
+    getDoc(doc(b, 'users', ANA, 'posts', 'p1')));
+
+  await ok('entrada · publico una pública', () =>
+    setDoc(doc(a, 'posts', 'p2'), { ...base, visibilidad: 'publica' }));
+  await ok('entrada · publico una de seguidoras', () =>
+    setDoc(doc(a, 'posts', 'p3'), { ...base, visibilidad: 'seguidoras' }));
+
+  /* LO PRIVADO NO PUEDE LLEGAR AQUÍ, ni a mano. */
+  await no('entrada · una PRIVADA no se copia fuera (#73)', () =>
+    setDoc(doc(a, 'posts', 'p4'), { ...base, visibilidad: 'privada' }));
+  await no('entrada · ni con una visibilidad inventada', () =>
+    setDoc(doc(a, 'posts', 'p5'), { ...base, visibilidad: 'todoelmundo' }));
+  await no('entrada · no publico en nombre de otra', () =>
+    setDoc(doc(b, 'posts', 'p6'), { ...base, visibilidad: 'publica' }));
+
+  /* Los tres niveles, aplicados. Cris NO sigue a Ana; Bea sí. */
+  await seed((db) => setDoc(doc(db, 'follows', `${BEA}_${ANA}`), { follower: BEA, following: ANA }));
+
+  await ok('nivel · la pública la lee cualquiera con sesión', () => getDoc(doc(c, 'posts', 'p2')));
+  await ok('nivel · la de seguidoras la lee quien la sigue', () => getDoc(doc(b, 'posts', 'p3')));
+  await no('nivel · la de seguidoras NO la lee quien no la sigue', () =>
+    getDoc(doc(c, 'posts', 'p3')));
+  await ok('nivel · su autora lee las suyas', () => getDoc(doc(a, 'posts', 'p3')));
+
+  /* Las consultas: pedir solo lo que se puede leer. */
+  await ok('consulta · lo público de Ana, sin seguirla', () =>
+    getDocs(query(collection(c, 'posts'), where('uid', '==', ANA),
+      where('visibilidad', 'in', ['publica']), limit(20))));
+  await ok('consulta · siguiéndola, lo suyo menos lo privado', () =>
+    getDocs(query(collection(b, 'posts'), where('uid', '==', ANA),
+      where('visibilidad', 'in', ['seguidoras', 'publica']), limit(20))));
+  await no('consulta · pedir de más deniega la consulta ENTERA', () =>
+    getDocs(query(collection(c, 'posts'), where('uid', '==', ANA),
+      where('visibilidad', 'in', ['seguidoras', 'publica']), limit(20))));
+
+  await ok('entrada · su autora la despublica', () => deleteDoc(doc(a, 'posts', 'p3')));
+  await no('entrada · nadie más la borra', () => deleteDoc(doc(b, 'posts', 'p2')));
+}
+
 /* ═══ LO QUE NO TIENE REGLA, SIGUE CERRADO ════════════════════
    El «todo lo demás, cerrado» del final es lo que convirtió la falta
    de una regla para `activity` en un feed vacío. Que siga ahí. */

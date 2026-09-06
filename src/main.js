@@ -24,6 +24,7 @@ import * as commentsui from './commentsui.js';
 import * as swapui from './swapui.js';
 import * as exploreui from './exploreui.js';
 import * as chatui from './chatui.js';
+import * as postsui from './postsui.js';
 import { loadMyBlocks } from './moderation.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
@@ -69,7 +70,7 @@ Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
   ...profileui, ...socialui, ...inviteui, ...feedui, ...commentsui, ...swapui,
-  ...exploreui, ...chatui,
+  ...exploreui, ...chatui, ...postsui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),

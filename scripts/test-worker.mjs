@@ -117,8 +117,9 @@ igual('recomendar: una sugerencia que no es objeto no revienta',
 
 grupo('LA LISTA BLANCA');
 
-ok('solo existen los tres encargos previstos',
-  JSON.stringify(Object.keys(INTENTS)) === JSON.stringify(['identify_book', 'book_brief', 'recommend']));
+ok('solo existen los cuatro encargos previstos',
+  JSON.stringify(Object.keys(INTENTS))
+    === JSON.stringify(['identify_book', 'book_brief', 'order_notes', 'recommend']));
 ok('cada encargo declara su límite de entrada, de salida y su forma',
   Object.values(INTENTS).every((i) => i.maxInput > 0 && i.maxTokens > 0 && typeof i.shape === 'function'));
 ok('la regla temática va en TODOS los encargos',
@@ -214,6 +215,56 @@ grupo('LO QUE LA CACHÉ AHORRA');
   ok('una sola respuesta cacheada ya ahorra más de lo que costó',
     brief * 2 > brief);
 }
+
+/* ── ORDENAR NOTAS · el agente no puede escribir  ·  #74 ────────
+   La garantía de la historia no es que se le pida que no invente: es
+   que por este canal NO CABE TEXTO DE NOTAS. Solo vuelven números, y
+   eso lo hace cumplir la forma, no el prompt. */
+console.log('\nORDENAR NOTAS · lo que NO puede volver');
+const ordenar = INTENTS.order_notes;
+
+ok('el encargo dice que no reescribe ninguna nota',
+  /NO ESCRIBES|NI REESCRIBES/i.test(ordenar.system));
+
+{
+  const r = ordenar.shape({
+    secciones: [{ titulo: 'La voz', notas: [0, 2] }],
+    titulos: ['Uno', 'Dos'],
+  });
+  ok('deja pasar los números de sección', JSON.stringify(r.secciones[0].notas) === '[0,2]');
+  ok('y los títulos propuestos', r.titulos.length === 2);
+}
+
+{
+  /* Si el modelo intentara devolver el TEXTO de una nota en vez de su
+     número, aquí no llega: `notas` solo admite enteros. */
+  const r = ordenar.shape({
+    secciones: [{ titulo: 'X', notas: ['El narrador miente y lo sabe', null, 1.5, -2, 3] }],
+  });
+  ok('EL TEXTO DE UNA NOTA NO PUEDE COLARSE por «notas»',
+    JSON.stringify(r.secciones[0].notas) === '[3]');
+}
+
+{
+  const r = ordenar.shape({ secciones: [{ titulo: 'X', notas: [] }] });
+  ok('una sección sin notas se descarta', r.secciones.length === 0);
+}
+
+{
+  const r = ordenar.shape({});
+  ok('una respuesta vacía no rompe nada', Array.isArray(r.secciones) && Array.isArray(r.titulos));
+}
+
+{
+  const muchas = ordenar.shape({
+    secciones: Array.from({ length: 30 }, (_, i) => ({ titulo: `S${i}`, notas: [i] })),
+    titulos: ['a', 'b', 'c', 'd', 'e'],
+  });
+  ok('las secciones se limitan', muchas.secciones.length <= 8);
+  ok('y los títulos también', muchas.titulos.length <= 3);
+}
+
+ok('ordenar notas NO se cachea: son de quien las escribió', ordenar.cacheable !== true);
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.`);
 process.exit(fallaron ? 1 : 0);

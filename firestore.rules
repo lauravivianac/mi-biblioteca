@@ -728,6 +728,54 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    /* ── LAS ENTRADAS DEL BLOG  ·  historias #72 y #73 ────────
+       Otra vez el mismo reparto que las reseñas y el perfil, y por el
+       mismo motivo: lo tuyo vive en users/{uid}/posts, donde no entra
+       nadie, y publicar es COPIAR aquí.
+
+       LO PRIVADO NO SE COPIA. No es que esté aquí y no se enseñe: es
+       que no llega a existir fuera de tu cuenta. Es la única forma de
+       que «privada» signifique privada, porque las reglas conceden
+       documentos enteros y cualquier cosa que esté aquí la puede leer
+       quien cumpla la condición de lectura.
+
+       LOS TRES NIVELES LOS APLICA ESTA REGLA, no la interfaz — que es
+       exactamente lo que pide la #73. La de seguidoras cuesta una
+       lectura por documento; es el precio de que sea cierta.
+
+       Nota sobre las consultas: en una lista, la regla se evalúa
+       documento a documento y basta que uno falle para que caiga la
+       consulta entera. Por eso el cliente pide siempre las
+       visibilidades que sabe que puede leer (ver
+       `visibilidadesQuePuedoLeer` en posts-core.js) en vez de pedirlo
+       todo y confiar en que el servidor filtre. */
+    match /posts/{postId} {
+      function meSigue(autor) {
+        return request.auth != null
+          && exists(/databases/$(database)/documents/follows/$(request.auth.uid + '_' + autor));
+      }
+
+      allow read: if request.auth != null
+                  && (
+                    resource.data.uid == request.auth.uid
+                    || resource.data.visibilidad == 'publica'
+                    || (resource.data.visibilidad == 'seguidoras' && meSigue(resource.data.uid))
+                  );
+
+      /* Escribe solo su autora, el `uid` de dentro tiene que ser el
+         suyo, y NUNCA se copia aquí una entrada privada: si alguien
+         lo intentara a mano, este `in` lo rechaza. */
+      allow create, update: if request.auth != null
+                            && request.resource.data.uid == request.auth.uid
+                            && request.resource.data.visibilidad in ['seguidoras', 'publica']
+                            && request.resource.data.titulo.size() <= 140
+                            && request.resource.data.cuerpo.size() <= 20000;
+
+      // Al volverla privada, o al borrarla, la copia se va.
+      allow delete: if request.auth != null
+                    && (noHayNada() || resource.data.uid == request.auth.uid);
+    }
+
     /* La colección `biblioteca` era de la época sin autenticación.
        Estuvo abierta a cualquier cuenta con sesión para poder migrarla
        una vez — lo que significaba que CUALQUIER usuaria podía leer y
