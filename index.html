@@ -153,9 +153,11 @@
                oninput="setFiltroTexto(this.value)" aria-label="Buscar entre los disponibles">
       </div>
       <div class="filter-scroll" id="trueque-ambitos"></div>
-      <button class="btn-ghost full" onclick="openSwaps()" style="margin-bottom:12px">
-        ⇄ Mis intercambios
-      </button>
+      <div class="trueque-atajos">
+        <button class="btn-ghost" onclick="openSwaps()">⇄ Solicitudes</button>
+        <button class="btn-ghost" onclick="openChats()">💬 Conversaciones</button>
+        <button class="btn-ghost" onclick="openSeguridad()">🛡 Seguridad</button>
+      </div>
       <div id="trueque-body"></div>
     </div>
 
@@ -259,6 +261,42 @@
 </div>
 
 <!-- COMENTARIOS -->
+<div class="overlay" id="chat-overlay" onclick="closeChat(event)">
+  <div class="sheet sheet-alta">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">El intercambio</div>
+    <button class="sheet-close" onclick="closeChat()" aria-label="Cerrar">✕</button>
+    <div id="chat-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="chats-overlay" onclick="closeChats(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Mis conversaciones</div>
+    <button class="sheet-close" onclick="closeSheet('chats-overlay')" aria-label="Cerrar">✕</button>
+    <div id="chats-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="seguridad-overlay" onclick="closeSeguridad(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Quedar con seguridad</div>
+    <button class="sheet-close" onclick="closeSheet('seguridad-overlay')" aria-label="Cerrar">✕</button>
+    <div id="seguridad-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="valorar-overlay" onclick="closeValorar(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">¿Cómo fue?</div>
+    <button class="sheet-close" onclick="closeSheet('valorar-overlay')" aria-label="Cerrar">✕</button>
+    <div id="valorar-body"></div>
+  </div>
+</div>
+
 <div class="overlay" id="ask-overlay" onclick="closeAsk(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>

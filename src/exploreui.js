@@ -389,15 +389,30 @@ function tarjetaSolicitud(s) {
           ${s.contraoferta.mensaje ? `<br>«${esc(s.contraoferta.mensaje)}»` : ''}
         </div>` : ''}
       ${s.estado === 'aceptada' ? `
+        <button class="btn-magic full" style="margin-top:10px"
+                onclick="openChatDeSolicitud('${esc(s.id)}')">
+          💬 Abrir la conversación
+        </button>
         <p class="set-fineprint">
-          Aceptada. Poneos de acuerdo para quedar — y quedad siempre en un sitio
-          público y con gente.
+          Poneos de acuerdo ahí dentro. No hace falta dar el teléfono, y quedad
+          siempre en un sitio público y con gente.
         </p>` : ''}
       ${acciones.length ? `<div class="swap-acciones">${acciones.join('')}</div>` : ''}
     </div>`;
 }
 
 const buscarSolicitud = (id) => [...recibidas, ...enviadas].find((s) => s.id === id) || null;
+
+/* El chat vive en chatui, y esto solo le pasa la solicitud: hacerlo al
+   revés —que chatui buscara la solicitud— ataría las dos pantallas en
+   los dos sentidos por una sola función. */
+export async function openChatDeSolicitud(id) {
+  const s = buscarSolicitud(id);
+  if (!s) return;
+  closeSheet('swaps-overlay');
+  const { openChat } = await import('./chatui.js');
+  await openChat(s);
+}
 
 export async function answer(id, estado) {
   const s = buscarSolicitud(id);

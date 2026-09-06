@@ -368,6 +368,63 @@ const yaCerrada = await requests.responder({ ...laMia, estado: 'aceptada' }, 'ca
 comprobar('responder · lo aceptado ya no se retira', yaCerrada.ok === false,
   JSON.stringify(yaCerrada));
 
+/* ═══ 11 · EL CHAT, CONFIRMAR Y VALORAR  ·  #85, #86, #88 ═════
+   La parte donde dos desconocidas quedan en persona. Lo que se prueba
+   aquí no es solo que funcione, sino que NO se pueda abrir un chat sin
+   trato aceptado ni valorar a quien no has visto. */
+const chatMod = await import('../src/chat.js');
+
+const chatAbierto = await chatMod.abrirChat({ ...laMia, estado: 'aceptada' });
+comprobar('chat · se abre sobre el trato aceptado', chatAbierto.ok === true,
+  JSON.stringify(chatAbierto).slice(0, 160));
+
+const elChat = chatAbierto.chat;
+comprobar('chat · las dos partes están dentro',
+  (elChat?.partes || []).includes(uidCris) && (elChat?.partes || []).includes(uidBea),
+  JSON.stringify(elChat?.partes));
+
+const escrito = await chatMod.mandar(elChat.id, '¿Te va bien el sábado en la biblioteca?');
+comprobar('chat · Cris escribe', escrito.ok === true, JSON.stringify(escrito));
+
+/* Sin trato aceptado no hay chat: se intenta sobre una solicitud
+   inventada y tiene que fallar. */
+const sinTrato = await chatMod.abrirChat({
+  id: `${uidCris}_inventada`, de: uidCris, para: uidBea, estado: 'pendiente', swapId: 'inventada',
+});
+comprobar('chat · NO se abre sin haber aceptado', sinTrato.ok === false,
+  JSON.stringify(sinTrato));
+
+/* Valorar antes de confirmar: no. */
+const prontoDemas = await chatMod.valorar(elChat, { puntualidad: 5, estado: 5, trato: 5 });
+comprobar('valorar · antes de confirmar, no', prontoDemas.ok === false,
+  JSON.stringify(prontoDemas));
+
+/* Confirmar por los dos lados. */
+const unaSola = await chatMod.confirmarIntercambio(elChat);
+comprobar('confirmar · Cris confirma', unaSola.ok === true, JSON.stringify(unaSola).slice(0, 140));
+comprobar('confirmar · con una sola NO está hecho', unaSola.chat?.completado !== true);
+
+await entrarComo(BEA.email, BEA.pass, BEA.nombre);
+const susChats = await chatMod.misChats();
+const mismoChat = susChats.find((c) => c.id === elChat.id);
+comprobar('chat · Bea lo ve entre los suyos', Boolean(mismoChat), `n=${susChats.length}`);
+
+const ambas = await chatMod.confirmarIntercambio(mismoChat);
+comprobar('confirmar · Bea confirma y queda hecho', ambas.chat?.completado === true,
+  JSON.stringify(ambas).slice(0, 140));
+
+/* Y ahora sí, valorar. */
+const valorado = await chatMod.valorar(ambas.chat, {
+  puntualidad: 5, estado: 4, trato: 5, comentario: 'Puntual y maja',
+});
+comprobar('valorar · después de confirmar, sí', valorado.ok === true, JSON.stringify(valorado).slice(0, 140));
+
+const repetida2 = await chatMod.valorar(ambas.chat, { puntualidad: 1, estado: 1, trato: 1 });
+comprobar('valorar · no se valora dos veces', repetida2.ok === false, JSON.stringify(repetida2));
+
+const suyas = await chatMod.valoracionesDe(uidCris);
+comprobar('valorar · la valoración se lee para el perfil', suyas.length === 1, `n=${suyas.length}`);
+
 /* ═══ RESULTADO ═══════════════════════════════════════════════ */
 await auth.logOut().catch(() => {});
 

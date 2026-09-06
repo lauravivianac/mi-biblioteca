@@ -386,6 +386,120 @@ async function no(nombre, fn) {
     setDoc(doc(b, 'notifs', ANA, 'items', `swapreq_${BEA}_s1`), { tipo: 'swapreq', from: BEA, at: 1 }));
 }
 
+/* ═══ EL CHAT Y LAS VALORACIONES  ·  #85, #86, #88 ════════════
+   La parte donde dos desconocidas quedan en persona. Lo que se prueba
+   aquí no es que funcione, sino que NO se pueda abrir un chat con
+   quien no aceptó nada, ni valorar a quien no has visto. */
+{
+  const a = ctx(ANA).firestore();
+  const b = ctx(BEA).firestore();
+  const c = ctx(CRIS).firestore();
+
+  /* Ana bloqueó a Bea en la sección de comentarios y ese bloqueo sigue
+     puesto. Se quita aquí a propósito: si no, el primer mensaje se
+     deniega —correctamente— y la prueba diría que el chat no funciona
+     cuando lo que falla es el montaje. */
+  await seed((db) => deleteDoc(doc(db, 'blocks', `${ANA}_${BEA}`)));
+
+  // Una solicitud aceptada entre Ana y Bea; y otra sin aceptar.
+  await seed(async (db) => {
+    await setDoc(doc(db, 'swapRequests', `${BEA}_sX`), {
+      de: BEA, para: ANA, swapId: 'sX', estado: 'aceptada', at: 1,
+    });
+    await setDoc(doc(db, 'swapRequests', `${BEA}_sY`), {
+      de: BEA, para: ANA, swapId: 'sY', estado: 'pendiente', at: 1,
+    });
+  });
+
+  const chat = {
+    partes: [ANA, BEA].sort(), solicitudId: `${BEA}_sX`, swapId: 'sX',
+    title: 'Dune', dueño: ANA, recibe: BEA,
+    confirmadoPor: [], completado: false, cerrado: false, at: 1, ultimoAt: 1,
+  };
+
+  await ok('chat · se abre sobre una solicitud aceptada', () =>
+    setDoc(doc(b, 'chats', `${BEA}_sX`), chat));
+  await no('chat · NO se abre sin haber aceptado', () =>
+    setDoc(doc(b, 'chats', `${BEA}_sY`), { ...chat, solicitudId: `${BEA}_sY`, swapId: 'sY' }));
+  await no('chat · una tercera no se cuela dentro', () =>
+    setDoc(doc(c, 'chats', `${CRIS}_sX`), { ...chat, partes: [CRIS, ANA].sort() }));
+  await no('chat · nadie de fuera lo lee', () => getDoc(doc(c, 'chats', `${BEA}_sX`)));
+  await ok('chat · lo leen las dos partes', () => getDoc(doc(a, 'chats', `${BEA}_sX`)));
+  await no('chat · no se cambia quiénes son las partes', () =>
+    setDoc(doc(a, 'chats', `${BEA}_sX`), { partes: [ANA, CRIS].sort() }, { merge: true }));
+  await no('chat · no se borra', () => deleteDoc(doc(a, 'chats', `${BEA}_sX`)));
+
+  await ok('mensaje · Bea escribe', () =>
+    addDoc(collection(b, 'chats', `${BEA}_sX`, 'mensajes'), { de: BEA, texto: '¿Cómo quedamos?', at: 1 }));
+  await ok('mensaje · Ana lo lee', () => getDocs(collection(a, 'chats', `${BEA}_sX`, 'mensajes')));
+  await no('mensaje · una tercera no lee la conversación', () =>
+    getDocs(collection(c, 'chats', `${BEA}_sX`, 'mensajes')));
+  await no('mensaje · no se firma con el nombre de otra', () =>
+    addDoc(collection(b, 'chats', `${BEA}_sX`, 'mensajes'), { de: ANA, texto: 'x', at: 1 }));
+  await no('mensaje · vacío no', () =>
+    addDoc(collection(b, 'chats', `${BEA}_sX`, 'mensajes'), { de: BEA, texto: '', at: 1 }));
+  /* Un mensaje YA ESCRITO no se toca. Se siembra con un identificador
+     conocido para poder intentar pisarlo: `setDoc` sobre un id nuevo
+     sería una creación, no una edición, y no probaría nada. */
+  await seed((db) => setDoc(doc(db, 'chats', `${BEA}_sX`, 'mensajes', 'm1'), {
+    de: BEA, texto: 'lo que dije', at: 2,
+  }));
+  await no('mensaje · lo ya escrito no se edita', () =>
+    setDoc(doc(b, 'chats', `${BEA}_sX`, 'mensajes', 'm1'), { de: BEA, texto: 'yo no dije eso', at: 2 }));
+  await no('mensaje · ni se borra', () =>
+    deleteDoc(doc(b, 'chats', `${BEA}_sX`, 'mensajes', 'm1')));
+  await no('mensaje · ni lo borra la otra parte', () =>
+    deleteDoc(doc(a, 'chats', `${BEA}_sX`, 'mensajes', 'm1')));
+
+  /* Bloquear cierra el chat por los dos lados. */
+  await ok('bloqueo · Ana bloquea a Bea', () =>
+    setDoc(doc(a, 'blocks', `${ANA}_${BEA}`), { de: ANA, a: BEA, at: 1 }));
+  await no('chat · quien fue bloqueada ya no escribe (#85)', () =>
+    addDoc(collection(b, 'chats', `${BEA}_sX`, 'mensajes'), { de: BEA, texto: 'hola?', at: 3 }));
+  await ok('bloqueo · Ana lo deshace', () => deleteDoc(doc(a, 'blocks', `${ANA}_${BEA}`)));
+
+  /* Valorar: solo tras completar, y solo las dos partes. */
+  await no('valorar · NO se puede antes de completar (#86)', () =>
+    setDoc(doc(a, 'swapRatings', `${BEA}_sX_${ANA}`), {
+      de: ANA, sobre: BEA, chatIdent: `${BEA}_sX`,
+      puntualidad: 5, estado: 5, trato: 5, media: 5, comentario: '', at: 1,
+    }));
+
+  await seed((db) => setDoc(doc(db, 'chats', `${BEA}_sX`), {
+    ...chat, confirmadoPor: [ANA, BEA], completado: true, cerrado: true,
+  }));
+
+  await ok('valorar · ya completado, sí', () =>
+    setDoc(doc(a, 'swapRatings', `${BEA}_sX_${ANA}`), {
+      de: ANA, sobre: BEA, chatIdent: `${BEA}_sX`,
+      puntualidad: 5, estado: 4, trato: 5, media: 4.67, comentario: 'Puntual', at: 2,
+    }));
+  await no('valorar · dos veces el mismo intercambio, no', () =>
+    setDoc(doc(a, 'swapRatings', `${BEA}_sX_${ANA}`), {
+      de: ANA, sobre: BEA, chatIdent: `${BEA}_sX`,
+      puntualidad: 1, estado: 1, trato: 1, media: 1, comentario: '', at: 3,
+    }));
+  await no('valorar · quien no participó, no (#86)', () =>
+    setDoc(doc(c, 'swapRatings', `${BEA}_sX_${CRIS}`), {
+      de: CRIS, sobre: BEA, chatIdent: `${BEA}_sX`,
+      puntualidad: 1, estado: 1, trato: 1, media: 1, comentario: '', at: 4,
+    }));
+  await no('valorar · no se valora a una misma', () =>
+    setDoc(doc(b, 'swapRatings', `${BEA}_sX_${BEA}`), {
+      de: BEA, sobre: BEA, chatIdent: `${BEA}_sX`,
+      puntualidad: 5, estado: 5, trato: 5, media: 5, comentario: '', at: 5,
+    }));
+  await no('valorar · seis estrellas no existen', () =>
+    setDoc(doc(b, 'swapRatings', `${BEA}_sX_${BEA}2`), {
+      de: BEA, sobre: ANA, chatIdent: `${BEA}_sX`,
+      puntualidad: 6, estado: 5, trato: 5, media: 5, comentario: '', at: 6,
+    }));
+  await ok('valorar · se leen para pintarlas en el perfil', () =>
+    getDocs(query(collection(c, 'swapRatings'), where('sobre', '==', BEA), limit(20))));
+  await no('valorar · una valoración no se borra ni se cambia', () =>
+    deleteDoc(doc(b, 'swapRatings', `${BEA}_sX_${ANA}`)));
+}
+
 /* ═══ LO QUE NO TIENE REGLA, SIGUE CERRADO ════════════════════
    El «todo lo demás, cerrado» del final es lo que convirtió la falta
    de una regla para `activity` en un feed vacío. Que siga ahí. */
