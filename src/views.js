@@ -285,6 +285,7 @@ function renderStreak() {
   slot.innerHTML = `
     <div class="streak-card ${info.enPeligro ? 'en-peligro' : ''} ${info.actual ? 'viva' : ''}">
       <div class="streak-flame">${info.actual ? '🔥' : '·'}</div>
+      <button class="streak-year" onclick="openYear()">Tu año →</button>
       <div class="streak-body">
         <div class="streak-num">${info.actual}</div>
         <div class="streak-line">${esc(streakLine(info))}</div>

@@ -14,6 +14,7 @@ import * as quotesui from './quotesui.js';
 import * as finished from './finished.js';
 import * as gapsui from './gapsui.js';
 import * as duel from './duel.js';
+import * as yearui from './yearui.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
 
@@ -52,7 +53,7 @@ setConsentPrompt(screens.ensureAgentConsent);
 
 Object.assign(window, {
   nav, closeSheet,
-  ...addbook, ...quotesui, ...finished, ...gapsui, ...duel,
+  ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
