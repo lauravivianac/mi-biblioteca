@@ -4,11 +4,16 @@
    Habla con el Worker de Cloudflare, nunca con DeepSeek directamente.
    La key vive allí; aquí no hay ninguna.
 
-   Si el Worker no está desplegado, la app funciona igual: el agente
-   es un último recurso, no un requisito. Todo lo que hace falta para
-   añadir un libro lo resuelven OpenLibrary y Google Books.
+   Una sola key, en el Worker, sirviendo a toda la app: identificar
+   una portada, decidir si un libro vale la pena, y qué leer después.
 
-   Para activarlo: despliega worker/ y pega su URL abajo.
+   Si el Worker no está desplegado la app funciona igual y sus botones
+   sencillamente no aparecen. Añadir libros por título o por código de
+   barras nunca pasa por aquí: eso lo resuelven OpenLibrary y Google
+   Books, que son gratis y no se inventan nada.
+
+   Para activarlo: despliega worker/ y pega su dirección en
+   ⚙ Ajustes → Identificar portadas con IA.
    ───────────────────────────────────────────────────────────── */
 
 import { currentUser } from './auth.js';
@@ -29,6 +34,7 @@ const MESSAGES = {
   'sin-sesion': 'La sesión caducó. Vuelve a entrar.',
   'limite-diario': 'Llegaste al límite de consultas de hoy. Se renueva mañana.',
   'intent-no-permitido': 'Esa consulta no está permitida.',
+  'fuera-de-tema': 'El agente solo habla de libros.',
   'proveedor': 'El servicio no respondió. Inténtalo más tarde.',
   'origin': 'Este dominio no está autorizado en el Worker.',
 };
@@ -69,4 +75,35 @@ export async function identifyFromCoverText(ocrText) {
     console.warn('El agente no pudo identificar la portada:', e.message);
     return null;
   }
+}
+
+/**
+ * «¿Me lo leo?» · historia #48
+ *
+ * Lo que hace falta para decidir, no una contraportada: de qué va sin
+ * destripar nada, para quién es y —lo que casi nadie escribe— para
+ * quién NO. Lanza en vez de devolver null: aquí la usuaria pidió esto
+ * a propósito y merece saber por qué no salió.
+ */
+export async function bookBrief(book) {
+  const out = await call('book_brief', `${book.title} — ${book.author}`);
+  if (out.desconocido) throw new Error('El agente no conoce este libro.');
+  return out;
+}
+
+/**
+ * Qué leer después · historia #49
+ *
+ * Se le manda lo LEÍDO con su puntuación y lo pendiente. Lo puntuado
+ * es lo que de verdad dice qué te gusta; lo pendiente evita que
+ * recomiende algo que ya está en la pila.
+ */
+export async function recommendFrom({ read = [], pending = [] }) {
+  const linea = (b) => `${b.title} — ${b.author}${b.rating ? ` (${b.rating}/5)` : ''}`;
+  const texto = [
+    'LEÍDOS:', ...read.slice(0, 25).map(linea),
+    'PENDIENTES (no los repitas):', ...pending.slice(0, 25).map((b) => `${b.title} — ${b.author}`),
+  ].join('\n');
+  const out = await call('recommend', texto);
+  return out.sugerencias || [];
 }

@@ -9,6 +9,7 @@ import {
 } from './auth.js';
 import {
   settings, updateSettings, exportData, exportCsv, updateEntry, findBook,
+  allBooks, statusOf, ratingOf,
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
 import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
@@ -24,7 +25,7 @@ import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
   availableSpecies, currentScene, SCENES,
 } from './pet.js';
-import { workerUrl, setWorkerUrl, setAgentEnabled } from './agent.js';
+import { workerUrl, setWorkerUrl, setAgentEnabled, recommendFrom } from './agent.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -436,17 +437,18 @@ export function openSettings() {
 
     <div class="section-heading"><span class="section-heading-text">El agente</span></div>
     <div class="set-row" onclick="configureAgent()">
-      <div><div class="set-row-title">Identificar portadas con IA</div>
+      <div><div class="set-row-title">El agente lector</div>
         <div class="set-row-sub">${workerUrl()
           ? (settings().agentEnabled
-              ? 'Encendido · solo se usa cuando ningún catálogo reconoce la portada'
+              ? 'Encendido · «¿me lo leo?», qué leer después, y portadas que ningún catálogo reconoce'
               : 'Configurado pero apagado · toca para encenderlo')
           : 'Sin configurar · despliega el Worker y pega aquí su dirección'}</div></div>
       <span class="set-chev">${workerUrl() && settings().agentEnabled ? '●' : '○'}</span>
     </div>
     <p class="set-fineprint">
-      La clave de DeepSeek vive en el Worker, nunca en la app. Añadir libros
-      por título o por código de barras funciona igual sin el agente.
+      La clave de DeepSeek vive en el Worker, nunca en la app. Solo habla de libros,
+      y sin él la app funciona igual: añadir por título o por código de barras
+      nunca pasa por el agente.
     </p>
 
     <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
@@ -527,6 +529,55 @@ function askText({ title, body, placeholder = '' }) {
     document.body.appendChild(wrap);
     $('ask-text').focus();
   });
+}
+
+/* ── QUÉ LEER DESPUÉS  ·  historia #49 ────────────────────────
+   Se le manda lo LEÍDO con su puntuación —que es lo que de verdad
+   dice qué te gusta— y lo pendiente, para que no recomiende algo
+   que ya está en la pila. Nada de esto sale del Worker. */
+
+export async function openRecs() {
+  $('recs-overlay').classList.add('open');
+  $('recs-body').innerHTML = '<p class="planner-hint">Mirando lo que has leído…</p>';
+
+  const books = allBooks();
+  const read = books.filter((b) => statusOf(b.id) === 'read')
+    .map((b) => ({ ...b, rating: ratingOf(b.id) }))
+    .sort((a, b) => b.rating - a.rating);
+  const pending = books.filter((b) => statusOf(b.id) !== 'read');
+
+  if (read.length < 3) {
+    $('recs-body').innerHTML = `<p class="planner-hint">
+      Con <strong>${read.length}</strong> ${read.length === 1 ? 'libro leído' : 'libros leídos'} todavía no hay
+      de dónde sacar una recomendación que valga. Marca unos cuantos como leídos
+      —y ponles estrellas, que es lo que más dice— y vuelve.
+    </p>`;
+    return;
+  }
+
+  try {
+    const sug = await recommendFrom({ read, pending });
+    if (!sug.length) {
+      $('recs-body').innerHTML = '<p class="planner-hint">No se le ocurrió nada esta vez. Prueba otra vez más tarde.</p>';
+      return;
+    }
+    $('recs-body').innerHTML = `
+      <p class="planner-hint">A partir de tus ${read.length} libros leídos y de cómo los puntuaste.</p>
+      <div class="recs">
+        ${sug.map((r) => `
+          <div class="rec">
+            <div class="rec-title">${esc(r.titulo)}</div>
+            <div class="rec-author">${esc(r.autor || '')}</div>
+            ${r.porque ? `<p class="rec-why">${esc(r.porque)}</p>` : ''}
+          </div>`).join('')}
+      </div>
+      <p class="set-fineprint">
+        Son sugerencias de un modelo: comprueba que el libro existe antes de buscarlo.
+        Para añadir uno, usa ＋ y escribe el título — de ahí salen los datos de verdad.
+      </p>`;
+  } catch (e) {
+    $('recs-body').innerHTML = `<p class="planner-hint warn">${esc(e.message)}</p>`;
+  }
 }
 
 export const doExportJson = () => {

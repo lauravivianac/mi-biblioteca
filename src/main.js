@@ -44,6 +44,7 @@ Object.assign(window, {
   nav, closeSheet,
   ...addbook,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
+  closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
   closePlanner: (e) => backdropClose(e, 'planner-overlay'),
   ...views, ...screens,

@@ -124,6 +124,7 @@
       </div>
       <div class="filter-scroll" id="genre-chips"></div>
       <div class="filter-scroll" id="status-chips"></div>
+      <div id="lib-agent"></div>
       <div id="lib-body"></div>
     </div>
 
@@ -172,6 +173,16 @@
     <!-- Lo pinta src/addbook.js: el formulario cambia según el camino
          que se elija (título, cámara o a mano). -->
     <div id="add-body"></div>
+  </div>
+</div>
+
+<!-- QUÉ LEER DESPUÉS -->
+<div class="overlay" id="recs-overlay" onclick="closeRecs(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('recs-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">✦ Qué leer después</div>
+    <div id="recs-body"></div>
   </div>
 </div>
 

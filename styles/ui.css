@@ -398,3 +398,38 @@ body:not(.signed-in) .fab { display: none; }
   color: var(--lilac); margin-bottom: 7px;
 }
 .draft-meta { font-size: 11.5px; color: var(--muted); margin-top: 7px; }
+
+
+/* ── ¿ME LO LEO?  ·  QUÉ LEER DESPUÉS ─────────────────────────
+   Lo que dice el agente va enmarcado y con su propia voz, para que
+   nunca se confunda con lo que escribiste tú. */
+
+.brief {
+  padding: 14px 16px; margin-bottom: 18px;
+  border: var(--card-border); border-left: 3px solid var(--lilac);
+  border-radius: var(--radius-sm);
+  background: var(--fog-soft);
+}
+.brief-text { font-size: 13.5px; line-height: 1.65; color: var(--text); }
+.brief-row {
+  display: flex; gap: 9px; align-items: baseline;
+  margin-top: 9px; font-size: 12.5px; line-height: 1.55; color: var(--muted);
+}
+.brief-tag {
+  flex-shrink: 0; padding: 2px 8px;
+  border: var(--hairline); border-radius: var(--pill-radius);
+  font-size: 10px; letter-spacing: var(--label-spacing); text-transform: uppercase;
+  color: var(--muted-soft);
+}
+.brief-tag.ok { color: var(--success); border-color: rgb(var(--success-rgb) / .35); }
+.brief-tag.no { color: var(--amber); border-color: rgb(var(--amber-rgb) / .35); }
+
+.recs { display: flex; flex-direction: column; gap: 10px; margin: 14px 0 4px; }
+.rec {
+  padding: 13px 15px;
+  border: var(--card-border); border-radius: var(--radius);
+  background: var(--card);
+}
+.rec-title { font-family: var(--font-display); font-size: 15px; color: var(--gold); line-height: 1.3; }
+.rec-author { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.rec-why { font-size: 12.5px; line-height: 1.6; color: var(--muted); margin-top: 9px; }
