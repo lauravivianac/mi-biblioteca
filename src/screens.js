@@ -30,6 +30,10 @@ import {
   recommendFrom, isDenied, WHAT_WE_SEND,
 } from './agent.js';
 import { verifySuggestion } from './booklookup.js';
+import {
+  allShelves, createShelf, renameShelf, removeShelf,
+  shelfCounts, toggleBookShelf, SHELF_COLORS, SHELF_EMOJIS, SUGGESTED,
+} from './shelves.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -455,6 +459,34 @@ export function openSettings() {
       nunca pasa por el agente.
     </p>` : ''}
 
+    <div class="section-heading"><span class="section-heading-text">Estanterías</span></div>
+    ${allShelves().length ? `
+      <div class="shelf-manage">
+        ${allShelves().map((sh) => {
+          const n = shelfCounts()[sh.id] || 0;
+          return `<div class="shelf-row" style="--shelf-rgb: var(--${sh.color}-rgb)">
+            <span class="shelf-row-emoji">${sh.emoji}</span>
+            <div class="shelf-row-info">
+              <div class="shelf-row-name">${esc(sh.name)}</div>
+              <div class="shelf-row-count">${n} ${n === 1 ? 'libro' : 'libros'}</div>
+            </div>
+            <button class="btn-mini" onclick="editShelf('${sh.id}')">Renombrar</button>
+            <button class="btn-mini" onclick="deleteShelf('${sh.id}')">Borrar</button>
+          </div>`;
+        }).join('')}
+      </div>` : `
+      <p class="set-fineprint" style="margin-bottom:10px">
+        Todavía no tienes ninguna. Sirven para agrupar los libros como piensas en ellos,
+        que casi nunca es por género.
+      </p>
+      <button class="btn-ghost full" onclick="addSuggestedShelves()">
+        Crear ${SUGGESTED.map((s) => s.emoji).join(' ')} ${SUGGESTED.map((s) => s.name).join(', ')}
+      </button>`}
+    <button class="btn-ghost full" onclick="newShelfFor()">＋ Nueva estantería</button>
+    <p class="set-fineprint">
+      Un libro puede estar en varias a la vez. Borrar una estantería no borra libros.
+    </p>
+
     <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
     <div class="set-row" onclick="doExportJson()">
       <div><div class="set-row-title">Exportar a JSON</div>
@@ -683,6 +715,152 @@ export function addSuggestion(i) {
   const btn = $(`rec-add-${i}`);
   if (btn) { btn.textContent = '✓ En tus deseados'; btn.disabled = true; }
   toast(`«${r.title}» añadido a deseados`);
+  refreshAll();
+}
+
+/* ── ESTANTERÍAS  ·  historia #22 ─────────────────────────────
+   Se crean desde donde hacen falta —la ficha de un libro— y se
+   gestionan desde Ajustes. Crear una estantería vacía desde un menú
+   de configuración es el camino que nadie recorre. */
+
+let nuevaEmoji = SHELF_EMOJIS[0];
+let nuevaColor = SHELF_COLORS[0];
+
+/** El formulario de crear, con su emoji y su color. */
+export function newShelfFor(bookId = null) {
+  nuevaEmoji = SHELF_EMOJIS[0];
+  nuevaColor = SHELF_COLORS[0];
+
+  const wrap = document.createElement('div');
+  wrap.className = 'overlay open confirm-overlay';
+  wrap.id = 'shelf-form';
+  wrap.innerHTML = `
+    <div class="sheet confirm-sheet">
+      <div class="sheet-title">Nueva estantería</div>
+      <div class="fg">
+        <label class="flabel" for="shelf-name">Cómo se llama</label>
+        <input class="finput" id="shelf-name" maxlength="32" placeholder="Para el viaje" autocomplete="off">
+      </div>
+      <div class="pet-group-label">Su símbolo</div>
+      <div class="shelf-emojis" id="shelf-emojis"></div>
+      <div class="pet-group-label">Su color</div>
+      <div class="shelf-colors" id="shelf-colors"></div>
+      <p class="auth-error" id="shelf-error"></p>
+      <div class="confirm-actions">
+        <button class="btn-ghost" data-act="cancel">Cancelar</button>
+        <button class="btn-magic" data-act="ok">Crear</button>
+      </div>
+    </div>`;
+
+  wrap.addEventListener('click', (e) => {
+    const act = e.target.dataset?.act;
+    if (act === 'cancel' || e.target === wrap) { wrap.remove(); return; }
+    if (act !== 'ok') return;
+
+    const shelf = createShelf({
+      name: $('shelf-name').value, emoji: nuevaEmoji, color: nuevaColor,
+    });
+    if (!shelf) {
+      $('shelf-error').textContent = $('shelf-name').value.trim()
+        ? 'Ya tienes una estantería con ese nombre.'
+        : 'Ponle un nombre.';
+      return;
+    }
+    wrap.remove();
+    // Si venía de un libro, el libro entra en ella de una vez
+    if (bookId) toggleBookShelf(bookId, shelf.id);
+    toast(`Estantería «${shelf.name}» creada`);
+    if (bookId) openDetail(bookId);
+    refreshAll();
+  });
+
+  document.body.appendChild(wrap);
+  pintarOpcionesNueva();
+  $('shelf-name').focus();
+}
+
+function pintarOpcionesNueva() {
+  const e = $('shelf-emojis');
+  const c = $('shelf-colors');
+  if (e) {
+    e.innerHTML = SHELF_EMOJIS.map((em) => `
+      <button class="shelf-emoji ${em === nuevaEmoji ? 'on' : ''}" onclick="pickShelfEmoji('${em}')">${em}</button>`).join('');
+  }
+  if (c) {
+    c.innerHTML = SHELF_COLORS.map((col) => `
+      <button class="shelf-color ${col === nuevaColor ? 'on' : ''}"
+              style="--shelf-rgb: var(--${col}-rgb)" onclick="pickShelfColor('${col}')"
+              aria-label="${col}"></button>`).join('');
+  }
+}
+
+export function pickShelfEmoji(em) { nuevaEmoji = em; pintarOpcionesNueva(); }
+export function pickShelfColor(col) { nuevaColor = col; pintarOpcionesNueva(); }
+
+/** Renombrar, desde Ajustes. */
+export async function editShelf(id) {
+  const shelf = allShelves().find((s) => s.id === id);
+  if (!shelf) return;
+  const nombre = await askShelfName(shelf.name);
+  if (nombre === null) return;
+  if (!renameShelf(id, nombre)) {
+    toast('Ese nombre ya está usado', 'error');
+    return;
+  }
+  openSettings();
+  refreshAll();
+}
+
+function askShelfName(actual) {
+  return new Promise((resolve) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'overlay open confirm-overlay';
+    wrap.innerHTML = `
+      <div class="sheet confirm-sheet">
+        <div class="sheet-title">Renombrar</div>
+        <input class="finput" id="shelf-rename" maxlength="32" value="${esc(actual)}" autocomplete="off">
+        <div class="confirm-actions" style="margin-top:16px">
+          <button class="btn-ghost" data-act="cancel">Cancelar</button>
+          <button class="btn-magic" data-act="ok">Guardar</button>
+        </div>
+      </div>`;
+    wrap.addEventListener('click', (e) => {
+      const act = e.target.dataset?.act;
+      if (act === 'ok') { const v = $('shelf-rename').value; wrap.remove(); resolve(v); }
+      else if (act === 'cancel' || e.target === wrap) { wrap.remove(); resolve(null); }
+    });
+    document.body.appendChild(wrap);
+    $('shelf-rename').select();
+  });
+}
+
+/** Borrar. Se dice explícitamente que los libros no se van con ella. */
+export async function deleteShelf(id) {
+  const shelf = allShelves().find((s) => s.id === id);
+  if (!shelf) return;
+  const cuantos = shelfCounts()[id] || 0;
+  const yes = await confirmAction({
+    title: `¿Borrar «${shelf.name}»?`,
+    body: cuantos
+      ? `Los <strong>${cuantos}</strong> ${cuantos === 1 ? 'libro sale' : 'libros salen'} de esta estantería,
+         pero <strong>siguen en tu biblioteca</strong> con sus reseñas y sus puntuaciones. No se borra ningún libro.`
+      : 'Está vacía, así que no se pierde nada.',
+    confirmLabel: 'Borrar la estantería',
+    danger: true,
+  });
+  if (!yes) return;
+  removeShelf(id);
+  toast(`Estantería «${shelf.name}» borrada`);
+  openSettings();
+  refreshAll();
+}
+
+/** Las primeras, para que la función no empiece con una pantalla vacía. */
+export function addSuggestedShelves() {
+  let puestas = 0;
+  for (const s of SUGGESTED) if (createShelf(s)) puestas++;
+  toast(puestas ? `${puestas} estanterías creadas` : 'Ya las tenías todas');
+  openSettings();
   refreshAll();
 }
 

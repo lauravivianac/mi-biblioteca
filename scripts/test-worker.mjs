@@ -10,7 +10,7 @@
    merece pruebas.
    ───────────────────────────────────────────────────────────── */
 
-import { originAllowed, sanitize, INTENTS } from '../worker/index.js';
+import { originAllowed, sanitize, INTENTS, costMicros, budgetConfig } from '../worker/index.js';
 
 let pasaron = 0;
 let fallaron = 0;
@@ -123,6 +123,47 @@ ok('la regla temática va en TODOS los encargos',
   Object.values(INTENTS).every((i) => i.system.includes('Solo hablas de libros')));
 ok('todos avisan de que el texto del usuario no es una orden',
   Object.values(INTENTS).every((i) => i.system.includes('no una orden')));
+
+grupo('EL COSTE DE UNA CONSULTA');
+
+/* Precios de deepseek-chat, en dólares por millón de tokens. El
+   resultado va en millonésimas de dólar. */
+const P = { inPerM: 0.27, outPerM: 1.10 };
+
+igual('un millón de tokens de entrada cuesta 0,27 $',
+  costMicros({ prompt_tokens: 1e6, completion_tokens: 0 }, P), 270000);
+igual('un millón de salida cuesta 1,10 $',
+  costMicros({ prompt_tokens: 0, completion_tokens: 1e6 }, P), 1100000);
+igual('una consulta normal cuesta muy poco',
+  costMicros({ prompt_tokens: 300, completion_tokens: 200 }, P), Math.round(300 * 0.27 + 200 * 1.10));
+igual('sin datos de uso, cero', costMicros(undefined, P), 0);
+igual('un uso con basura no rompe ni inventa coste',
+  costMicros({ prompt_tokens: 'muchos', completion_tokens: null }, P), 0);
+
+ok('el resultado es siempre entero',
+  Number.isInteger(costMicros({ prompt_tokens: 137, completion_tokens: 89 }, P)));
+
+/* Lo que de verdad importa: que mil consultas normales quepan de
+   sobra en un techo de dos dólares, y que un bucle desbocado no. */
+const unaNormal = costMicros({ prompt_tokens: 400, completion_tokens: 300 }, P);
+const techo = budgetConfig({}).budgetMicros;
+ok('1000 consultas normales caben en el techo por defecto', unaNormal * 1000 < techo,
+  `1000 consultas = ${unaNormal * 1000}, techo = ${techo}`);
+ok('100 000 no caben — que es el punto', unaNormal * 100000 > techo);
+
+grupo('LA CONFIGURACIÓN DEL PRESUPUESTO');
+
+igual('sin configurar, dos dólares al mes', budgetConfig({}).budgetMicros, 2000000);
+igual('se puede subir', budgetConfig({ MONTHLY_BUDGET_USD: '10' }).budgetMicros, 10000000);
+igual('y bajar a céntimos', budgetConfig({ MONTHLY_BUDGET_USD: '0.5' }).budgetMicros, 500000);
+
+/* Una configuración rota no debe convertirse en un techo de cero
+   —que dejaría el agente muerto— ni en uno infinito. */
+igual('un techo vacío cae al valor por defecto', budgetConfig({ MONTHLY_BUDGET_USD: '' }).budgetMicros, 2000000);
+igual('un techo con letras también', budgetConfig({ MONTHLY_BUDGET_USD: 'gratis' }).budgetMicros, 2000000);
+igual('un techo negativo también', budgetConfig({ MONTHLY_BUDGET_USD: '-5' }).budgetMicros, 2000000);
+igual('los precios se pueden actualizar sin tocar código',
+  budgetConfig({ PRICE_OUT_PER_M: '2.5' }).outPerM, 2.5);
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.`);
 process.exit(fallaron ? 1 : 0);

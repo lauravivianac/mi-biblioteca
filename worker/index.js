@@ -90,21 +90,78 @@ export const INTENTS = {
   },
 };
 
-/* ── LÍMITES ─────────────────────────────────────────────────── */
-/* Por usuaria y por día. El contador vive en la memoria del Worker,
-   que Cloudflare recicla cuando quiere: es un freno contra un bucle o
-   un abuso evidente, no una contabilidad exacta. Para eso haría falta
-   KV, y no lo vale para lo que cuesta una consulta aquí. */
-const DAILY_LIMIT = 60;
-const buckets = new Map();   // uid -> { day, count }
+/* ── LÍMITES Y PRESUPUESTO  ·  historia #56 ───────────────────
 
-function withinLimit(uid) {
-  const day = new Date().toISOString().slice(0, 10);
-  const b = buckets.get(uid);
-  if (!b || b.day !== day) { buckets.set(uid, { day, count: 1 }); return true; }
-  if (b.count >= DAILY_LIMIT) return false;
-  b.count++;
-  return true;
+   Dos frenos distintos:
+
+   · Por usuaria y día, para que nadie se coma la key sola.
+   · Por MES y en dinero, para toda la app, porque el gasto lo paga
+     una sola persona y sin techo no hay techo.
+
+   Los contadores viven en KV, no en memoria. El contador en memoria
+   que había antes se perdía cada vez que Cloudflare reciclaba el
+   isolate —o sea, todo el rato—, así que el límite «diario» se
+   reiniciaba solo y no limitaba nada.
+
+   Si no hay KV configurado, se sigue usando memoria: prefiero un
+   freno flojo a un Worker que deja de funcionar porque falta un
+   paso de infraestructura. El README dice cómo crearlo.
+
+   KV no tiene incremento atómico y es consistente «a la larga», así
+   que dos consultas a la vez pueden pasarse un poco del tope. Es un
+   freno, no una contabilidad: sirve para que un bucle no gaste 200
+   dólares mientras duermes, no para cuadrar céntimos. */
+
+const DAILY_LIMIT = 60;
+const memoria = new Map();          // respaldo cuando no hay KV
+
+const HOY = () => new Date().toISOString().slice(0, 10);
+const MES = () => new Date().toISOString().slice(0, 7);
+
+const DIA_TTL = 60 * 60 * 48;       // dos días
+const MES_TTL = 60 * 60 * 24 * 64;  // dos meses largos
+
+async function leer(env, clave) {
+  if (!env.AGENTE) return Number(memoria.get(clave) || 0);
+  return Number((await env.AGENTE.get(clave)) || 0);
+}
+
+async function sumar(env, clave, cuanto, ttl) {
+  const nuevo = (await leer(env, clave)) + cuanto;
+  if (!env.AGENTE) memoria.set(clave, nuevo);
+  else await env.AGENTE.put(clave, String(nuevo), { expirationTtl: ttl });
+  return nuevo;
+}
+
+/**
+ * Cuánto costó una consulta, en millonésimas de dólar.
+ *
+ * En enteros y no en decimales porque un acumulador mensual sumando
+ * flotantes minúsculos acaba desviándose, y aquí lo que se acumula
+ * decide cuándo se corta el grifo.
+ *
+ * Los precios van en la configuración, no aquí: cambian, y tener que
+ * tocar código para actualizarlos garantiza que nadie los actualice.
+ */
+export function costMicros(usage = {}, { inPerM = 0, outPerM = 0 } = {}) {
+  const entrada = Number(usage.prompt_tokens) || 0;
+  const salida = Number(usage.completion_tokens) || 0;
+  // precio por millón × tokens = millonésimas de dólar, directo
+  return Math.round(entrada * inPerM + salida * outPerM);
+}
+
+/** Lee los precios y el techo de la configuración, con valores por defecto. */
+export function budgetConfig(env = {}) {
+  const num = (v, sino) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : sino);
+  return {
+    /* Precios de deepseek-chat en dólares por millón de tokens.
+       COMPRUÉBALOS: cambian, y un precio viejo aquí significa un
+       techo que no es el que crees. */
+    inPerM: num(env.PRICE_IN_PER_M, 0.27),
+    outPerM: num(env.PRICE_OUT_PER_M, 1.10),
+    // Techo mensual para TODA la app, en dólares
+    budgetMicros: Math.round(num(env.MONTHLY_BUDGET_USD, 2) * 1e6),
+  };
 }
 
 /* ── VERIFICACIÓN DEL TOKEN ──────────────────────────────────── */
@@ -235,8 +292,22 @@ export default {
     const uid = await verifyToken((request.headers.get('Authorization') || '').replace(/^Bearer /, ''));
     if (!uid) return json({ error: 'sin-sesion' }, 401, allowOrigin);
 
-    if (!withinLimit(uid)) {
+    const claveDia = `dia:${uid}:${HOY()}`;
+    const claveGasto = `gasto:${MES()}`;
+    const precios = budgetConfig(env);
+
+    if (await leer(env, claveDia) >= DAILY_LIMIT) {
       return json({ error: 'limite-diario', message: `Máximo ${DAILY_LIMIT} consultas al día. Se renueva mañana.` }, 429, allowOrigin);
+    }
+
+    /* El techo del mes se comprueba ANTES de llamar, no después:
+       comprobarlo después sería cobrar la consulta que sobrepasa. */
+    const gastado = await leer(env, claveGasto);
+    if (gastado >= precios.budgetMicros) {
+      return json({
+        error: 'presupuesto-agotado',
+        message: 'El agente agotó su presupuesto de este mes.',
+      }, 402, allowOrigin);
     }
 
     const text = sanitize(body.text, spec.maxInput);
@@ -263,6 +334,13 @@ export default {
     if (!r.ok) return json({ error: 'proveedor', status: r.status }, 502, allowOrigin);
 
     const data = await r.json();
+
+    /* Se apunta el gasto real, no una estimación: el proveedor
+       devuelve los tokens que de verdad usó. Y se apunta aunque la
+       respuesta venga ilegible — el dinero se gastó igual. */
+    await sumar(env, claveDia, 1, DIA_TTL);
+    await sumar(env, claveGasto, costMicros(data.usage, precios), MES_TTL);
+
     let out;
     try { out = JSON.parse(data.choices?.[0]?.message?.content || '{}'); }
     catch { return json({ error: 'respuesta-ilegible' }, 502, allowOrigin); }

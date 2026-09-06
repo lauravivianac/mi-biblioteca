@@ -11,6 +11,20 @@ workers_dev = true
 # ahí, contestando. Ninguna es necesaria — la app usa una sola dirección.
 preview_urls = false
 
+# ── DÓNDE SE LLEVAN LAS CUENTAS ──────────────────────────────────────
+# Va comentado a propósito: con un id inventado, `wrangler deploy` falla
+# y te quedas sin agente. Sin KV el Worker funciona igual, pero los
+# contadores viven en memoria y se pierden cuando Cloudflare recicla el
+# isolate — o sea, el techo mensual no frena de verdad.
+#
+# Para activarlo, dos pasos:
+#   1) npx wrangler kv namespace create AGENTE
+#   2) descomenta las tres líneas de abajo y pega el id que imprimió
+#
+# [[kv_namespaces]]
+# binding = "AGENTE"
+# id = "aqui-el-id-que-te-dio-wrangler"
+
 [vars]
 # Desde qué dominios puede llamarse al Worker.
 #
@@ -25,3 +39,14 @@ ALLOWED_ORIGINS = "https://lauravivianac.github.io,https://mi-biblioteca.vercel.
 
 # La key de DeepSeek NO va aquí: este archivo está en el repositorio.
 # Va como secreto del entorno, con `wrangler secret put DEEPSEEK_API_KEY`.
+
+# Techo de gasto para TODA la app, en dólares al mes. Cuando se pasa,
+# el agente deja de responder hasta el mes siguiente y la app lo dice
+# con claridad. Súbelo cuando sepas cuánto se gasta de verdad.
+MONTHLY_BUDGET_USD = "2"
+
+# Precios de deepseek-chat, en dólares por millón de tokens.
+# COMPRUÉBALOS de vez en cuando: si cambian y esto no, el techo deja
+# de ser el que crees.
+PRICE_IN_PER_M = "0.27"
+PRICE_OUT_PER_M = "1.10"
