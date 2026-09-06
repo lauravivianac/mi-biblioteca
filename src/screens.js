@@ -22,6 +22,7 @@ import { MONTH_ORDER } from './seed.js';
 import { achievementStatus, earnedCount } from './achievements.js';
 import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
+  availableSpecies, currentScene, SCENES,
 } from './pet.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
@@ -251,6 +252,11 @@ function renderPetShelf() {
            placeholder="Ponle un nombre" value="${esc(cfg.name)}"
            onchange="setPetName(this.value)">
 
+    <div class="pet-group-label">Quién te acompaña</div>
+    <div class="pet-options">
+      ${availableSpecies().map((sp) => opt('species', sp, `${sp.emoji} `)).join('')}
+    </div>
+
     <div class="pet-group-label">Pelaje</div>
     <div class="pet-options">
       ${availableFurs().map((f) => opt('fur', f,
@@ -262,6 +268,10 @@ function renderPetShelf() {
 
     <div class="pet-group-label">Su rincón</div>
     <div class="pet-options">${availableCorners().map((c) => opt('corner', c)).join('')}</div>
+    ${cfg.corner === 'auto' ? `<p class="planner-hint">
+      Ahora mismo está en <strong>${esc(SCENES.find((sc) => sc.id === currentScene()).name)}</strong>,
+      por lo que estás leyendo. Cambia sola con el bloque que tengas entre manos.
+    </p>` : ''}
 
     <p class="set-fineprint">
       Todo se desbloquea leyendo. Un accesorio que costó terminar un libro de 900 páginas
