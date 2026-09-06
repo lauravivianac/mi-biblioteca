@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:worker",
+    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:taste && npm run test:worker",
     "test:contrast": "node scripts/check-contrast.mjs",
     "test:planner": "node scripts/test-planner.mjs",
     "test:booklookup": "node scripts/test-booklookup.mjs",
@@ -15,6 +15,7 @@
     "test:shelves": "node scripts/test-shelves.mjs",
     "test:quotes": "node scripts/test-quotes.mjs",
     "test:suggest": "node scripts/test-suggest.mjs",
-    "test:reviews": "node scripts/test-reviews.mjs"
+    "test:reviews": "node scripts/test-reviews.mjs",
+    "test:taste": "node scripts/test-taste.mjs"
   }
 }

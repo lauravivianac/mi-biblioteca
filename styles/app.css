@@ -613,6 +613,21 @@ body {
 .review-txt::placeholder { color: var(--muted); }
 .review-txt:focus { border-color: var(--violet); }
 
+/* ── TU GUSTO, EN UNA FRASE  ·  historia #62 ──
+   Va arriba del todo y con aire: es lo que hace auditable al motor.
+   Si dice que te encanta la poesía y es mentira, quieres verlo tú. */
+.taste-line {
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: var(--card-radius);
+  border: var(--hairline);
+  background: rgb(var(--lilac-rgb) / 0.06);
+}
+
 /* ── PRIVADA O PÚBLICA  ·  historia #28 ──
    Apagado es el estado normal, y se nota: gris, sin brillo, sin
    reclamar nada. El encendido sí canta —porque publicar es lo que

@@ -9,7 +9,7 @@ import {
 } from './auth.js';
 import {
   settings, updateSettings, exportData, exportCsv, updateEntry, findBook,
-  allBooks, statusOf, ratingOf, addBook,
+  allBooks, statusOf, ratingOf, addBook, coverOf,
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
 import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
@@ -30,6 +30,8 @@ import {
   recommendFrom, isDenied, WHAT_WE_SEND,
 } from './agent.js';
 import { verifySuggestion } from './booklookup.js';
+import { recommendMine } from './taste.js';
+import { describeTaste } from './taste-core.js';
 import {
   allShelves, createShelf, renameShelf, removeShelf,
   shelfCounts, toggleBookShelf, SHELF_COLORS, SHELF_EMOJIS, SUGGESTED,
@@ -614,11 +616,67 @@ export async function toggleAgent() {
 
 let sugeridos = [];
 
-export async function openRecs() {
-  // Antes de abrir nada: nada sale de aquí sin un sí.
+/* ── LO TUYO PRIMERO  ·  historia #62 ─────────────────────────
+   Esta pantalla pedía permiso para el agente antes de enseñar nada,
+   así que sin agente no había recomendaciones en absoluto. Y las
+   había: tus propios pendientes, ordenados por lo que ya se sabe de
+   tu gusto. Es instantáneo, funciona sin conexión y no gasta un
+   token. Los descubrimientos de fuera son un botón aparte, porque
+   son lo único que de verdad necesita salir a internet. */
+
+export function openRecs() {
+  $('recs-overlay').classList.add('open');
+  pintarRecsLocales();
+}
+
+function pintarRecsLocales() {
+  const { perfil, sugerencias } = recommendMine({ limit: 5 });
+
+  $('recs-body').innerHTML = `
+    <p class="taste-line">${esc(describeTaste(perfil))}</p>
+
+    ${sugerencias.length ? `
+      <div class="store-shelf-label">De los tuyos</div>
+      ${sugerencias.map((b) => `
+        <div class="sug">
+          <div class="sug-head">
+            ${coverOf(b.id)
+              ? `<img class="sug-cover" src="${esc(coverOf(b.id))}" alt="" loading="lazy">`
+              : '<div class="sug-cover sug-cover-ph">📕</div>'}
+            <div class="sug-info">
+              <div class="sug-title">${esc(b.title)}</div>
+              <div class="sug-author">${esc(b.author)}${b.pages && b.pages !== '—' ? ` · ${esc(b.pages)} págs.` : ''}</div>
+            </div>
+          </div>
+          ${b.porque ? `<p class="sug-why">${esc(b.porque)}</p>` : ''}
+          <div class="sug-actions">
+            <button class="btn-magic btn-sug" onclick="startFromRecs('${b.id}')">Empezarlo</button>
+          </div>
+        </div>`).join('')}
+    ` : `<p class="planner-hint">
+      No te queda nada pendiente que proponerte. Buen momento para añadir algo con ＋.
+    </p>`}
+
+    ${agentOffered() ? `
+      <button class="btn-ghost full" id="recs-agent-btn" onclick="askAgentRecs()" style="margin-top:16px">
+        ✦ Buscar libros nuevos, fuera de tu biblioteca
+      </button>
+      <p class="set-fineprint">Lo de arriba es tuyo y no gasta nada. Esto le pregunta al agente.</p>
+    ` : ''}`;
+}
+
+/** Empezar uno de los tuyos, desde aquí. */
+export function startFromRecs(id) {
+  updateEntry(id, { status: 'reading', startedAt: Date.now() });
+  closeSheet('recs-overlay');
+  refreshAll();
+  toast('¡A leer!');
+}
+
+export async function askAgentRecs() {
+  // Antes de mandar nada: nada sale de aquí sin un sí.
   if (!await ensureAgentConsent()) return;
 
-  $('recs-overlay').classList.add('open');
   $('recs-body').innerHTML = '<p class="planner-hint">Mirando lo que has leído…</p>';
   sugeridos = [];
 
@@ -631,9 +689,10 @@ export async function openRecs() {
   if (read.length < 3) {
     $('recs-body').innerHTML = `<p class="planner-hint">
       Con <strong>${read.length}</strong> ${read.length === 1 ? 'libro leído' : 'libros leídos'} todavía no hay
-      de dónde sacar una recomendación que valga. Marca unos cuantos como leídos
+      de dónde sacar un descubrimiento que valga. Marca unos cuantos como leídos
       —y ponles estrellas, que es lo que más dice— y vuelve.
-    </p>`;
+    </p>
+    <button class="btn-ghost full" onclick="openRecs()" style="margin-top:14px">← Volver a los tuyos</button>`;
     return;
   }
 
@@ -692,7 +751,8 @@ export async function openRecs() {
       <p class="set-fineprint">
         Los datos —portada, autor, páginas— salen de OpenLibrary y Google Books, no del agente.
         Lo único suyo es el porqué.
-      </p>`;
+      </p>
+      <button class="btn-ghost full" onclick="openRecs()" style="margin-top:14px">← Volver a los tuyos</button>`;
   } catch (e) {
     if (isDenied(e)) { closeSheet('recs-overlay'); return; }
     $('recs-body').innerHTML = `<p class="planner-hint warn">${esc(e.message)}</p>`;

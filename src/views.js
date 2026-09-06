@@ -194,7 +194,9 @@ export function renderLib() {
     const cuantas = quoteCount();
     agentSlot.innerHTML = [
       cuantas ? `<button class="btn-ghost full" onclick="openQuotes()">❞ Mis citas · ${cuantas}</button>` : '',
-      agentOffered() ? '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>' : '',
+      /* Ya no depende del agente: desde #62 la primera respuesta sale
+         de tus propios libros, sin red y sin gastar nada. */
+      '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>',
     ].join('');
   }
 
