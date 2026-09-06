@@ -26,9 +26,19 @@ const MESSAGES = {
   'auth/too-many-requests': 'Demasiados intentos seguidos. Espera un momento.',
   'auth/popup-closed-by-user': 'Se cerró la ventana antes de terminar.',
   'auth/popup-blocked': 'El navegador bloqueó la ventana. Inténtalo otra vez.',
+  'auth/cancelled-popup-request': 'Se abrió otra ventana de acceso. Inténtalo otra vez.',
   'auth/network-request-failed': 'Sin conexión. Revisa tu red e inténtalo de nuevo.',
   'auth/operation-not-allowed':
     'Ese método de inicio de sesión todavía no está habilitado en la consola de Firebase.',
+  /* Este se ve así: la ventana de Google abre y se cierra sola, sin
+     decir nada. Sin este mensaje salía «algo no salió bien», que manda
+     a buscar el fallo justo donde no está. El dominio de cada preview
+     de Vercel es distinto, y Firebase no admite comodines, así que
+     pasa cada vez que se abre la app desde una URL nueva. */
+  'auth/unauthorized-domain':
+    `«${location.hostname}» no está autorizado en Firebase. Añádelo en `
+    + 'Authentication → Settings → Authorized domains, o entra con correo '
+    + 'y contraseña, que no depende del dominio.',
 };
 
 export const humanError = (e) =>

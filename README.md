@@ -23,7 +23,21 @@ En [console.firebase.google.com](https://console.firebase.google.com) → tu pro
   después: mientras no esté habilitado, ese botón devuelve un mensaje claro en vez
   de romperse.
 
-En **Authentication → Settings → Authorized domains**, añade `lauravivianac.github.io`.
+En **Authentication → Settings → Authorized domains**, añade cada dominio desde el que
+se vaya a abrir la app:
+
+- `lauravivianac.github.io` — GitHub Pages
+- `mi-biblioteca-lyart.vercel.app` — Vercel
+
+**Este es el fallo que más cuesta reconocer.** Si el dominio no está en esa lista, la
+ventana de Google abre y se cierra sola, sin explicar nada; el error real es
+`auth/unauthorized-domain` y solo se ve en la consola del navegador. La app ahora lo
+traduce y dice qué dominio hay que añadir, pero el arreglo está aquí.
+
+Los **previews de Vercel** (`mi-biblioteca-git-<rama>-….vercel.app`) tienen un dominio
+distinto por rama y Firebase no admite comodines, así que ahí Google nunca va a
+funcionar salvo que se dé de alta cada uno a mano. Para probar un preview, entra con
+correo y contraseña, que no depende del dominio.
 
 ### 2. Desplegar las reglas de seguridad ⚠️
 
