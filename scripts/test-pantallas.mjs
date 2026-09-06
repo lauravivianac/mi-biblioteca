@@ -25,7 +25,7 @@
 
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, normalize } from 'node:path';
 
@@ -49,6 +49,23 @@ const servidor = createServer(async (req, res) => {
 });
 await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${servidor.address().port}`;
+
+/* ── ANTES DE ABRIR EL NAVEGADOR ─────────────────────────────
+   Que toda hoja que el código intenta abrir EXISTA en el marcado.
+
+   Es la otra forma de que un botón no haga nada: `openSheet` sobre un
+   id que no está no abre nada y no se queja. Se comprueba leyendo, que
+   es barato, y cubre las hojas nuevas sin tocar este fichero. */
+const ficherosSrc = (await readdir(join(raiz, 'src'))).filter((x) => x.endsWith('.js'));
+const fuentes = await Promise.all(
+  ficherosSrc.map((x) => readFile(join(raiz, 'src', x), 'utf8')),
+);
+const marcado = await readFile(join(raiz, 'index.html'), 'utf8');
+const enElHtml = new Set([...marcado.matchAll(/id="([a-z-]+-overlay)"/g)].map((m) => m[1]));
+const pedidasPorElCodigo = new Set(
+  fuentes.flatMap((s) => [...s.matchAll(/openSheet\('([a-z-]+-overlay)'\)/g)].map((m) => m[1])),
+);
+const huerfanas = [...pedidasPorElCodigo].filter((id) => !enElHtml.has(id));
 
 const navegador = await chromium.launch({
   executablePath: process.env.CHROMIUM_PATH || undefined,
@@ -118,6 +135,24 @@ const resultado = await pagina.evaluate(async (filas) => {
     closeSheet(id);
   }
   salida.trasCerrarTodo = hojaDeArriba();
+
+  /* TODAS las hojas del index.html, no solo las siete que se notaban.
+     El fallo era de la pila entera, así que la prueba tiene que serlo
+     también — y una hoja nueva queda cubierta sin tocar este fichero.
+
+     Basta con abrirlas sobre una misma de debajo: si cada una gana a
+     esa, la pila funciona para cualquier pareja. */
+  salida.todas = {};
+  const todosLosIds = [...document.querySelectorAll('.overlay[id]')].map((el) => el.id);
+  openSheet('settings-overlay');
+  for (const id of todosLosIds) {
+    if (id === 'settings-overlay') continue;
+    openSheet(id);
+    salida.todas[id] = hojaDeArriba();
+    closeSheet(id);
+  }
+  closeSheet('settings-overlay');
+  salida.cuantas = todosLosIds.length;
   return salida;
 }, FILAS_DE_AJUSTES);
 
@@ -151,8 +186,23 @@ for (const id of Object.values(FILAS_DE_AJUSTES)) {
 comprobar('cerradas todas, no queda ninguna encima',
   resultado.trasCerrarTodo === 'ninguna', `quedó «${resultado.trasCerrarTodo}»`);
 
+/* Todas las hojas del marcado, no solo las que se notaban. */
+for (const [id, arriba] of Object.entries(resultado.todas)) {
+  comprobar(`pila · «${id}» gana a la de debajo`, arriba === id,
+    `arriba quedó «${arriba}»`);
+}
+comprobar('se probaron todas las hojas del marcado', resultado.cuantas >= 25,
+  `solo se encontraron ${resultado.cuantas}`);
+
 comprobar('el marcado no lanza errores de JavaScript',
   erroresDePagina.length === 0, erroresDePagina.join(' · '));
+
+comprobar('toda hoja que el código abre existe en el marcado',
+  huerfanas.length === 0,
+  `el código abre pero el HTML no tiene: ${huerfanas.join(', ')}`);
+comprobar('el código abre hojas por openSheet, no a mano',
+  pedidasPorElCodigo.size >= 25,
+  `solo ${pedidasPorElCodigo.size} llamadas a openSheet — ¿alguna volvió a classList.add?`);
 
 if (!fallos.length) {
   console.log(`\n  ✓ ${pasan} comprobaciones de pantalla en Chromium. Sin fallos.\n`);
