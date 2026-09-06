@@ -322,7 +322,9 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.resource.data.from == request.auth.uid
                     && (noticeId == 'follow_' + request.auth.uid
-                        || noticeId == 'comment_' + request.auth.uid)
+                        || noticeId == 'comment_' + request.auth.uid
+                        || noticeId == 'swapreq_' + request.auth.uid
+                        || noticeId == 'swapres_' + request.auth.uid)
                     && userId != request.auth.uid;
 
       /* La dueña, para marcarlo leído; y quien lo dejó, para
@@ -337,7 +339,9 @@ service cloud.firestore {
                         && resource.data.from == request.auth.uid
                         && request.resource.data.from == request.auth.uid
                         && (noticeId == 'follow_' + request.auth.uid
-                            || noticeId == 'comment_' + request.auth.uid));
+                            || noticeId == 'comment_' + request.auth.uid
+                            || noticeId == 'swapreq_' + request.auth.uid
+                            || noticeId == 'swapres_' + request.auth.uid));
 
       allow delete: if isOwner(userId)
                     || (request.auth != null
@@ -525,6 +529,75 @@ service cloud.firestore {
 
       allow delete: if request.auth != null
                     && (noHayNada() || resource.data.uid == request.auth.uid);
+    }
+
+    /* ── SOLICITUDES DE INTERCAMBIO  ·  historia #84 ──────────
+       Las publicaciones son públicas a propósito; esto NO. A quién le
+       pides un libro no es asunto de nadie más, así que solo la leen
+       las dos personas implicadas.
+
+       EL IDENTIFICADOR ES `{quienPide}_{publicación}`, y ahí está la
+       defensa contra el spam: dos solicitudes de la misma persona
+       sobre el mismo libro son el mismo documento, así que no se
+       pueden apilar. El tope diario de la historia vive en la app —
+       contar documentos dentro de una regla no se puede, y decirlo es
+       más honesto que fingir que esto lo cubre.
+
+       LA MÁQUINA DE ESTADOS ESTÁ AQUÍ, no solo en el cliente. Quien
+       recibe contesta mientras está pendiente; quien pidió cierra la
+       contrapropuesta o retira la suya. Sin esto, cualquiera de las
+       dos podría marcar como «aceptada» una solicitud que la otra
+       nunca aceptó — y aceptar es lo que abre el chat y lleva a un
+       encuentro en persona.
+
+       Y SIGUE SIN HABER DINERO, igual que en las publicaciones: un
+       campo de precio se rechaza aunque alguien lo mande a mano. */
+    match /swapRequests/{reqId} {
+      function soyParte() {
+        return request.auth != null
+               && (resource.data.de == request.auth.uid
+                   || resource.data.para == request.auth.uid);
+      }
+      function sinDinero(d) {
+        return !('precio' in d) && !('price' in d) && !('pago' in d);
+      }
+
+      allow read: if soyParte();
+
+      allow create: if request.auth != null
+                    && request.resource.data.de == request.auth.uid
+                    && request.resource.data.para != request.auth.uid
+                    && reqId == request.auth.uid + '_' + request.resource.data.swapId
+                    && request.resource.data.estado == 'pendiente'
+                    && request.resource.data.mensaje.size() <= 300
+                    && request.resource.data.ofrezco.size() <= 3
+                    && sinDinero(request.resource.data);
+
+      /* Ni el `de`, ni el `para`, ni de qué libro se habla cambian
+         nunca: una solicitud es entre esas dos personas y sobre ese
+         libro, y poder cambiarlo sería poder colar una conversación
+         ajena en la bandeja de alguien. */
+      allow update: if soyParte()
+                    && request.resource.data.de == resource.data.de
+                    && request.resource.data.para == resource.data.para
+                    && request.resource.data.swapId == resource.data.swapId
+                    && sinDinero(request.resource.data)
+                    && (
+                      (request.auth.uid == resource.data.para
+                       && resource.data.estado == 'pendiente'
+                       && request.resource.data.estado in ['aceptada', 'rechazada', 'contrapropuesta'])
+                      ||
+                      (request.auth.uid == resource.data.de
+                       && ((resource.data.estado == 'contrapropuesta'
+                            && request.resource.data.estado in ['aceptada', 'rechazada'])
+                           || (resource.data.estado in ['pendiente', 'contrapropuesta']
+                               && request.resource.data.estado == 'cancelada')))
+                    );
+
+      allow delete: if request.auth != null
+                    && (noHayNada()
+                        || resource.data.de == request.auth.uid
+                        || resource.data.para == request.auth.uid);
     }
 
     /* La colección `biblioteca` era de la época sin autenticación.

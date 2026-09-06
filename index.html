@@ -104,6 +104,9 @@
       <div class="nav-item" onclick="nav('feed',this)" role="button" tabindex="0">
         <span class="nav-icon">👀</span><span class="nav-label">Amigas</span>
       </div>
+      <div class="nav-item" onclick="nav('trueque',this)" role="button" tabindex="0">
+        <span class="nav-icon">⇄</span><span class="nav-label">Trueque</span>
+      </div>
     </nav>
   </header>
 
@@ -140,6 +143,20 @@
     <div class="view" id="view-feed">
       <p class="planner-lede">Lo que están leyendo las personas que sigues.</p>
       <div id="feed-body"></div>
+    </div>
+
+    <!-- TRUEQUE · #83 -->
+    <div class="view" id="view-trueque">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="trueque-buscar" placeholder="Buscar título o autor..."
+               oninput="setFiltroTexto(this.value)" aria-label="Buscar entre los disponibles">
+      </div>
+      <div class="filter-scroll" id="trueque-ambitos"></div>
+      <button class="btn-ghost full" onclick="openSwaps()" style="margin-bottom:12px">
+        ⇄ Mis intercambios
+      </button>
+      <div id="trueque-body"></div>
     </div>
 
     <!-- TRACKER -->
@@ -242,6 +259,33 @@
 </div>
 
 <!-- COMENTARIOS -->
+<div class="overlay" id="ask-overlay" onclick="closeAsk(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Pedir este libro</div>
+    <button class="sheet-close" onclick="closeSheet('ask-overlay')" aria-label="Cerrar">✕</button>
+    <div id="ask-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="swaps-overlay" onclick="closeSwaps(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Mis intercambios</div>
+    <button class="sheet-close" onclick="closeSheet('swaps-overlay')" aria-label="Cerrar">✕</button>
+    <div id="swaps-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="counter-overlay" onclick="closeCounter(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Contraproponer</div>
+    <button class="sheet-close" onclick="closeSheet('counter-overlay')" aria-label="Cerrar">✕</button>
+    <div id="counter-body"></div>
+  </div>
+</div>
+
 <div class="overlay" id="comments-overlay" onclick="closeComments(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>

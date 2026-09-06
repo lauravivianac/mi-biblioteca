@@ -309,6 +309,83 @@ async function no(nombre, fn) {
     setDoc(doc(b, 'swaps', 's1'), { activa: false }, { merge: true }));
 }
 
+/* ═══ SOLICITUDES DE INTERCAMBIO  ·  #84 ══════════════════════
+   La máquina de estados, contra el motor de verdad. Lo que importa no
+   es que se pueda pedir, sino que NADIE PUEDA MARCAR COMO ACEPTADA una
+   solicitud que la otra persona no aceptó: aceptar es lo que abre el
+   chat y lleva a un encuentro en persona. */
+{
+  const a = ctx(ANA).firestore();
+  const b = ctx(BEA).firestore();
+  const c = ctx(CRIS).firestore();
+  const base = {
+    de: BEA, deNombre: 'Bea', deUsuario: 'beita', para: ANA,
+    swapId: 's1', bookId: 'b1', title: 'T', author: 'A',
+    ofrezco: [], suelto: true, mensaje: 'me interesa', estado: 'pendiente',
+    at: 1, actualizado: 1,
+  };
+  const id = `${BEA}_s1`;
+
+  await ok('solicitud · Bea la manda', () => setDoc(doc(b, 'swapRequests', id), base));
+  await no('solicitud · el identificador tiene que ser suyo', () =>
+    setDoc(doc(b, 'swapRequests', `${CRIS}_s1`), { ...base, de: CRIS }));
+  await no('solicitud · no la firma con el nombre de otra', () =>
+    setDoc(doc(c, 'swapRequests', `${CRIS}_s9`), { ...base, de: BEA, swapId: 's9' }));
+  await no('solicitud · no se pide a una misma', () =>
+    setDoc(doc(b, 'swapRequests', `${BEA}_s2`), { ...base, para: BEA, swapId: 's2' }));
+  await no('solicitud · con precio, no (#82)', () =>
+    setDoc(doc(b, 'swapRequests', `${BEA}_s3`), { ...base, swapId: 's3', precio: 20 }));
+  await no('solicitud · más de tres libros ofrecidos, no', () =>
+    setDoc(doc(b, 'swapRequests', `${BEA}_s4`), {
+      ...base, swapId: 's4', suelto: false,
+      ofrezco: [{ bookId: '1' }, { bookId: '2' }, { bookId: '3' }, { bookId: '4' }],
+    }));
+
+  await ok('solicitud · la ven las dos partes', () => getDoc(doc(a, 'swapRequests', id)));
+  await ok('solicitud · y quien la mandó', () => getDoc(doc(b, 'swapRequests', id)));
+  await no('solicitud · nadie más la ve', () => getDoc(doc(c, 'swapRequests', id)));
+
+  /* Lo que no puede pasar de ninguna manera. */
+  await no('solicitud · quien pide NO puede aceptarse a sí misma', () =>
+    setDoc(doc(b, 'swapRequests', id), { estado: 'aceptada' }, { merge: true }));
+  await no('solicitud · una tercera no la toca', () =>
+    setDoc(doc(c, 'swapRequests', id), { estado: 'aceptada' }, { merge: true }));
+  await no('solicitud · no se cambia de quién es', () =>
+    setDoc(doc(a, 'swapRequests', id), { de: CRIS, estado: 'aceptada' }, { merge: true }));
+  await no('solicitud · no se cambia de qué libro habla', () =>
+    setDoc(doc(a, 'swapRequests', id), { swapId: 's9', estado: 'aceptada' }, { merge: true }));
+
+  /* El camino bueno: Ana contrapropone, Bea cierra. */
+  await ok('solicitud · Ana contrapropone', () =>
+    setDoc(doc(a, 'swapRequests', id), {
+      estado: 'contrapropuesta', contraoferta: { pido: [], mensaje: '¿y aquel otro?' },
+    }, { merge: true }));
+  await no('solicitud · Ana no puede cerrar su propia contrapropuesta', () =>
+    setDoc(doc(a, 'swapRequests', id), { estado: 'aceptada' }, { merge: true }));
+  await ok('solicitud · Bea la acepta', () =>
+    setDoc(doc(b, 'swapRequests', id), { estado: 'aceptada' }, { merge: true }));
+  await no('solicitud · aceptada, ya no se retoca', () =>
+    setDoc(doc(a, 'swapRequests', id), { estado: 'rechazada' }, { merge: true }));
+
+  /* Retirar la propia, mientras siga viva. */
+  const id2 = `${BEA}_s5`;
+  await ok('solicitud · otra más', () =>
+    setDoc(doc(b, 'swapRequests', id2), { ...base, swapId: 's5' }));
+  await no('solicitud · Ana no puede retirar la de Bea', () =>
+    setDoc(doc(a, 'swapRequests', id2), { estado: 'cancelada' }, { merge: true }));
+  await ok('solicitud · Bea la retira', () =>
+    setDoc(doc(b, 'swapRequests', id2), { estado: 'cancelada' }, { merge: true }));
+  await ok('solicitud · y la puede borrar', () => deleteDoc(doc(b, 'swapRequests', id2)));
+
+  /* Los avisos del intercambio, con el mismo tope que los demás. */
+  await ok('aviso · de solicitud (#84)', () =>
+    setDoc(doc(b, 'notifs', ANA, 'items', `swapreq_${BEA}`), { tipo: 'swapreq', from: BEA, at: 1 }));
+  await ok('aviso · de respuesta (#84)', () =>
+    setDoc(doc(a, 'notifs', BEA, 'items', `swapres_${ANA}`), { tipo: 'swapres', from: ANA, at: 1 }));
+  await no('aviso · sin identificador libre tampoco aquí', () =>
+    setDoc(doc(b, 'notifs', ANA, 'items', `swapreq_${BEA}_s1`), { tipo: 'swapreq', from: BEA, at: 1 }));
+}
+
 /* ═══ LO QUE NO TIENE REGLA, SIGUE CERRADO ════════════════════
    El «todo lo demás, cerrado» del final es lo que convirtió la falta
    de una regla para `activity` en un feed vacío. Que siga ahí. */

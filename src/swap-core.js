@@ -133,6 +133,11 @@ export function swapDoc({
     country: place.country || '',
     city: place.city,
     cityKey: place.cityKey || '',
+    /* El país normalizado va aparte del país escrito, y hace falta:
+       ampliar la búsqueda a todo el país (#83) es una consulta por
+       igualdad, y «España» y «españa» tienen que ser el mismo sitio.
+       Es la misma razón por la que existe `cityKey`. */
+    countryKey: place.countryKey || '',
     area: place.area || '',
     geohash: place.geohash || null,
     activa: true,
@@ -143,7 +148,7 @@ export function swapDoc({
 export const SWAP_FIELDS = [
   'uid', 'username', 'name', 'bookId', 'title', 'author', 'genre', 'cover',
   'estado', 'nota', 'foto', 'suelto', 'aCambioDe',
-  'country', 'city', 'cityKey', 'area', 'geohash', 'activa', 'at',
+  'country', 'city', 'cityKey', 'countryKey', 'area', 'geohash', 'activa', 'at',
 ];
 
 /** Lo que se lee bajo el título en la lista. */

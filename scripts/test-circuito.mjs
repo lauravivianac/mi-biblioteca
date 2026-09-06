@@ -296,6 +296,78 @@ const enBogota = await getDocs(query(
 comprobar('intercambio · otra persona la encuentra por ciudad',
   enBogota.docs.some((d) => d.id === publicado.id), `n=${enBogota.size}`);
 
+/* ═══ 10 · EXPLORAR Y PEDIR  ·  #83 y #84 ═════════════════════
+   El circuito entero del trueque entre dos personas, con el código
+   real: Cris encuentra el libro de Bea, se lo pide, Bea contrapropone
+   y Cris cierra. Es la parte donde dos desconocidas quedan en acuerdo,
+   así que se comprueba cada paso y sobre todo los que NO se pueden
+   dar. */
+const explore = await import('../src/explore.js');
+const requests = await import('../src/requests.js');
+
+/* Cris está en la misma ciudad que Bea: si no, no se encontrarían. */
+store.setPlace({ country: 'Colombia', city: 'Bogotá', area: 'Teusaquillo' });
+await store.flush();
+await moderation.loadMyBlocks();
+
+const enMiCiudad = await explore.explorar('ciudad');
+comprobar('explorar · sale el libro de Bea', enMiCiudad.publicaciones.some((p) => p.id === publicado.id),
+  `n=${enMiCiudad.publicaciones.length}`);
+comprobar('explorar · lo mío no se explora',
+  enMiCiudad.publicaciones.every((p) => p.uid !== uidCris));
+
+const suya = enMiCiudad.publicaciones.find((p) => p.id === publicado.id);
+comprobar('explorar · lo que llega NO trae ubicación exacta',
+  suya && !('lat' in suya) && !('lon' in suya) && !('address' in suya));
+
+/* Pedirlo, ofreciendo un libro leído. */
+store.updateEntry(LIBRO_B, { status: 'read' });
+await store.flush();
+const solicitado = await requests.solicitar(suya, {
+  ofrezco: [store.findBook(LIBRO_B)], mensaje: 'Me interesa mucho',
+});
+comprobar('pedir · Cris se lo pide', solicitado.ok === true, JSON.stringify(solicitado).slice(0, 160));
+comprobar('pedir · queda pendiente', solicitado.solicitud?.estado === 'pendiente');
+
+const repetida = await requests.solicitar(suya, { suelto: true });
+comprobar('pedir · no se pide dos veces lo mismo', repetida.ok === false && repetida.yaEsta === true,
+  JSON.stringify(repetida));
+
+/* Bea la recibe y contrapropone. */
+await entrarComo(BEA.email, BEA.pass, BEA.nombre);
+const recibidas = await requests.misRecibidas();
+const suSolicitud = recibidas.find((s) => s.de === uidCris);
+comprobar('pedir · Bea la ve entre las recibidas', Boolean(suSolicitud), `n=${recibidas.length}`);
+
+const avisosBea = await social.myNotices();
+comprobar('pedir · a Bea le llega el aviso', avisosBea.some((a) => a.tipo === 'swapreq'),
+  JSON.stringify(avisosBea.map((a) => a.tipo)));
+
+const contra = await requests.responder(suSolicitud, 'contrapropuesta', {
+  pido: [], mensaje: 'Ese no, ¿tienes otro?',
+});
+comprobar('responder · Bea contrapropone', contra.ok === true, JSON.stringify(contra).slice(0, 140));
+
+const noPuedeCerrar = await requests.responder(
+  { ...suSolicitud, estado: 'contrapropuesta' }, 'aceptada',
+);
+comprobar('responder · Bea NO cierra su propia contrapropuesta', noPuedeCerrar.ok === false,
+  JSON.stringify(noPuedeCerrar));
+
+/* Cris cierra. */
+await entrarComo(cris.email, cris.pass, cris.nombre);
+const misSolicitudes = await requests.misEnviadas();
+const laMia = misSolicitudes.find((s) => s.swapId === publicado.id);
+comprobar('responder · Cris la ve con la contrapropuesta',
+  laMia?.estado === 'contrapropuesta', JSON.stringify(laMia?.estado));
+
+const cerrada = await requests.responder(laMia, 'aceptada');
+comprobar('responder · Cris acepta', cerrada.ok === true, JSON.stringify(cerrada).slice(0, 140));
+
+const yaCerrada = await requests.responder({ ...laMia, estado: 'aceptada' }, 'cancelada');
+comprobar('responder · lo aceptado ya no se retira', yaCerrada.ok === false,
+  JSON.stringify(yaCerrada));
+
 /* ═══ RESULTADO ═══════════════════════════════════════════════ */
 await auth.logOut().catch(() => {});
 

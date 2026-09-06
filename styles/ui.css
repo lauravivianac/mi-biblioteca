@@ -860,3 +860,71 @@ body:not(.signed-in) .fab { display: none; }
 .swap-lugar { font-size: 11.5px; color: var(--muted); margin-top: 8px; }
 .swap-acciones { display: flex; gap: 7px; margin-top: 10px; }
 .swap-acciones .btn-mini { flex: 1; }
+
+/* ── TRUEQUE · explorar y solicitar  ·  #83 y #84 ───────────────
+   La marca de «lo tienes pendiente» es lo único de esta pantalla que
+   se pinta con color de acento. Es deliberado: la nota de la historia
+   dice que resaltar lo que ya querías leer es lo que separa esto de un
+   tablón de anuncios, así que se resalta de verdad y no con un matiz
+   que nadie ve. */
+.swap-card.marca-quiero {
+  border-color: rgb(var(--gold-rgb) / .45);
+  box-shadow: 0 0 0 1px rgb(var(--gold-rgb) / .12);
+}
+.swap-marca {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 7px;
+}
+.swap-card.marca-leyendo .swap-marca { color: var(--lilac); }
+.swap-card.marca-leido { opacity: .72; }
+.swap-card.marca-leido .swap-marca { color: var(--muted); }
+
+/* Portada y texto, uno al lado del otro: en una lista de libros
+   ajenos la portada es lo que se reconoce antes que el título. */
+.swap-cab { display: flex; gap: 11px; align-items: flex-start; }
+.swap-cab > div { min-width: 0; flex: 1; }
+.swap-portada {
+  width: 52px;
+  flex: 0 0 52px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  display: block;
+}
+
+.swap-estado {
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  color: var(--lilac);
+  margin-top: 5px;
+}
+.swap-card.cerrada { opacity: .6; }
+.swap-contra {
+  font-size: 12.5px;
+  color: var(--lilac);
+  background: rgb(var(--lilac-rgb) / .08);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin-top: 9px;
+}
+
+/* Los libros que se ofrecen: se envuelven en vez de desplazarse, para
+   poder ver de un vistazo cuáles llevas marcados. */
+.ask-libros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 168px;
+  overflow-y: auto;
+  margin-top: 6px;
+}
+.ask-libros .chip { max-width: 100%; }
+
+/* Con cinco pestañas el texto se aprieta. Se encoge la letra en vez de
+   quitar la etiqueta: un icono solo no dice qué es «⇄». */
+@media (max-width: 420px) {
+  .nav-label { font-size: 9.5px; letter-spacing: 0; }
+}
