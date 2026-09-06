@@ -3,6 +3,7 @@
    Acceso · Onboarding · Tienda de temas · Ajustes · Plan lector
    ───────────────────────────────────────────────────────────── */
 
+import { SOPORTE, mailtoSoporte } from './moderation-core.js';
 import {
   registerWithEmail, signInWithEmail, resetPassword, signInWithGoogle,
   signInWithApple, logOut, deleteAccount, humanError, currentUser,
@@ -83,6 +84,15 @@ export function renderAuth() {
       <p class="auth-fineprint">
         Nada de lo que escribas es público. Puedes exportar o borrar todo cuando quieras.
       </p>
+      ${isSignup ? `
+        <p class="auth-fineprint legal-acepta">
+          Al crear la cuenta aceptas las
+          <a href="/legal/eula" target="_blank" rel="noopener">normas de uso</a>,
+          los <a href="/legal/terminos" target="_blank" rel="noopener">términos</a>
+          y la <a href="/legal/privacidad" target="_blank" rel="noopener">política de privacidad</a>.
+          Las normas son cortas y la primera es la que importa:
+          <b>tolerancia cero al contenido ofensivo y a quien se comporta mal</b>.
+        </p>` : ''}
     </div>`;
 }
 
@@ -547,6 +557,11 @@ export function openSettings() {
     <div class="set-row" onclick="openMySwaps()">
       <div><div class="set-row-title">Mis libros ofrecidos</div>
         <div class="set-row-sub">Lo que tienes disponible para intercambio</div></div>
+      <span class="set-chev">›</span>
+    </div>
+    <div class="set-row" onclick="openLegal()">
+      <div><div class="set-row-title">Privacidad, términos y soporte</div>
+        <div class="set-row-sub">Qué se guarda, qué no, y cómo escribirnos</div></div>
       <span class="set-chev">›</span>
     </div>
     <div class="set-row" onclick="openPosts()">
@@ -1286,3 +1301,48 @@ export function acceptPlan() {
   refreshAll();
   toast(`Plan aplicado: ${patches.length} libros repartidos`);
 }
+
+/* ── LOS DOCUMENTOS LEGALES  ·  historia #97 ────────────────────
+   Se abren en el navegador y no dentro de una hoja, a propósito: son
+   páginas publicadas en una URL estable —eso es lo que exige la
+   tienda— y así lo que lee quien usa la app es exactamente lo mismo
+   que lee quien revisa la ficha. Un texto legal que solo existe dentro
+   de la app es un texto que no se puede enlazar. */
+export function openLegal() {
+  openSheet('legal-overlay');
+  $('legal-body').innerHTML = `
+    <p class="planner-hint">
+      Están escritos en español claro, no en jerga copiada. Se abren en el
+      navegador porque son las mismas páginas que enlaza la ficha de la tienda.
+    </p>
+
+    <a class="set-row" href="/legal/privacidad" target="_blank" rel="noopener">
+      <div><div class="set-row-title">Política de privacidad</div>
+        <div class="set-row-sub">Qué se guarda, con quién se comparte y qué NO se guarda nunca</div></div>
+      <span class="set-chev">↗</span>
+    </a>
+    <a class="set-row" href="/legal/terminos" target="_blank" rel="noopener">
+      <div><div class="set-row-title">Términos de servicio</div>
+        <div class="set-row-sub">Qué es esto y qué se puede esperar de ello</div></div>
+      <span class="set-chev">↗</span>
+    </a>
+    <a class="set-row" href="/legal/eula" target="_blank" rel="noopener">
+      <div><div class="set-row-title">Normas de uso</div>
+        <div class="set-row-sub">Tolerancia cero al contenido ofensivo y a quien se comporta mal</div></div>
+      <span class="set-chev">↗</span>
+    </a>
+
+    <h4 class="prof-sec-title" style="margin-top:20px">¿Necesitas ayuda?</h4>
+    <p class="set-fineprint" style="margin-top:0">
+      Escribe y te contestamos. Si es sobre alguien que te está molestando,
+      cuéntalo con detalle: hay tolerancia cero y se revisa.
+    </p>
+    <a class="btn-magic full" href="${mailtoSoporte()}" style="display:block;text-align:center">
+      Escribir a soporte
+    </a>
+    <p class="set-fineprint" style="text-align:center">${esc(SOPORTE.correo)}</p>`;
+}
+
+export const closeLegal = (e) => {
+  if (!e || e.target === $('legal-overlay')) closeSheet('legal-overlay');
+};

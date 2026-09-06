@@ -1079,3 +1079,12 @@ body:not(.signed-in) .fab { display: none; }
 .vis-icono { font-size: 16px; }
 .vis-label { font-size: 13px; }
 .vis-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* Los enlaces legales al crear la cuenta. Se leen antes de aceptar,
+   así que van a la vista y no escondidos tras un «ver más». */
+.legal-acepta { line-height: 1.5; margin-top: 10px; }
+.legal-acepta a { color: var(--lilac); }
+.legal-acepta b { color: var(--gold); }
+/* Las filas de ajustes que son enlaces de verdad se ven igual que las
+   que abren una hoja: para quien las toca son la misma cosa. */
+a.set-row { text-decoration: none; color: inherit; display: flex; }
