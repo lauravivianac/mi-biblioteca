@@ -38,6 +38,7 @@ import {
   parseQuery, buscable, rankPeople, dedupe, sinMi,
   commonBooks, rankSuggestions, clavesParaBuscar, prefixRange,
 } from './search-core.js';
+import { mergeFeed, chunk, PAGINA } from './feed-core.js';
 
 /* Tope de todo lo que se lee de golpe. Una pantalla no enseña más. */
 const TOPE = 100;
@@ -287,4 +288,44 @@ export async function dropNotice(id) {
   try { await deleteDoc(doc(db, 'notifs', me, 'items', id)); } catch (e) {
     console.warn('No se pudo borrar el aviso:', e);
   }
+}
+
+/* ── EL FEED  ·  historia #49 ────────────────────────────────
+   Sin reparto: se lee al vuelo la actividad de a quién sigo. Firestore
+   solo admite 30 valores en un `in`, así que a partir de 30 seguidas
+   son varias consultas y feed-core las vuelve a ordenar — sin eso el
+   feed saldría por bloques en vez de por fecha. */
+
+export async function loadFeed({ antesDe = null, tope = PAGINA } = {}) {
+  const me = myUid();
+  if (!me) return { entradas: [], siguiendo: 0, hayMas: false };
+
+  const sigo = await followingOf(me);
+  if (!sigo.length) return { entradas: [], siguiendo: 0, hayMas: false };
+
+  const trozos = chunk(sigo);
+  const listas = await Promise.all(trozos.map(async (grupo) => {
+    try {
+      const partes = [
+        collection(db, 'activity'),
+        where('uid', 'in', grupo),
+        orderBy('at', 'desc'),
+      ];
+      if (antesDe) partes.push(where('at', '<', antesDe));
+      partes.push(limit(tope));
+      const snap = await getDocs(query(...partes));
+      return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    } catch (e) {
+      console.warn('No se pudo leer una parte del feed:', e);
+      return [];
+    }
+  }));
+
+  const todas = mergeFeed(listas);
+  return {
+    entradas: todas.slice(0, tope),
+    siguiendo: sigo.length,
+    /* Hay más si un trozo llenó su página: puede que falte por traer. */
+    hayMas: todas.length > tope,
+  };
 }

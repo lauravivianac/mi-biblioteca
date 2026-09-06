@@ -57,6 +57,11 @@ function pintarRelacion() {
   const slot = $('rel-slot');
   if (!slot) return;
   const { uid, sigo, meSigue, cuentas } = relacion;
+  /* Sin sesión no se pinta el botón. Quien llega por una invitación
+     (#48) puede ver el perfil, pero «Seguir» no tendría a quién
+     apuntar: un botón que solo puede fallar es peor que no estar, y la
+     invitación a crear la cuenta ya está al final del perfil. */
+  const sinSesion = !myUid();
   const esMio = uid === myUid();
   const b = followButton({ sigo });
   const insignia = followBadge({ sigo, meSigue });
@@ -71,7 +76,7 @@ function pintarRelacion() {
           <b>${cuentas.siguiendo}</b><span>siguiendo</span>
         </button>
       </div>` : ''}
-    ${esMio ? '' : `
+    ${esMio || sinSesion ? '' : `
       <div class="rel-actions">
         <button class="btn-magic full ${b.activo ? 'is-following' : ''}"
                 onclick="toggleFollow('${esc(uid)}')">${b.texto}</button>

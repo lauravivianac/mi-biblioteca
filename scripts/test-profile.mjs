@@ -118,7 +118,7 @@ ok('sin uid, null', publicProfileDoc({ username: 'laura', name: 'Laura' }) === n
 /* ── LAS SECCIONES ───────────────────────────────────────────── */
 
 grupo('LAS SECCIONES');
-ok('hay siete', SECCIONES.length === 7);
+ok('hay ocho', SECCIONES.length === 8);
 ok('todas tienen id, etiqueta y pista', SECCIONES.every((s) => s.id && s.label && s.hint));
 ok('por defecto se ven todas', IDS_SECCION.every((id) => seccionVisible({}, id)));
 ok('sin lista, visible', seccionVisible({ profileHidden: null }, 'numeros'));

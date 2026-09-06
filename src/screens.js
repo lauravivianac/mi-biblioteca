@@ -538,6 +538,11 @@ export function openSettings() {
           : 'Elige tu @usuario para tenerlo'}</div></div>
       <span class="set-chev">›</span>
     </div>
+    <div class="set-row" onclick="openInvite()">
+      <div><div class="set-row-title">Invitar a alguien</div>
+        <div class="set-row-sub">Tu link y tu código QR, para enseñarlo en persona</div></div>
+      <span class="set-chev">›</span>
+    </div>
     <div class="set-row" onclick="openProfileSettings()">
       <div><div class="set-row-title">Qué se ve en tu perfil</div>
         <div class="set-row-sub">Tu bio, tu ciudad y qué secciones se publican</div></div>

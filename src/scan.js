@@ -65,6 +65,36 @@ export async function scanBarcode(video, { seconds = 15, onProgress = () => {} }
   return null;
 }
 
+/* ── LEER UN QR DE PERFIL  ·  historia #48 ───────────────────
+   Aquí NO hay lector propio de repuesto, y conviene decirlo claro.
+
+   Escribir un código QR cabe en un fichero (ver qr-core.js): es un
+   algoritmo cerrado. LEERLO es otra cosa —hay que binarizar la imagen,
+   encontrar los ojos, enderezar la perspectiva y corregir errores—, y
+   eso no se sostiene con las manos.
+
+   Así que se usa el lector del navegador cuando existe, que es en
+   Android y en escritorio. En el Safari del iPhone no existe, y ahí la
+   pantalla lo dice y ofrece el otro camino, que es pegar el link. Es
+   mejor que un botón que no hace nada. */
+export const puedeLeerQr = () => lectorNativo();
+
+export async function scanQr(video, { seconds = 20, onProgress = () => {} } = {}) {
+  if (!lectorNativo()) return null;
+  const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+  const hasta = Date.now() + seconds * 1000;
+
+  while (Date.now() < hasta) {
+    try {
+      const codes = await detector.detect(video);
+      if (codes.length && codes[0].rawValue) return codes[0].rawValue;
+    } catch { /* la cámara aún no da un cuadro utilizable */ }
+    onProgress(Math.max(0, (hasta - Date.now()) / 1000));
+    await new Promise((r) => setTimeout(r, 220));
+  }
+  return null;
+}
+
 /**
  * Un intento sobre el cuadro actual, con nuestro lector.
  *

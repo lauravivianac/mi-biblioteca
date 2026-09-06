@@ -2,7 +2,7 @@
    es una de las cosas buenas que ya tenía y que el refactor no
    puede perder (criterio de la historia #12). */
 
-const CACHE = 'bib-v21';
+const CACHE = 'bib-v23';
 const SHELL = [
   './', './index.html',
   './styles/tokens.css', './styles/app.css', './styles/worlds.css', './styles/ui.css', './styles/pet.css',
@@ -22,6 +22,8 @@ const SHELL = [
   './src/cards-core.js', './src/cardgen.js', './src/shareui.js',
   './src/profile-core.js', './src/profileui.js',
   './src/follows-core.js', './src/search-core.js', './src/social.js', './src/socialui.js',
+  './src/qr-core.js', './src/inviteui.js',
+  './src/feed-core.js', './src/feedui.js',
 ];
 
 self.addEventListener('install', (e) => {
