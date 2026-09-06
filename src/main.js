@@ -21,6 +21,7 @@ import * as socialui from './socialui.js';
 import * as inviteui from './inviteui.js';
 import * as feedui from './feedui.js';
 import * as commentsui from './commentsui.js';
+import * as swapui from './swapui.js';
 import { loadMyBlocks } from './moderation.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
@@ -64,7 +65,7 @@ setConsentPrompt(screens.ensureAgentConsent);
 Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
-  ...profileui, ...socialui, ...inviteui, ...feedui, ...commentsui,
+  ...profileui, ...socialui, ...inviteui, ...feedui, ...commentsui, ...swapui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),

@@ -363,6 +363,54 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    /* ── INTERCAMBIO  ·  historias #81, #82, #89 ──────────────
+       Las publicaciones las lee cualquiera con sesión: para eso están,
+       para que alguien de tu ciudad encuentre tu libro. Explorar no
+       pide nada más — la barrera de la #89 es solo para PUBLICAR.
+
+       LO QUE NO PUEDE ENTRAR AQUÍ ES DÓNDE VIVES. La regla lo exige
+       campo a campo: hay ciudad, y no hay ni `lat`, ni `lon`, ni
+       `address`, ni un geohash más largo del pactado. Está en el
+       cliente (place-core.js) y está aquí, porque el cliente se puede
+       modificar y esto no.
+
+       TAMPOCO HAY PRECIO. Es trueque: meter dinero abriría requisitos
+       legales y de tienda mucho mayores y, sobre todo, la puerta a las
+       estafas. Un campo de precio se rechaza aunque alguien lo mande.
+
+       El correo verificado se comprueba con el token, que lo trae
+       firmado por Google: es lo único de la #89 que el cliente no
+       podría saltarse solo. Los días de cuenta y los libros
+       registrados se comprueban en la app — son un filtro contra
+       cuentas desechables, no una barrera de seguridad. */
+    match /swaps/{swapId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && request.auth.token.email_verified == true
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.city is string
+                    && request.resource.data.city.size() > 0
+                    && !('lat' in request.resource.data)
+                    && !('lon' in request.resource.data)
+                    && !('address' in request.resource.data)
+                    && !('precio' in request.resource.data)
+                    && !('price' in request.resource.data)
+                    && (request.resource.data.geohash == null
+                        || request.resource.data.geohash.size() <= 6);
+
+      /* Solo su dueña la toca, y el uid no se puede cambiar: si se
+         pudiera, se podría regalar una publicación a otra cuenta. */
+      allow update: if request.auth != null
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == resource.data.uid
+                    && !('lat' in request.resource.data)
+                    && !('lon' in request.resource.data)
+                    && !('precio' in request.resource.data);
+
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
     /* La colección `biblioteca` era de la época sin autenticación.
        Estuvo abierta a cualquier cuenta con sesión para poder migrarla
        una vez — lo que significaba que CUALQUIER usuaria podía leer y
