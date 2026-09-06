@@ -30,6 +30,30 @@ service cloud.firestore {
       }
     }
 
+    /* ── RESEÑAS PUBLICADAS  ·  historia #28 ──────────────────
+       Las reglas de Firestore conceden documentos ENTEROS: no existe
+       «puede leer este documento pero no el campo `review`». Por eso
+       una reseña pública no puede ser un campo dentro del libro —
+       abrirlo para que otra persona lea la reseña lo abriría con todo
+       lo demás dentro.
+
+       Así que publicar es copiar aquí. A esta colección solo llega lo
+       que se marcó como público, y con lo justo (ver reviews-core.js:
+       título, autor, texto, puntuación y de quién es). Lo privado
+       nunca sale de users/{uid}, donde nadie más entra.
+
+       Escribe solo su dueña, y la ruta lo demuestra: el {userId} del
+       camino tiene que ser el de quien escribe. */
+    match /reviews/{userId} {
+      allow read: if request.auth != null;
+      allow write: if isOwner(userId);
+
+      match /entries/{bookId} {
+        allow read: if request.auth != null;
+        allow write: if isOwner(userId);
+      }
+    }
+
     /* La colección `biblioteca` era de la época sin autenticación.
        Estuvo abierta a cualquier cuenta con sesión para poder migrarla
        una vez — lo que significaba que CUALQUIER usuaria podía leer y

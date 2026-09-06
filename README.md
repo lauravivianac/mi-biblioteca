@@ -38,6 +38,11 @@ la base de datos estaba efectivamente abierta: cualquiera que abriera la app esc
 sobre los datos. Mientras las reglas de [`firestore.rules`](./firestore.rules) no
 estén desplegadas, la base sigue abierta por mucho que la app pida iniciar sesión.
 
+**Vuelve a desplegarlas cuando el archivo cambie.** La última vez fue con las reseñas
+públicas (historia #28), que viven en una colección aparte. Si esas reglas no están
+desplegadas, publicar una reseña simplemente no funciona —falla del lado seguro: se
+queda privada, y el resto de la app sigue guardando con normalidad—.
+
 ### 3. Migrar los datos antiguos
 
 La primera vez que inicies sesión, la app detecta el documento `biblioteca/laura` y

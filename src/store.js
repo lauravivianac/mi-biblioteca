@@ -16,13 +16,19 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { db } from './firebase.js';
 import { seedBooks, pageCount } from './seed.js';
+import { publicReviewDoc, isPublicReview, publicCount } from './reviews-core.js';
 
 const state = {
   uid: null,
   books: [],        // semilla + propios, ya fusionados
-  entries: {},      // bookId -> { status, rating, review, hidden, page, cover, pinnedMonth }
+  entries: {},      // bookId -> { status, rating, review, reviewPublic, hidden, page, cover, pinnedMonth }
   settings: {},
   dirty: new Set(),
+  /* Aparte del resto a propósito: la copia pública solo se toca cuando
+     cambia la reseña o su interruptor. Si fuera con `dirty`, anotar una
+     página escribiría en la colección pública, que es a la vez un gasto
+     y una escritura que no tendría por qué existir. */
+  reviewDirty: new Set(),
   settingsDirty: false,
 };
 
@@ -60,6 +66,8 @@ export const entry = (id) => state.entries[id] || {};
 export const statusOf = (id) => state.entries[id]?.status || 'pending';
 export const ratingOf = (id) => state.entries[id]?.rating || 0;
 export const reviewOf = (id) => state.entries[id]?.review || '';
+export const reviewIsPublic = (id) => isPublicReview(state.entries[id] || {});
+export const publicReviewCount = () => publicCount(state.entries);
 export const coverOf = (id) => state.entries[id]?.cover ?? null;
 export const settings = () => ({ ...DEFAULT_SETTINGS, ...state.settings });
 
@@ -87,9 +95,21 @@ export function progressPct(id) {
 export function updateEntry(id, patch) {
   state.entries[id] = { ...(state.entries[id] || {}), ...patch };
   state.dirty.add(id);
+  /* Cambiar el texto también puede despublicar: si lo borras, la copia
+     pública tiene que irse contigo, sin acordarte del interruptor. */
+  if ('review' in patch || 'reviewPublic' in patch) state.reviewDirty.add(id);
   writeLS('entries', state.entries);
   schedulePersist();
 }
+
+/**
+ * Publicar una reseña, o volver a guardársela  ·  historia #28
+ *
+ * En los dos sentidos y en cualquier momento. Lo que se publica no es
+ * este documento —que lleva dentro por dónde vas, tus citas y lo demás—
+ * sino una COPIA con lo justo, en otra colección; ver reviews-core.js.
+ */
+export const setReviewPublic = (id, pub) => updateEntry(id, { reviewPublic: !!pub });
 
 export function updateSettings(patch) {
   state.settings = { ...settings(), ...patch };
@@ -112,6 +132,10 @@ export function addBook(book) {
 export function removeBook(id) {
   const book = findBook(id);
   if (!book) return;
+  /* Quitar el libro se lleva su reseña pública. Dejarla publicada
+     sería lo contrario de lo que acabas de pedir, y no habría dónde
+     ir a quitarla: la ficha con el interruptor ya no existe. */
+  state.reviewDirty.add(id);
   if (book.custom) {
     state.books = state.books.filter((b) => b.id !== id);
     writeLS('custom', state.books.filter((b) => b.custom));
@@ -119,7 +143,7 @@ export function removeBook(id) {
     delete state.entries[id];
     state.dirty.delete(id);
   } else {
-    updateEntry(id, { hidden: true });
+    updateEntry(id, { hidden: true, reviewPublic: false });
   }
   writeLS('entries', state.entries);
   schedulePersist();
@@ -137,12 +161,18 @@ function schedulePersist() {
   persistTimer = setTimeout(() => { flush().catch(() => {}); }, 900);
 }
 
+/** Dónde vive la copia pública de una reseña. La ruta la comprueban las reglas. */
+const publicReviewRef = (userId, bookId) =>
+  doc(db, 'reviews', userId, 'entries', bookId);
+
 export async function flush() {
   if (!state.uid) return;                       // sin sesión, solo local
-  if (!state.dirty.size && !state.settingsDirty) return;
+  if (!state.dirty.size && !state.reviewDirty.size && !state.settingsDirty) return;
   onSaveState('saving');
   const ids = [...state.dirty];
   state.dirty.clear();
+  const reviewIds = [...state.reviewDirty];
+  state.reviewDirty.clear();
   const hadSettings = state.settingsDirty;
   state.settingsDirty = false;
   try {
@@ -153,6 +183,7 @@ export async function flush() {
       if (book?.custom) Object.assign(payload, book);
       batch.set(doc(db, 'users', state.uid, 'books', id), payload, { merge: true });
     }
+
     if (hadSettings) {
       batch.set(doc(db, 'users', state.uid), {
         settings: state.settings, updatedAt: Date.now(),
@@ -166,6 +197,43 @@ export async function flush() {
     if (hadSettings) state.settingsDirty = true;
     onSaveState('offline');
     console.warn('No se pudo guardar en Firestore, los datos siguen en este dispositivo:', e);
+  }
+
+  await flushPublicReviews(reviewIds);
+}
+
+/**
+ * Las copias públicas, en su propia escritura y no en el lote anterior.
+ *
+ * Iban juntas hasta que caí en esto: la colección `reviews` solo existe
+ * si están desplegadas las reglas nuevas (`firebase deploy --only
+ * firestore:rules`). Si no lo están, esa escritura la rechaza el
+ * servidor — y en un lote único se habría llevado por delante el
+ * guardado de TODOS los libros. Un interruptor que nadie ha tocado no
+ * puede romper el guardado de quien no lo usa.
+ *
+ * Falla del lado seguro: si la escritura no pasa, la reseña NO se
+ * publica; se reintenta con el próximo cambio y al cerrar la pestaña.
+ */
+async function flushPublicReviews(ids) {
+  if (!ids.length || !state.uid) return;
+  try {
+    const batch = writeBatch(db);
+    for (const id of ids) {
+      const copia = publicReviewDoc({
+        uid: state.uid, book: findBook(id), entry: state.entries[id],
+      });
+      const ref = publicReviewRef(state.uid, id);
+      if (copia) batch.set(ref, copia);
+      else batch.delete(ref);
+    }
+    await batch.commit();
+  } catch (e) {
+    ids.forEach((id) => state.reviewDirty.add(id));
+    console.warn(
+      'No se pudo actualizar la visibilidad de una reseña. Se reintentará. '
+      + '¿Están desplegadas las reglas de firestore.rules?', e,
+    );
   }
 }
 
@@ -237,6 +305,7 @@ export function exportData() {
       estado: e.status || 'pendiente',
       valoracion: e.rating || null,
       resena: e.review || null,
+      resenaPublica: isPublicReview(e),
       progresoPaginas: e.page ?? null,
       propio: !!b.custom,
     };
@@ -263,15 +332,25 @@ export function exportCsv() {
 /** Borra TODO lo de esta usuaria en Firestore. Recorre el árbol: no es una sola operación. */
 export async function deleteAllUserData() {
   if (!state.uid) return;
-  const booksSnap = await getDocs(collection(db, 'users', state.uid, 'books'));
+  /* Las reseñas publicadas viven FUERA de users/{uid}, que es justo lo
+     que las hace legibles. Por eso hay que ir a buscarlas: borrar la
+     cuenta y dejar tus reseñas publicadas con tu nombre sería el peor
+     fallo posible de esta historia. */
+  const [booksSnap, publicSnap] = await Promise.all([
+    getDocs(collection(db, 'users', state.uid, 'books')),
+    getDocs(collection(db, 'reviews', state.uid, 'entries')).catch(() => ({ forEach: () => {} })),
+  ]);
   const chunks = [];
   let batch = writeBatch(db); let n = 0;
-  booksSnap.forEach((d) => {
+  const borrar = (d) => {
     batch.delete(d.ref);
     if (++n === 400) { chunks.push(batch.commit()); batch = writeBatch(db); n = 0; }
-  });
+  };
+  booksSnap.forEach(borrar);
+  publicSnap.forEach(borrar);
   chunks.push(batch.commit());
   await Promise.all(chunks);
+  await deleteDoc(doc(db, 'reviews', state.uid)).catch(() => {});
   await deleteDoc(doc(db, 'users', state.uid));
   for (const k of ['entries', 'settings', 'custom']) {
     try { localStorage.removeItem(lsKey(k)); } catch {}
