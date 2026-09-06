@@ -92,11 +92,40 @@ npm test
 - **Generador de plan** — 30 pruebas sobre el núcleo, que es puro a propósito: no
   necesita Firebase, ni navegador, ni sesión.
 
-## Añadir un tema
+## Cómo funciona un tema
 
-Un tema es **datos, no CSS**: unos quince valores en `src/themes.js`. Todo lo derivado
-—bordes, nieblas, superficies translúcidas, sombras— se recalcula solo, así que no hay
-que tocar ni una regla de estilo. Después, `npm run test:contrast`.
+Un tema **no es una paleta**. Cambia cuatro cosas a la vez:
+
+| Eje | Qué transporta | Ejemplo |
+|---|---|---|
+| **Color** | Colores base como hex y como tripleta RGB, para que las transparencias sigan al tema | Obsidiana en negro puro |
+| **Forma** | Radios por rol: tarjeta, control, píldora, hoja, runa | Máquina a 0px, Marea a 22px |
+| **Material** | Borde, relleno, sombra y filo — van juntos porque son una decisión, no tres | Pergamino sin tarjetas, solo renglones |
+| **Textura y ornamento** | La capa que se superpone y el signo que separa secciones | Vellum en Grimorio, líneas de barrido en Máquina |
+
+Lo que un token no alcanza —seudoelementos, geometría propia, la firma de cada mundo—
+vive en [`styles/worlds.css`](./styles/worlds.css), en un bloque por tema.
+
+**La firma de cada uno**, que es lo que lo hace reconocible:
+
+| Tema | Firma |
+|---|---|
+| ✨ Grimorio | El margen dorado al filo izquierdo de cada libro, como un códice |
+| 🌑 Obsidiana | El filo de luz de 1px en el canto superior. Sin bordes, sin brillos |
+| ☀️ Pergamino | El renglón: los libros son entradas de un índice, no tarjetas |
+| 🌿 Herbario | La etiqueta de espécimen sobre papel cuadriculado |
+| 🌊 Marea | La línea de marea que cruza el fondo muy despacio |
+| 🕯️ Gótico | El arco de vitral, con vela arriba y viñeteado en los bordes |
+| 🌸 Sakura | El trazo vertical junto a los encabezados. Separa el vacío |
+| 🖨️ Máquina | Los corchetes y las marcas de esquina, sobre líneas de barrido |
+
+### Añadir uno nuevo
+
+Unos quince valores en `src/themes.js` y, si quiere firma propia, un bloque en
+`worlds.css`. Todo lo derivado se recalcula solo. Después, `npm run test:contrast`.
+
+Un mando útil: `--month-tint` decide cuánto del color del mes se deja pasar. Grimorio
+quiere ese arcoíris; Obsidiana lo pone en `0%` y recupera su propia paleta.
 
 ---
 

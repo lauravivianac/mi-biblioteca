@@ -27,11 +27,6 @@ let filterStatus = 'all';
 let searchQ = '';
 let detailId = null;
 
-const hexToRgb = (hex) => {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return m ? `${parseInt(m[1], 16)} ${parseInt(m[2], 16)} ${parseInt(m[3], 16)}` : '255 255 255';
-};
-
 /** Los estados que no cuentan como pendientes de verdad. */
 const countsAsPending = (id) => !['read', 'abandoned', 'wished'].includes(statusOf(id));
 
@@ -105,7 +100,7 @@ export function renderPlan() {
     const readCount = books.filter((b) => statusOf(b.id) === 'read').length;
     html += `<div class="month-group">
       <div class="month-label">
-        <div class="month-rune" style="background:${col}">${emoji}</div>
+        <div class="month-rune" style="--month-accent:${col}">${emoji}</div>
         <div class="month-name-text">${month}</div>
         <div class="month-progress">${readCount}/${books.length}</div>
       </div>`;
@@ -114,7 +109,7 @@ export function renderPlan() {
       const isAnchor = (book.role || '').includes('Ancla');
       const pct = progressPct(book.id);
       const pinned = !!entry(book.id).pinnedMonth;
-      html += `<div class="book-card ${isRead ? 'read' : ''}" style="border-color:rgb(${hexToRgb(col)} / .3)" onclick="openDetail('${book.id}')">
+      html += `<div class="book-card ${isRead ? 'read' : ''}" style="--month-accent:${col}" onclick="openDetail('${book.id}')">
         <div class="book-card-cover">${coverMarkup(book, 'cover-placeholder', emoji)}</div>
         <div class="book-card-body">
           <div class="book-card-role ${isAnchor ? 'role-anchor' : 'role-short'}">${esc(book.role)}${pinned ? ' · 📌' : ''}</div>

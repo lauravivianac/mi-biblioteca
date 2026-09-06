@@ -30,14 +30,56 @@
   --success-deep: #2E7D32;
   --danger: #FF8A8A;      --danger-rgb: 255 138 138;
 
-  /* ── TIPOGRAFÍA Y FORMA · el tema también los reemplaza ──── */
+  /* ── TIPOGRAFÍA ──────────────────────────────────────────── */
   --font-display: 'Cinzel', Georgia, serif;
   --font-body: 'Inter', system-ui, sans-serif;
-  --radius-sm: 10px;
-  --radius: 14px;
-  --radius-lg: 20px;
   --display-spacing: 1px;
   --display-transform: none;
+  --display-weight: 400;
+  --label-transform: uppercase;
+  --label-spacing: 2px;
+
+  /* ── FORMA · qué tan blandas o duras son las esquinas ─────
+     Un tema que solo cambia el color se siente la misma app
+     pintada distinta. La forma es la mitad del carácter. */
+  --card-radius: 14px;
+  --ctl-radius: 10px;
+  --chip-radius: 8px;
+  --pill-radius: 20px;
+  --sheet-radius: 24px 24px 0 0;
+  --rune-radius: 8px;
+
+  /* Cuánto del color del mes tiñe la interfaz. Un tema estricto
+     lo baja a 0 y recupera su propia paleta. */
+  --month-tint: 30%;
+  --rune-tint: 100%;
+
+  /* ── MATERIAL · de qué está hecha una superficie ──────────
+     Borde, relleno y sombra van juntos: son una decisión, no tres. */
+  --hairline: 1px solid var(--border);
+  --card-bg: var(--card);
+  --card-border: 1px solid var(--border);
+  --card-shadow: none;
+  --card-shadow-hover: 0 8px 28px rgb(var(--purple-rgb) / .28);
+  --card-edge: none;              /* luz en el filo superior */
+  --cover-frame: none;            /* marco de las portadas */
+  --sheet-bg: var(--card-solid);
+
+  /* ── TEXTURA · la capa que se superpone a todo ────────────
+     Vellum, papel, grano de película, rejilla, líneas de barrido. */
+  --texture: none;
+  --texture-size: auto;
+  --texture-opacity: 0;
+  --texture-blend: normal;
+
+  /* ── ORNAMENTO · la marca que separa y remata ─────────────
+     Cada mundo tiene su signo: ❧ para el grimorio, [ ] para
+     la terminal, nada para la obsidiana. */
+  --ornament: '';
+  --ornament-color: var(--gold);
+  --rule-line: linear-gradient(90deg, transparent, var(--border), transparent);
+  --rule-height: 1px;
+  --vignette: none;
 
   /* ── ATMÓSFERA · un tema puede apagarla ──────────────────── */
   --stars-opacity: 1;
@@ -66,6 +108,8 @@
   --accent-wash: linear-gradient(135deg, rgb(var(--purple-rgb) / .4), rgb(var(--violet-rgb) / .2));
   --gold-wash: rgb(var(--gold-rgb) / .12);
   --success-wash: rgb(var(--success-rgb) / .18);
+  --role-anchor: var(--gold);
+  --role-short: var(--violet);
   --danger-wash: rgb(var(--danger-rgb) / .18);
 }
 
