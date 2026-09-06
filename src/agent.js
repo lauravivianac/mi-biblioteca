@@ -12,22 +12,42 @@
    barras nunca pasa por aquí: eso lo resuelven OpenLibrary y Google
    Books, que son gratis y no se inventan nada.
 
-   Para activarlo: despliega worker/ y pega su dirección en
-   ⚙ Ajustes → Identificar portadas con IA.
    ───────────────────────────────────────────────────────────── */
 
 import { currentUser } from './auth.js';
 import { settings, updateSettings } from './store.js';
 
-/** URL del Worker desplegado. Vacía = el agente está apagado. */
-const WORKER_URL = '';
+/**
+ * La dirección del Worker de ESTE despliegue.
+ *
+ * Va aquí, en el código, y no en los ajustes de cada persona: es una
+ * propiedad del despliegue, no de la usuaria. Pedírsela a cada quien
+ * significaría que nadie salvo quien montó el Worker tendría agente
+ * —y que para tenerlo habría que explicarle a la gente qué es un
+ * Worker de Cloudflare, que es exactamente lo que una app no debe
+ * hacer.
+ *
+ * No es un secreto: es una dirección pública. Lo que la protege es
+ * lo que hay detrás — token de Firebase válido, origen permitido,
+ * lista blanca de encargos y límite diario. Quien la copie no
+ * consigue nada sin una cuenta de esta app.
+ *
+ * Si haces tu propio despliegue, cambia esta línea por la tuya.
+ * Vacía = no hay agente, y la app funciona igual sin él.
+ */
+const WORKER_URL = 'https://mi-biblioteca-agente.iafactory.workers.dev';
 
-/** ¿Se puede usar el agente ahora mismo? */
-export const agentAvailable = () => Boolean(workerUrl()) && settings().agentEnabled === true;
+export const workerUrl = () => WORKER_URL;
 
-/** Permite configurarlo desde ajustes sin tocar el código. */
-export const workerUrl = () => settings().agentUrl || WORKER_URL;
-export const setWorkerUrl = (url) => updateSettings({ agentUrl: String(url || '').trim() });
+/**
+ * ¿Se puede usar el agente ahora mismo?
+ *
+ * Encendido salvo que la usuaria lo apague a propósito: para ella es
+ * una función de la app, no una pieza de infraestructura que deba
+ * configurar antes de poder usarla.
+ */
+export const agentAvailable = () => Boolean(WORKER_URL) && settings().agentEnabled !== false;
+
 export const setAgentEnabled = (on) => updateSettings({ agentEnabled: !!on });
 
 const MESSAGES = {
