@@ -19,7 +19,7 @@ import { seedBooks, pageCount } from './seed.js';
 import { publicReviewDoc, isPublicReview, publicCount } from './reviews-core.js';
 import { streakInfo, addDay } from './streak-core.js';
 import { validateUsername, canChangeUsername, normalize } from './username-core.js';
-import { publicProfileDoc, seccionVisible } from './profile-core.js';
+import { publicProfileDoc, seccionVisible, followersOnlyDoc, esPrivada } from './profile-core.js';
 import { activityDoc, activityId } from './feed-core.js';
 
 const state = {
@@ -124,6 +124,9 @@ export function recordReadingDay(date = new Date()) {
    Con dos segmentos, `usernames/laura` sí es un documento. */
 
 export const myUsername = () => settings().username || null;
+
+/** ¿Mi cuenta es privada?  ·  historia #52 */
+export const soyPrivada = () => esPrivada(settings());
 
 const usernameRef = (handle) => doc(db, 'usernames', normalize(handle));
 
@@ -501,11 +504,21 @@ async function borrarActividadDe(bookId) {
 async function flushProfile() {
   if (!state.uid) return;
   try {
-    const copia = publicProfileDoc(datosDelPerfil());
+    const datos = datosDelPerfil();
+    const copia = publicProfileDoc(datos);
     /* Sin @usuario todavía no hay perfil que publicar. No es un error:
        es que aún no ha elegido nombre. */
     if (!copia) return;
     await setDoc(profileRef(state.uid), copia);
+
+    /* Con la cuenta privada (#52), lo que no va en la tarjeta va en un
+       documento aparte que solo pueden leer las seguidoras. Al volver a
+       público se BORRA: dejarlo ahí sería dejar una copia de tus datos
+       en un sitio que ya no hace falta. */
+    const soloSeguidoras = followersOnlyDoc(datos);
+    const refFull = doc(db, 'profiles', state.uid, 'full', 'data');
+    if (soloSeguidoras) await setDoc(refFull, soloSeguidoras);
+    else await deleteDoc(refFull).catch(() => {});
   } catch (e) {
     state.profileDirty = true;      // se reintenta con el próximo cambio
     console.warn(
@@ -710,6 +723,7 @@ export async function deleteAllUserData() {
      colgados después de borrar la cuenta. */
   await deleteDoc(profileRef(state.uid))
     .catch((e) => console.warn('No se pudo borrar el perfil público:', e));
+  await deleteDoc(doc(db, 'profiles', state.uid, 'full', 'data')).catch(() => {});
   /* El @usuario se libera: si no, el nombre quedaría cogido para
      siempre por una cuenta que ya no existe. Lo pide la historia #44
      y además es lo único decente. */

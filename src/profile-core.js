@@ -40,6 +40,22 @@ export const IDS_SECCION = SECCIONES.map((s) => s.id);
 
 /* Por defecto se ve todo menos nada: quien abre un perfil recién hecho
    tiene que ver algo. Apagar es una decisión, encender no. */
+/* ── CUENTA PRIVADA  ·  historia #52 ──────────────────────────
+   Con la cuenta privada, quien no te sigue ve SOLO tu avatar, tu
+   nombre y tu bio. Y como las reglas de Firestore conceden documentos
+   enteros, eso no se puede hacer escondiendo campos: lo demás tiene
+   que estar en OTRO documento, al que solo llegan tus seguidoras.
+
+   Así que un perfil privado publica dos cosas: la tarjeta —que lee
+   cualquiera— y el resto en profiles/{uid}/full/data, cuya regla
+   comprueba que quien lee tenga una flecha de seguimiento aprobada.
+
+   Consecuencia buscada: una cuenta privada NO aparece en «quizá
+   conozcas», porque sus libros ya no están en el documento por el que
+   busca esa consulta. Es lo correcto — quien se pone en privado no
+   quiere que la encuentren por lo que lee. */
+export const esPrivada = (settings = {}) => settings.privada === true;
+
 export function seccionVisible(settings = {}, id) {
   const off = settings.profileHidden;
   if (!Array.isArray(off)) return true;
@@ -111,7 +127,11 @@ export function publicProfileDoc({
 } = {}) {
   if (!uid || !username) return null;
 
-  const ve = (id) => seccionVisible(settings, id);
+  const privada = esPrivada(settings);
+  /* En privado no se enseña ninguna sección al mundo: se apagan todas
+     a la vez, y por el mismo camino que las apaga la usuaria a mano —
+     así no hay dos formas distintas de no publicar algo. */
+  const ve = (id) => !privada && seccionVisible(settings, id);
   const doc = {
     uid,
     username: String(username).toLowerCase(),
@@ -122,6 +142,7 @@ export function publicProfileDoc({
     bio: limpiarBio(settings.bio),
     city: limpiarCiudad(settings.city),
     secciones: IDS_SECCION.filter(ve),
+    privada,
     updatedAt: at,
   };
 
@@ -184,9 +205,31 @@ export function publicProfileDoc({
  * nuevo que se cuele rompe una prueba en vez de filtrarse callando.
  */
 export const CAMPOS_PUBLICOS = [
-  'uid', 'username', 'name', 'nameLower', 'bio', 'city', 'secciones', 'updatedAt',
-  'leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos',
+  'uid', 'username', 'name', 'nameLower', 'bio', 'city', 'secciones', 'privada',
+  'updatedAt', 'leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos',
 ];
+
+/**
+ * Lo que solo ven tus seguidoras, cuando la cuenta es privada.
+ *
+ * Es exactamente lo que publicaría una cuenta pública, menos la
+ * tarjeta: se construye con el mismo código, quitándole la marca de
+ * privada. Hacerlo así evita que las dos versiones se separen con el
+ * tiempo y acabe enseñándose de más en una de ellas.
+ *
+ * Devuelve null si la cuenta no es privada: entonces todo va en el
+ * documento de siempre y este sobra.
+ */
+export function followersOnlyDoc(datos = {}) {
+  if (!esPrivada(datos.settings || {})) return null;
+  const abierto = publicProfileDoc({
+    ...datos,
+    settings: { ...(datos.settings || {}), privada: false },
+  });
+  if (!abierto) return null;
+  const { uid, username, name, nameLower, bio, city, privada, ...resto } = abierto;
+  return { uid, ...resto };
+}
 
 /** El link del perfil, que es lo que se pega en WhatsApp. */
 export function profileUrl(username, origin = '') {

@@ -26,9 +26,11 @@ import {
 import { allShelves } from './shelves.js';
 import {
   SECCIONES, seccionVisible, toggleSeccion, limpiarBio, limpiarCiudad,
-  inicial, profileUrl, usernameFromHash, resumenCorto,
+  inicial, profileUrl, usernameFromHash, resumenCorto, esPrivada,
 } from './profile-core.js';
+import { AVISO_PRIVADA } from './follows-core.js';
 import { relationSlot, loadRelation } from './socialui.js';
+import { fetchFullProfile, isFollowing } from './social.js';
 import { meBloqueo } from './moderation.js';
 import { petSvg } from './pet.js';
 import { $, esc, toast, closeSheet } from './ui.js';
@@ -82,7 +84,28 @@ export async function openProfile(handle) {
 
   /* La relación (seguir, contadores) va aparte y DESPUÉS: son tres
      consultas más y el perfil no tiene por qué esperarlas. */
-  loadRelation(r.uid);
+  loadRelation(r.uid, r.profile.privada === true);
+
+  /* CUENTA PRIVADA (#52): lo demás vive en otro documento y la regla
+     del servidor solo lo abre a quien la sigue.
+
+     AUN ASÍ SE COMPRUEBA AQUÍ ANTES DE PEDIRLO. La regla es la que
+     protege de verdad —el cliente se puede modificar—, pero pedir a
+     ciegas y fiarlo todo a ella significa que un despliegue de reglas
+     mal hecho lo enseña TODO sin que nada más lo pare. Preguntar
+     primero no cuesta una lectura de más: ya la hacía loadRelation. */
+  if (r.profile.privada && !r.mio) {
+    const laSigo = await isFollowing(r.uid);
+    if (mio !== turno || !visto) return;
+    if (laSigo) {
+      const resto = await fetchFullProfile(r.uid);
+      if (mio !== turno || !visto) return;
+      if (resto) {
+        visto.profile = { ...visto.profile, ...resto };
+        pintar();
+      }
+    }
+  }
 
   /* Las reseñas vienen de otra colección y pueden tardar. Se pintan
      cuando lleguen en vez de retrasar todo el perfil. */
@@ -147,6 +170,9 @@ function pintar() {
     <p class="prof-resumen">${esc(resumenCorto(p))}</p>
 
     ${relationSlot()}
+
+    ${p.privada && !p.secciones?.length && !visto.mio ? `
+      <p class="planner-hint" style="margin-top:6px">🔒 ${esc(AVISO_PRIVADA)}</p>` : ''}
 
     ${ve('numeros') && p.numeros ? bloqueNumeros(p.numeros) : ''}
     ${ve('leyendo') ? bloqueLeyendo(p.leyendo) : ''}
@@ -310,6 +336,21 @@ function pintarAjustes() {
     <input class="finput" id="prof-city" maxlength="40" placeholder="Bogotá"
            value="${esc(s.city || '')}" onchange="saveProfileText()">
 
+    <div class="set-row" onclick="togglePrivada()">
+      <div>
+        <div class="set-row-title">Cuenta privada</div>
+        <div class="set-row-sub">${esPrivada(s)
+          ? 'Solo tus seguidoras ven lo que lees. Seguirte hay que pedírtelo.'
+          : 'Cualquiera puede ver tu perfil y seguirte sin pedir permiso.'}</div>
+      </div>
+      <span class="prof-flag ${esPrivada(s) ? 'on' : ''}">${esPrivada(s) ? 'Privada' : 'Pública'}</span>
+    </div>
+    <div class="set-row" onclick="closeSheet('profset-overlay');openRequests()">
+      <div><div class="set-row-title">Solicitudes para seguirte</div>
+        <div class="set-row-sub">Quién ha pedido verte</div></div>
+      <span class="set-chev">›</span>
+    </div>
+
     <h4 class="prof-sec-title" style="margin-top:20px">Qué se ve en tu perfil</h4>
     <p class="set-fineprint">
       Lo que apagues no se publica: deja de estar en tu perfil, no solo de pintarse.
@@ -344,6 +385,22 @@ function bloqueEstanteriasAjustes() {
           ${sh.public ? 'Se ve' : 'Oculto'}
         </span>
       </div>`).join('')}`;
+}
+
+/**
+ * Poner o quitar la cuenta privada  ·  historia #52
+ *
+ * Al pasar de pública a privada, QUIEN YA TE SEGUÍA SIGUE DENTRO. Lo
+ * pide la historia y es lo sensato: si al cerrar la cuenta perdieras a
+ * todas tus seguidoras, cerrarla saldría tan caro que nadie lo haría.
+ */
+export function togglePrivada() {
+  const ahora = !esPrivada(settings());
+  updateSettings({ privada: ahora });
+  pintarAjustes();
+  toast(ahora
+    ? 'Cuenta privada. Quien ya te seguía sigue dentro.'
+    : 'Cuenta pública otra vez.');
 }
 
 export function toggleProfileSection(id) {

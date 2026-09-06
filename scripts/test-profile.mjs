@@ -8,6 +8,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import {
+  esPrivada, followersOnlyDoc,
   SECCIONES, IDS_SECCION, seccionVisible, toggleSeccion,
   limpiarBio, limpiarCiudad, inicial, profileStats, generosFavoritos,
   publicProfileDoc, CAMPOS_PUBLICOS, profileUrl, usernameFromHash, resumenCorto,
@@ -110,6 +111,46 @@ grupo('QUE ME ENCUENTREN POR MIS LIBROS (#47) ES OTRO INTERRUPTOR');
   ok('y sigue sin haber reseñas ahí dentro',
     !JSON.stringify(d.librosLeidos).includes('review'));
 }
+
+/* ── CUENTA PRIVADA  ·  historia #52 ─────────────────────────── */
+
+grupo('CUENTA PRIVADA: LA TARJETA NO LLEVA NADA MÁS');
+{
+  const priv = base({ settings: { ...AJUSTES, privada: true } });
+  ok('se marca como privada', priv.privada === true);
+  ok('el nombre y la bio sí se ven — es lo que pide la historia',
+    priv.name === 'Laura' && priv.bio === 'Leo de noche.');
+  igual('pero NINGUNA sección se publica', priv.secciones, []);
+  const conDatos = ['leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos']
+    .filter((k) => k in priv);
+  igual('y sus datos NO están en el documento que lee cualquiera', conDatos, []);
+  ok('en pública sí están', 'numeros' in base());
+}
+
+grupo('LO QUE SOLO VEN LAS SEGUIDORAS');
+{
+  const datos = { uid: 'u1', username: 'laura.v', name: 'Laura', settings: { ...AJUSTES, privada: true }, books: LIBROS, racha: 5, year: 2026, at: 1000 };
+  const full = followersOnlyDoc(datos);
+  ok('existe cuando la cuenta es privada', full !== null);
+  ok('lleva los números', full.numeros.leidosEsteAnio === 2);
+  ok('y los géneros', full.generos.length > 0);
+  ok('NO repite la bio ni el nombre: eso ya está en la tarjeta',
+    !('bio' in full) && !('name' in full));
+  ok('lleva el uid, para saber de quién es', full.uid === 'u1');
+  ok('en una cuenta pública no existe: todo va en el documento de siempre',
+    followersOnlyDoc({ ...datos, settings: AJUSTES }) === null);
+  ok('sigue sin filtrarse la estantería privada',
+    !JSON.stringify(full).includes('Regalos para Ana'));
+}
+
+grupo('UNA CUENTA PRIVADA NO APARECE EN «QUIZÁ CONOZCAS»');
+ok('porque sus libros ya no están donde busca esa consulta',
+  !('librosLeidos' in base({ settings: { ...AJUSTES, privada: true } })));
+
+grupo('EL INTERRUPTOR');
+ok('por defecto, pública', !esPrivada({}));
+ok('se pone', esPrivada({ privada: true }));
+ok('un «casi sí» no la hace privada', !esPrivada({ privada: 'si' }));
 
 grupo('SIN @USUARIO NO HAY PERFIL');
 ok('sin username, null', publicProfileDoc({ uid: 'u1', name: 'Laura' }) === null);
