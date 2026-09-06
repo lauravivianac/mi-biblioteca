@@ -31,6 +31,7 @@ import {
   recommendFrom, isDenied, WHAT_WE_SEND,
 } from './agent.js';
 import { verifySuggestion } from './booklookup.js';
+import { openShare } from './shareui.js';
 import { recommendMine } from './taste.js';
 import { describeTaste } from './taste-core.js';
 import {
@@ -217,6 +218,13 @@ export async function saveUsername() {
   userState = null;
   repintarUsername();
   toast(`Ahora eres ${displayHandle(r.username)}`);
+}
+
+/** Presumir de un logro  ·  historia #92 */
+export function shareAchievement(nombre) {
+  const a = achievementStatus().find((x) => x.name === nombre);
+  if (!a) return;
+  openShare('logro', { name: a.name, icon: a.icon, hint: a.earned ? '' : a.hint });
 }
 
 /* ── ONBOARDING  ·  historia #19 ─────────────────────────────── */
@@ -527,7 +535,9 @@ export function openSettings() {
             <div class="ach-hint">${a.earned ? 'Conseguido' : esc(a.hint)}</div>
             ${!a.earned ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${a.pct}%"></div></div>` : ''}
           </div>
-          ${!a.earned ? `<span class="ach-count">${a.done}/${a.need}${a.unit}</span>` : ''}
+          ${a.earned
+            ? `<button class="btn-mini" onclick="shareAchievement('${esc(a.name).replace(/'/g, "&#39;")}')">✦</button>`
+            : `<span class="ach-count">${a.done}/${a.need}${a.unit}</span>`}
         </div>`).join('')}
     </div>
 

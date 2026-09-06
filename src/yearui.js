@@ -14,6 +14,7 @@
 import { allBooks, statusOf, ratingOf, entry, readingDays } from './store.js';
 import { yearReview, yearCards, yearsWithBooks } from './year-core.js';
 import { $, esc, closeSheet } from './ui.js';
+import { openShare } from './shareui.js';
 
 let anio = new Date().getFullYear();
 let indice = 0;
@@ -53,6 +54,16 @@ export function yearGo(i) {
 
 export const yearNext = () => yearGo(indice + 1);
 export const yearPrev = () => yearGo(indice - 1);
+
+/** Presumir del año entero  ·  historia #92 */
+export function shareYear() {
+  const r = yearReview(conEstado(), { year: anio, readingDays: readingDays() });
+  openShare('anio', {
+    anio: r.anio, leidos: r.leidos, paginas: r.paginas,
+    generosDistintos: r.generosDistintos, rachaMasLarga: r.rachaMasLarga,
+    enCurso: r.enCurso,
+  });
+}
 
 export function setYearReview(y) {
   anio = Number(y);
@@ -97,7 +108,7 @@ function pintar() {
       <button class="btn-mini" onclick="yearNext()" ${indice === tarjetas.length - 1 ? 'disabled' : ''}>Siguiente →</button>
     </div>
 
-    <p class="set-fineprint">
-      Compartirlo como imagen llega con las tarjetas de #90–#93. De momento se mira aquí.
-    </p>`;
+    <button class="btn-magic full" onclick="shareYear()" style="margin-top:6px">
+      ✦ Presumir de tu año
+    </button>`;
 }

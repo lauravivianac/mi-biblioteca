@@ -22,6 +22,7 @@ import { celebrateFinished } from './finished.js';
 import { visibilityLabel } from './reviews-core.js';
 import { gapsOf, fillableGaps, describeGap } from './gaps.js';
 import { streakLine, freezeNotice } from './streak-core.js';
+import { openShare } from './shareui.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -498,6 +499,10 @@ export async function openDetail(id) {
       <textarea class="review-txt" style="min-height:72px" placeholder="¿Qué te pareció?" onchange="setReview('${id}',this.value)">${esc(reviewOf(id))}</textarea>
       <div id="review-privacy">${privacyRow(id)}</div>
 
+      ${s === 'read' ? `<button class="btn-ghost full" onclick="shareBook('${id}')" style="margin-bottom:14px">
+        ✦ Presumir de este libro
+      </button>` : ''}
+
       <button class="btn-delete" onclick="deleteBook('${id}')">🗑 Eliminar de la biblioteca</button>
     </div>`;
   $('detail-overlay').classList.add('open');
@@ -530,6 +535,16 @@ export function toggleReviewPublicHere(id) {
   setReviewPublic(id, !reviewIsPublic(id));
   renderTracker();
   toast(reviewIsPublic(id) ? 'Reseña publicada' : 'Reseña guardada solo para ti');
+}
+
+/** Presumir de un libro terminado  ·  historia #91 */
+export function shareBook(id) {
+  const b = findBook(id);
+  if (!b) return;
+  openShare('libro', {
+    title: b.title, author: b.author, rating: ratingOf(id),
+    review: reviewOf(id), cover: coverOf(id),
+  });
 }
 
 export function toggleReviewPublic(id) {

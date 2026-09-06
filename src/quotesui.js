@@ -23,6 +23,7 @@ import {
 import { openCamera, closeCamera, grabFrame, readText } from './scan.js';
 import { $, esc, toast, closeSheet } from './ui.js';
 import { openDetail } from './views.js';
+import { openShare } from './shareui.js';
 
 let capturaLibro = null;     // el libro al que se le está poniendo una cita
 let textoCapturado = '';
@@ -43,6 +44,7 @@ export function renderQuotes(bookId) {
         <figcaption class="quote-foot">
           ${q.page ? `<span class="quote-page">p. ${q.page}</span>` : '<span class="quote-page quote-nopage">sin página</span>'}
           ${q.note ? `<span class="quote-note">${esc(q.note)}</span>` : ''}
+          <button class="btn-mini" onclick="shareQuote('${bookId}','${q.id}')">✦ Presumir</button>
           <button class="btn-mini" onclick="copyQuote('${bookId}','${q.id}')">Copiar</button>
           <button class="btn-mini" onclick="dropQuote('${bookId}','${q.id}')">Borrar</button>
         </figcaption>
@@ -171,6 +173,22 @@ export function dropQuote(bookId, quoteId) {
 }
 
 /**
+ * Presumir de una frase  ·  historia #91
+ *
+ * La tarjeta bonita que la vista de citas prometía «para cuando exista
+ * la épica de compartir». Ya existe.
+ */
+export function shareQuote(bookId, quoteId) {
+  const cita = quotesOf(bookId).find((q) => q.id === quoteId);
+  if (!cita) return;
+  const libro = bookOfQuote(bookId);
+  openShare('cita', {
+    text: cita.text, page: cita.page,
+    bookTitle: libro?.title, bookAuthor: libro?.author,
+  });
+}
+
+/**
  * Copiar la cita con su atribución.
  *
  * La tarjeta bonita de 1080×1920 es de la épica de compartir (#90,
@@ -248,6 +266,7 @@ function pintarTodas() {
             ${esc(q.bookTitle)} · ${esc(q.bookAuthor)}
           </button>
           ${q.page ? `<span class="quote-page">p. ${q.page}</span>` : ''}
+          <button class="btn-mini" onclick="shareQuote('${q.bookId}','${q.id}')">✦ Presumir</button>
           <button class="btn-mini" onclick="copyQuote('${q.bookId}','${q.id}')">Copiar</button>
         </figcaption>
       </figure>`).join('')}`;
