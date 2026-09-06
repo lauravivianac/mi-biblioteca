@@ -126,12 +126,14 @@ async function loadOcr() {
 }
 
 /**
- * Extrae el texto de una portada, en el dispositivo.
- * Preferible a mandar la imagen a un servicio: es gratis, no sube
- * fotos de nadie a ningún lado, y el resultado alimenta la misma
- * búsqueda de catálogos que el resto de caminos.
+ * Extrae el texto de una imagen, en el dispositivo.
+ *
+ * Lo usan dos caminos: identificar una portada cuando no hay código
+ * de barras, y capturar una cita de una página. En los dos, hacerlo
+ * aquí y no en un servidor significa que las fotos de los libros de
+ * nadie salen del teléfono.
  */
-export async function readCoverText(canvas, onProgress = () => {}) {
+export async function readText(canvas, onProgress = () => {}) {
   const T = await loadOcr();
   const { data } = await T.recognize(canvas, 'spa+eng', {
     logger: (m) => { if (m.status === 'recognizing text') onProgress(m.progress); },

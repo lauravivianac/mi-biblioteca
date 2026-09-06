@@ -523,3 +523,62 @@ body:not(.signed-in) .fab { display: none; }
 .shelf-row-info { flex: 1; min-width: 0; }
 .shelf-row-name { font-size: 13.5px; color: var(--text); }
 .shelf-row-count { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ── CITAS  ·  historia #29 ───────────────────────────────────
+   Una cita tiene que parecer una cita: con su comilla, su sangría y
+   su tipografía de lectura. Si se ve como un campo de formulario más,
+   guardar frases deja de apetecer. */
+
+.quote {
+  position: relative;
+  margin: 0 0 12px;
+  padding: 14px 16px 12px 34px;
+  border: var(--card-border);
+  border-left: 2px solid rgb(var(--gold-rgb) / .5);
+  border-radius: var(--radius-sm);
+  background: var(--fog-soft);
+}
+.quote::before {
+  content: '❞';
+  position: absolute; left: 11px; top: 10px;
+  font-family: var(--font-display);
+  font-size: 19px; line-height: 1;
+  color: rgb(var(--gold-rgb) / .55);
+}
+.quote-text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 14.5px; line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.quote-foot {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  margin-top: 11px;
+}
+.quote-page {
+  font-size: 11px; color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+.quote-nopage { color: var(--muted-soft); }
+.quote-note {
+  flex: 1; min-width: 120px;
+  font-size: 11.5px; color: var(--muted); font-style: italic;
+}
+.quote-book {
+  flex: 1; min-width: 140px; text-align: left; padding: 0;
+  background: none; border: 0; cursor: pointer;
+  font-family: var(--font-body); font-size: 11.5px; color: var(--lilac);
+}
+.quote-book:hover { text-decoration: underline; }
+.quote-standalone { background: var(--card); }
+
+/* El marco de la cámara, al capturar una cita: apaisado, porque una
+   frase ocupa lo ancho de la página y no un cuadrado. */
+.quote-frame { inset: 26% 6%; }
+
+/* Guardar una cita se abre DESDE la ficha del libro, así que tiene
+   que ir por encima de ella. Todas las hojas comparten z-index y
+   ganaba la que estuviera después en el marcado: la hoja de la cita
+   se abría debajo y no se podía tocar. */
+#qcap-overlay { z-index: 320; }
