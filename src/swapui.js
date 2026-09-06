@@ -26,7 +26,7 @@ import {
   fotoCabe, MAX_FOTO_BYTES,
 } from './swap-core.js';
 import { placeTexto, tieneCiudad, SIN_CIUDAD, PROMESA } from './place-core.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 
 let mias = [];
 let libroActual = null;
@@ -35,7 +35,7 @@ let fotoActual = null;
 /* ── DÓNDE ESTOY  ·  #81 ─────────────────────────────────────── */
 
 export function openPlace() {
-  $('place-overlay').classList.add('open');
+  openSheet('place-overlay');
   pintarPlace();
 }
 
@@ -158,7 +158,7 @@ export async function openSwap(bookId) {
   fotoActual = null;
   if (!libroActual) return;
 
-  $('swap-overlay').classList.add('open');
+  openSheet('swap-overlay');
   $('swap-body').innerHTML = '<p class="planner-hint">Un momento…</p>';
 
   if (!puedePublicarseEste(statusOf(bookId))) {
@@ -340,7 +340,7 @@ export async function withdrawSwap(id) {
 /* ── MIS PUBLICACIONES  ·  #82 ───────────────────────────────── */
 
 export async function openMySwaps() {
-  $('myswaps-overlay').classList.add('open');
+  openSheet('myswaps-overlay');
   $('myswaps-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
   mias = await misPublicaciones();
   pintarMias();

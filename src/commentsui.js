@@ -23,7 +23,7 @@ import {
 import { MOTIVOS, EXPLICACION, mailtoSoporte, SOPORTE } from './moderation-core.js';
 import { inicial } from './profile-core.js';
 import { cuandoTexto } from './feed-core.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 
 let hilo = { target: null, owner: null, comentarios: [], reacciones: {}, cerrado: false };
 let abiertos = new Set();      // los spoilers que ya se destaparon
@@ -33,7 +33,7 @@ let abiertos = new Set();      // los spoilers que ya se destaparon
 export async function openComments(target, owner = '', cerrado = false) {
   hilo = { target, owner, comentarios: [], reacciones: {}, cerrado };
   abiertos = new Set();
-  $('comments-overlay').classList.add('open');
+  openSheet('comments-overlay');
   $('comments-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
 
   const [cs, rs] = await Promise.all([loadComments(target), loadReactions(target)]);
@@ -180,7 +180,7 @@ let reporte = { tipo: null, sobre: null, deQuien: null, copia: '' };
 
 export function openReport(tipo, sobre, deQuien, copia = '') {
   reporte = { tipo, sobre, deQuien, copia };
-  $('report-overlay').classList.add('open');
+  openSheet('report-overlay');
   $('report-body').innerHTML = `
     <p class="planner-hint">
       Lo mira una persona. Cuéntanos qué pasa y no le decimos a nadie que fuiste tú.
@@ -232,7 +232,7 @@ let aQuien = null;
 
 export function openBlock(otherUid, nombre = '') {
   aQuien = otherUid;
-  $('block-overlay').classList.add('open');
+  openSheet('block-overlay');
   const bloqueada = misBloqueos().bloqueados.includes(otherUid);
   const silenciada = misBloqueos().silenciados.includes(otherUid);
 
@@ -301,7 +301,7 @@ export { meBloqueo };
 /* ── LA LISTA DE BLOQUEADAS, EN AJUSTES  ·  #51 ──────────────── */
 
 export async function openBlocked() {
-  $('blocked-overlay').classList.add('open');
+  openSheet('blocked-overlay');
   $('blocked-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
   const { bloqueados, silenciados } = await loadMyBlocks();
 

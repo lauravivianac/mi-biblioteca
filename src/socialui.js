@@ -27,7 +27,7 @@ import { inicial } from './profile-core.js';
 /* openProfile se llama desde los onclick del marcado, o sea por window,
    así que no se importa: profileui ya importa de aquí y hacerlo en los
    dos sentidos es un círculo que no hace falta. */
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 
 let turnoBusqueda = 0;
 let debounce = null;
@@ -130,7 +130,7 @@ export async function toggleFollow(otherUid) {
 /* ── LAS LISTAS DE SEGUIDORAS  ·  #46 ────────────────────────── */
 
 export async function openFollowList(cual, userUid) {
-  $('follows-overlay').classList.add('open');
+  openSheet('follows-overlay');
   $('follows-title').textContent = cual === 'seguidoras' ? 'Seguidoras' : 'Siguiendo a';
   $('follows-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
 
@@ -170,7 +170,7 @@ function fila(p, motivo = '', conQuitar = false) {
 /* ── BUSCAR PERSONAS  ·  #47 ─────────────────────────────────── */
 
 export function openPeople() {
-  $('people-overlay').classList.add('open');
+  openSheet('people-overlay');
   $('people-body').innerHTML = `
     <div class="fg">
       <div class="uname-field">
@@ -260,7 +260,7 @@ async function sugerencias() {
 let avisos = [];
 
 export async function openNotices() {
-  $('notices-overlay').classList.add('open');
+  openSheet('notices-overlay');
   $('notices-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
   avisos = await myNotices();
 
@@ -312,7 +312,7 @@ export { seguidorasTexto };
 let solicitudes = [];
 
 export async function openRequests() {
-  $('requests-overlay').classList.add('open');
+  openSheet('requests-overlay');
   $('requests-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
   solicitudes = await misSolicitudes();
   pintarSolicitudes();

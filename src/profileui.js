@@ -33,7 +33,7 @@ import { relationSlot, loadRelation } from './socialui.js';
 import { fetchFullProfile, isFollowing } from './social.js';
 import { meBloqueo } from './moderation.js';
 import { petSvg } from './pet.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 
 let visto = null;        // { profile, uid, mio } de lo último que se abrió
 let turno = 0;           // una carga lenta no pinta encima de otra más nueva
@@ -43,7 +43,7 @@ let turno = 0;           // una carga lenta no pinta encima de otra más nueva
 /** Abrir un perfil por @usuario. Sin argumento, el tuyo. */
 export async function openProfile(handle) {
   const nombre = handle || myUsername();
-  $('profile-overlay').classList.add('open');
+  openSheet('profile-overlay');
 
   if (!nombre) { pintarSinNombre(); return; }
 
@@ -305,7 +305,7 @@ export async function copyProfileLink() {
 /* ── ELEGIR QUÉ SE VE ────────────────────────────────────────── */
 
 export function openProfileSettings() {
-  $('profset-overlay').classList.add('open');
+  openSheet('profset-overlay');
   pintarAjustes();
 }
 

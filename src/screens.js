@@ -18,7 +18,7 @@ import { THEMES } from './themes.js';
 
 const THEME_BASE = THEMES[0].tokens;
 import { readingPace, goalFeasibility, goalProgress, stalledBooks, generatePlan, planPatches, estimateDays } from './planner.js';
-import { $, esc, toast, confirmAction, download, closeSheet } from './ui.js';
+import { $, esc, toast, confirmAction, download, closeSheet, openSheet } from './ui.js';
 import { refreshAll } from './views.js';
 import { MONTH_ORDER } from './seed.js';
 import { achievementStatus, earnedCount } from './achievements.js';
@@ -325,7 +325,7 @@ let previewing = null;
 
 export function openThemeStore() {
   renderThemeStore();
-  $('store-overlay').classList.add('open');
+  openSheet('store-overlay');
 }
 
 export function closeThemeStore() {
@@ -668,7 +668,7 @@ export function openSettings() {
     <p class="set-fineprint">
       Borrar la cuenta elimina tus libros, reseñas y ajustes. No se puede deshacer.
     </p>`;
-  $('settings-overlay').classList.add('open');
+  openSheet('settings-overlay');
 }
 
 /* ── EL AGENTE  ·  historia #61 ───────────────────────────────
@@ -786,7 +786,7 @@ let sugeridos = [];
    son lo único que de verdad necesita salir a internet. */
 
 export function openRecs() {
-  $('recs-overlay').classList.add('open');
+  openSheet('recs-overlay');
   pintarRecsLocales();
 }
 
@@ -1129,7 +1129,7 @@ let draftPlan = null;
 export function openPlanner() {
   draftPlan = null;
   renderPlannerStep1();
-  $('planner-overlay').classList.add('open');
+  openSheet('planner-overlay');
 }
 
 function renderPlannerStep1() {

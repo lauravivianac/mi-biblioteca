@@ -101,6 +101,23 @@ la rama y que ninguna lectura del código había encontrado.
 Necesitan Java (el emulador es un `.jar`) y por eso van aparte de `npm test`, que
 sigue corriendo sin instalar nada.
 
+#### Y que las pantallas se vean
+
+```bash
+npx playwright install chromium   # solo la primera vez
+npm run test:pantallas
+```
+
+Abre el `index.html` del repo en un navegador de verdad y comprueba que la hoja que
+abres **se ve**. Suena a poco y no lo es: las seis filas de ajustes —tu perfil,
+dónde estás, tus libros ofrecidos, bloqueadas, invitar, qué se ve en tu perfil— y
+la tienda de temas se abrían **enteras por detrás** de la propia pantalla de
+ajustes, porque todas las hojas compartían `z-index` y ganaba la que estuviera más
+abajo en el HTML. Tocar esas siete filas no hacía nada.
+
+Ninguna prueba podía verlo: las demás son de lógica pura en Node y esto es un
+problema de pintado. Hacía falta un navegador, y no había ninguno mirando.
+
 ### 3. Migrar los datos antiguos
 
 La primera vez que inicies sesión, la app detecta el documento `biblioteca/laura` y

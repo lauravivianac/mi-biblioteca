@@ -19,7 +19,7 @@ import {
 } from './scan.js';
 import { addBook, updateEntry } from './store.js';
 import { GENRES, MONTH_ORDER } from './seed.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll } from './views.js';
 
 let mode = 'titulo';       // titulo · camara · manual
@@ -31,7 +31,7 @@ export function openAdd() {
   mode = 'titulo';
   draft = null;
   render();
-  $('add-overlay').classList.add('open');
+  openSheet('add-overlay');
 }
 
 export function closeAdd(e) {
