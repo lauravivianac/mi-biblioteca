@@ -613,6 +613,49 @@ body {
 .review-txt::placeholder { color: var(--muted); }
 .review-txt:focus { border-color: var(--violet); }
 
+/* ── LA RACHA  ·  historia #68 ──
+   Apagada cuando no hay racha, cálida cuando la hay, y con un borde
+   de aviso cuando hoy todavía no cuenta. Nada de rojo ni de alarmas:
+   la racha tiene que dar ganas, no ansiedad. */
+.streak-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  background: var(--card-bg);
+}
+.streak-card.viva {
+  border-color: rgb(var(--amber-rgb) / 0.45);
+  background: linear-gradient(135deg, rgb(var(--amber-rgb) / 0.10), transparent 70%);
+}
+.streak-card.en-peligro { border-style: dashed; }
+.streak-flame {
+  font-size: 30px;
+  line-height: 1;
+  flex: none;
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+.streak-card.viva .streak-flame { filter: none; opacity: 1; }
+.streak-body { flex: 1; min-width: 0; }
+.streak-num {
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1;
+  color: var(--gold);
+}
+.streak-line { font-size: 12px; color: var(--text); margin-top: 4px; }
+.streak-best { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.streak-freeze {
+  font-size: 11px;
+  color: var(--lilac);
+  margin-top: 6px;
+}
+.streak-freeze-left { font-size: 10px; color: var(--muted); margin-top: 4px; opacity: 0.8; }
+
 /* ── ¿CUÁL PRIMERO?  ·  historia #60 ── */
 .duel-pick {
   display: flex;

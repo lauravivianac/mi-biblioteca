@@ -7,7 +7,7 @@
 import { MONTH_ORDER, MONTH_COLORS, MONTH_EMOJIS, pageCount } from './seed.js';
 import {
   allBooks, findBook, entry, statusOf, ratingOf, reviewOf, coverOf,
-  reviewIsPublic, setReviewPublic,
+  reviewIsPublic, setReviewPublic, myStreak, recordReadingDay,
   updateEntry, removeBook, progressPct,
 } from './store.js';
 import { fetchCover } from './covers.js';
@@ -21,6 +21,7 @@ import { quoteCount } from './quotes.js';
 import { celebrateFinished } from './finished.js';
 import { visibilityLabel } from './reviews-core.js';
 import { gapsOf, fillableGaps, describeGap } from './gaps.js';
+import { streakLine, freezeNotice } from './streak-core.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -273,8 +274,37 @@ export function renderLib() {
 
 /* ── TRACKER ─────────────────────────────────────────────────── */
 
+/* ── LA RACHA  ·  historia #68 ──────────────────────────────── */
+
+function renderStreak() {
+  const slot = $('streak-slot');
+  if (!slot) return;
+  const info = myStreak();
+  const aviso = freezeNotice(info);
+
+  slot.innerHTML = `
+    <div class="streak-card ${info.enPeligro ? 'en-peligro' : ''} ${info.actual ? 'viva' : ''}">
+      <div class="streak-flame">${info.actual ? '🔥' : '·'}</div>
+      <div class="streak-body">
+        <div class="streak-num">${info.actual}</div>
+        <div class="streak-line">${esc(streakLine(info))}</div>
+        ${info.masLarga > info.actual
+          ? `<div class="streak-best">Tu mejor marca: ${info.masLarga} días</div>` : ''}
+        ${aviso ? `<div class="streak-freeze">❄ ${esc(aviso)}</div>` : ''}
+        <div class="streak-freeze-left">
+          ${info.congelacionesRestantes === 2
+            ? 'Te quedan 2 congelaciones este mes'
+            : info.congelacionesRestantes === 1
+              ? 'Te queda 1 congelación este mes'
+              : 'Ya no quedan congelaciones este mes'}
+        </div>
+      </div>
+    </div>`;
+}
+
 export function renderTracker() {
   updateStats();
+  renderStreak();
   const body = $('tracker-body');
   if (!body) return;
 
@@ -343,6 +373,9 @@ export function setStatus(id, status) {
   if (status === 'pending') { patch.finishedAt = null; }
   updateEntry(id, patch);
 
+  /* Empezar o terminar un libro es lectura del día  ·  #68 */
+  if (['reading', 'read'].includes(status)) recordReadingDay();
+
   /* Un logro que se consigue en silencio no motiva a nadie. */
   for (const a of refreshAchievements()) {
     toast(`${a.icon}  ${a.name}${a.unlocksTheme ? ' · desbloqueaste un tema' : ''}`);
@@ -376,6 +409,10 @@ export function setPage(id, value) {
   if (!e.startedAt && page > 0) patch.startedAt = Date.now();
   if (page > 0 && statusOf(id) === 'pending') patch.status = 'reading';
   updateEntry(id, patch);
+
+  /* Anotar páginas es LA señal de que hoy leíste  ·  #68. Basta con
+     unas pocas: la historia dice que no hay mínimo castigador. */
+  if (page > 0) recordReadingDay();
 
   if (total && page >= total && statusOf(id) !== 'read') {
     confirmAction({

@@ -17,6 +17,7 @@ import {
 import { db } from './firebase.js';
 import { seedBooks, pageCount } from './seed.js';
 import { publicReviewDoc, isPublicReview, publicCount } from './reviews-core.js';
+import { streakInfo, addDay } from './streak-core.js';
 
 const state = {
   uid: null,
@@ -70,6 +71,31 @@ export const reviewIsPublic = (id) => isPublicReview(state.entries[id] || {});
 export const publicReviewCount = () => publicCount(state.entries);
 export const coverOf = (id) => state.entries[id]?.cover ?? null;
 export const settings = () => ({ ...DEFAULT_SETTINGS, ...state.settings });
+
+/* ── LA RACHA  ·  historia #68 ────────────────────────────────
+   Los días con actividad se guardan como fechas LOCALES en los
+   ajustes. La racha en sí no se guarda: se deduce de esos días cada
+   vez. Un contador guardado se desincroniza en cuanto cambias de
+   dispositivo, y entonces la racha depende de la historia de tus
+   clics en vez de tus días de lectura. */
+
+export const readingDays = () => settings().readingDays || [];
+export const myStreak = () => streakInfo(readingDays());
+
+/**
+ * Apuntar que hoy hubo lectura.
+ *
+ * Se llama desde donde se registra progreso de verdad —anotar página,
+ * empezar un libro, terminarlo—, nunca al abrir la app: una racha que
+ * sube por mirar la pantalla no mide nada.
+ */
+export function recordReadingDay(date = new Date()) {
+  const antes = readingDays();
+  const despues = addDay(antes, date);
+  if (despues === antes) return false;      // ya estaba apuntado hoy
+  updateSettings({ readingDays: despues });
+  return true;
+}
 
 /** Páginas leídas de un libro, tanto si se registró página como porcentaje. */
 export function pagesRead(id) {
