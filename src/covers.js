@@ -25,9 +25,19 @@ async function fromGoogleBooks(book) {
   return img ? img.replace(/^http:/, 'https:') : null;
 }
 
-/** Devuelve la URL de portada, cacheada por libro. `null` = buscada y no encontrada. */
+/**
+ * Devuelve la URL de portada, cacheada por libro.
+ *
+ * Un libro sin portada se marca con cadena vacía, no con null. Parece
+ * un detalle y no lo es: `coverOf` devuelve null tanto para «nunca la
+ * busqué» como para «la busqué y no hay», así que guardando null se
+ * volvía a salir a OpenLibrary y a Google CADA VEZ que abrías esa
+ * ficha. Diez segundos de espera, para siempre, por un libro que no
+ * tiene portada en ningún catálogo.
+ */
 export async function fetchCover(bookId) {
   const cached = coverOf(bookId);
+  if (cached === '') return null;                       // buscada, no hay
   if (cached !== null && cached !== undefined) return cached;
   if (inFlight.has(bookId)) return inFlight.get(bookId);
 
@@ -38,7 +48,7 @@ export async function fetchCover(bookId) {
     let url = null;
     try { url = await fromOpenLibrary(book); } catch {}
     if (!url) { try { url = await fromGoogleBooks(book); } catch {} }
-    updateEntry(bookId, { cover: url });
+    updateEntry(bookId, { cover: url || '' });
     inFlight.delete(bookId);
     return url;
   })();

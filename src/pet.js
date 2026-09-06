@@ -73,6 +73,15 @@ const GENRE_SCENE = {
   'Thriller': 'lampara',
   'Novela contemporánea': 'taza',
   'Autobiografía': 'taza',
+  'Romance': 'rama',
+  'Fantasía': 'planta',
+  'Aventura': 'hojas',
+  'Ciencia ficción': 'lampara',
+  'Novela histórica': 'columna',
+  'Ensayo / Filosofía': 'lampara',
+  'Humor': 'taza',
+  'Infantil': 'planta',
+  'Novela gráfica / Cómic': 'lampara',
 };
 
 /* ── ESPECIES ────────────────────────────────────────────────
@@ -80,11 +89,18 @@ const GENRE_SCENE = {
    atención y diluirían lo único que hace funcionar esto: que haya
    alguien esperándote. */
 
+/* Ninguna se desbloquea. Los accesorios y los rincones sí se ganan
+   leyendo —eso premia el hábito—, pero elegir CON QUIÉN te sientas a
+   leer es lo primero que hace alguien al abrir la app, y esconderlo
+   detrás de un logro solo hacía que pareciera que no había más que
+   una gata. Lo que se gana es el guardarropa, no la compañía. */
 export const SPECIES = [
-  { id: 'gato',    name: 'Gata',    emoji: '🐈', unlock: null },
-  { id: 'buho',    name: 'Búho',    emoji: '🦉', unlock: 'primer-clasico' },
-  { id: 'zorro',   name: 'Zorro',   emoji: '🦊', unlock: 'cinco-generos' },
-  { id: 'mapache', name: 'Mapache', emoji: '🦝', unlock: 'diez-libros' },
+  { id: 'gato',    name: 'Gatita',  emoji: '🐱', unlock: null },
+  { id: 'conejo',  name: 'Coneja',  emoji: '🐰', unlock: null },
+  { id: 'buho',    name: 'Búho',    emoji: '🦉', unlock: null },
+  { id: 'zorro',   name: 'Zorrita', emoji: '🦊', unlock: null },
+  { id: 'mapache', name: 'Mapache', emoji: '🦝', unlock: null },
+  { id: 'panda',   name: 'Panda',   emoji: '🐼', unlock: null },
 ];
 
 export const DEFAULT_PET = {
@@ -243,40 +259,69 @@ export function petPhrase(state = petState()) {
    importante— puede tomar los colores del tema activo, que es lo
    que la hace encajar con los nueve mundos. */
 
+/* Proporciones kawaii: la cabeza ocupa más que el cuerpo, los ojos
+   van bajos y muy separados, y todo lo que puede ser redondo lo es.
+   No es un capricho — es lo que separa «un animalito» de «un animal
+   dibujado en pequeño». Las esquinas duras se leen como adultas. */
+
 const EYES = {
-  contenta:   '<path d="M50 47 Q55 42 60 47" /><path d="M68 47 Q73 42 78 47" />',
-  leyendo:    '<path d="M50 48 Q55 53 60 48" /><path d="M68 48 Q73 53 78 48" />',
-  dormida:    '<path d="M49 48 Q55 52 61 48" /><path d="M67 48 Q73 52 79 48" />',
-  celebrando: '<path d="M50 48 Q55 41 60 48" /><path d="M68 48 Q73 41 78 48" />',
+  contenta:   '<path d="M46 55 Q52 48 58 55" /><path d="M70 55 Q76 48 82 55" />',
+  leyendo:    '<path d="M46 52 Q52 59 58 52" /><path d="M70 52 Q76 59 82 52" />',
+  dormida:    '<path d="M46 54 Q52 59.5 58 54" /><path d="M70 54 Q76 59.5 82 54" />',
+  celebrando: '<path d="M46 56 Q52 46 58 56" /><path d="M70 56 Q76 46 82 56" />',
   expectante: '',
 };
 
+/* Dos brillos por ojo, no uno: el grande arriba y uno chiquito abajo.
+   Es lo que hace que el ojo parezca húmedo en vez de un punto negro. */
 const OPEN_EYES = `
-  <ellipse cx="55" cy="46" rx="4.2" ry="5.4" fill="var(--pet-eye)" stroke="none"/>
-  <ellipse cx="73" cy="46" rx="4.2" ry="5.4" fill="var(--pet-eye)" stroke="none"/>
-  <circle cx="56.4" cy="44.2" r="1.5" fill="var(--pet-shine)" stroke="none"/>
-  <circle cx="74.4" cy="44.2" r="1.5" fill="var(--pet-shine)" stroke="none"/>`;
+  <ellipse cx="52" cy="53" rx="6.6" ry="7.8" fill="var(--pet-eye)" stroke="none"/>
+  <ellipse cx="76" cy="53" rx="6.6" ry="7.8" fill="var(--pet-eye)" stroke="none"/>
+  <circle cx="54.4" cy="49.6" r="2.5" fill="var(--pet-shine)" stroke="none"/>
+  <circle cx="78.4" cy="49.6" r="2.5" fill="var(--pet-shine)" stroke="none"/>
+  <circle cx="49.8" cy="56.6" r="1.3" fill="var(--pet-shine)" stroke="none" opacity=".65"/>
+  <circle cx="73.8" cy="56.6" r="1.3" fill="var(--pet-shine)" stroke="none" opacity=".65"/>`;
 
+/** Los cachetes. Van siempre, en cualquier ánimo: son la mitad del gesto. */
+const BLUSH = `
+  <ellipse cx="39" cy="62" rx="6.6" ry="4.2" fill="var(--pet-blush)" stroke="none"/>
+  <ellipse cx="89" cy="62" rx="6.6" ry="4.2" fill="var(--pet-blush)" stroke="none"/>`;
+
+/* Los accesorios se dibujan DESPUÉS de la cabeza, así que van en sus
+   coordenadas absolutas. Ninguno tapa los ojos ni los cachetes: un
+   accesorio que esconde el gesto no es un accesorio, es una máscara. */
 const ACCESSORY_SVG = {
   ninguno: '',
-  bufanda: `<path d="M44 66 Q64 76 84 66 L84 74 Q64 84 44 74 Z" fill="var(--pet-accent)" stroke="none"/>
-            <path d="M78 72 L86 92 L78 92 L73 75 Z" fill="var(--pet-accent)" stroke="none" opacity=".85"/>`,
-  gafas:   `<circle cx="55" cy="46" r="9" fill="none" stroke="var(--pet-accent)" stroke-width="2.4"/>
-            <circle cx="73" cy="46" r="9" fill="none" stroke="var(--pet-accent)" stroke-width="2.4"/>
-            <path d="M64 46 h0" stroke="var(--pet-accent)" stroke-width="2.4"/>
-            <path d="M64 46 L64 46 M63 46 h2" stroke="var(--pet-accent)" stroke-width="2.4"/>`,
-  lazo:    `<path d="M64 68 L54 62 L54 74 Z" fill="var(--pet-accent)" stroke="none"/>
-            <path d="M64 68 L74 62 L74 74 Z" fill="var(--pet-accent)" stroke="none"/>
-            <circle cx="64" cy="68" r="3.4" fill="var(--pet-accent)" stroke="none"/>`,
-  gorro:   `<path d="M44 26 Q64 4 84 26 Z" fill="var(--pet-accent)" stroke="none"/>
-            <ellipse cx="64" cy="27" rx="22" ry="4" fill="var(--pet-accent)" stroke="none" opacity=".8"/>`,
-  flor:    `<g transform="translate(82 24)">
-              <circle cx="0" cy="-6" r="4.4" fill="var(--pet-accent)" stroke="none"/>
-              <circle cx="5.7" cy="-1.9" r="4.4" fill="var(--pet-accent)" stroke="none"/>
-              <circle cx="3.5" cy="4.9" r="4.4" fill="var(--pet-accent)" stroke="none"/>
-              <circle cx="-3.5" cy="4.9" r="4.4" fill="var(--pet-accent)" stroke="none"/>
-              <circle cx="-5.7" cy="-1.9" r="4.4" fill="var(--pet-accent)" stroke="none"/>
-              <circle cx="0" cy="0" r="3" fill="var(--pet-shine)" stroke="none"/>
+  /* Una banda en el cuello con su borde. Sin el contorno se fundía
+     con la barriga clara y parecía un peto, no una bufanda. */
+  bufanda: `<path d="M41 72 Q64 82 87 72 Q89 76 87 80 Q64 90 41 80 Q39 76 41 72 Z"
+                  fill="var(--pet-accent)" stroke="var(--pet-outline)" stroke-width="1.2"/>
+            <path d="M79 79 Q87 90 85 101 Q80 103 75 101 Q77 90 73 82 Z"
+                  fill="var(--pet-accent)" stroke="var(--pet-outline)" stroke-width="1.2" opacity=".92"/>
+            <path d="M46 78 h34" stroke="var(--pet-shine)" stroke-width="1.4" opacity=".28" fill="none"/>`,
+  gafas:   `<g fill="none" stroke="var(--pet-accent)" stroke-width="2.6" stroke-linecap="round">
+              <rect x="41" y="43" width="22" height="20" rx="9"/>
+              <rect x="65" y="43" width="22" height="20" rx="9"/>
+              <path d="M63 52 h2"/>
+              <path d="M41 51 q-6 -1 -8 3 M87 51 q6 -1 8 3"/>
+            </g>`,
+  lazo:    `<g transform="translate(40 26) rotate(-16)">
+              <path d="M0 0 Q-11 -8 -12 1 Q-13 10 0 3 Z" fill="var(--pet-accent)" stroke="none"/>
+              <path d="M0 0 Q11 -8 12 1 Q13 10 0 3 Z" fill="var(--pet-accent)" stroke="none"/>
+              <ellipse cx="0" cy="1.5" rx="3.6" ry="3.2" fill="var(--pet-accent)" stroke="none"/>
+              <ellipse cx="-1" cy="0.4" rx="1.4" ry="1.1" fill="var(--pet-shine)" stroke="none" opacity=".6"/>
+            </g>`,
+  gorro:   `<path d="M42 27 Q50 3 64 3 Q78 3 86 27 Z" fill="var(--pet-accent)" stroke="none"/>
+            <ellipse cx="64" cy="27" rx="24" ry="5" fill="var(--pet-accent)" stroke="none"/>
+            <ellipse cx="64" cy="26" rx="24" ry="4" fill="var(--pet-shine)" stroke="none" opacity=".28"/>
+            <circle cx="64" cy="4" r="5" fill="var(--pet-shine)" stroke="none" opacity=".55"/>`,
+  flor:    `<g transform="translate(90 27)">
+              <circle cx="0" cy="-6.4" r="4.8" fill="var(--pet-accent)" stroke="none"/>
+              <circle cx="6.1" cy="-2" r="4.8" fill="var(--pet-accent)" stroke="none"/>
+              <circle cx="3.8" cy="5.2" r="4.8" fill="var(--pet-accent)" stroke="none"/>
+              <circle cx="-3.8" cy="5.2" r="4.8" fill="var(--pet-accent)" stroke="none"/>
+              <circle cx="-6.1" cy="-2" r="4.8" fill="var(--pet-accent)" stroke="none"/>
+              <circle cx="0" cy="0" r="3.2" fill="var(--pet-shine)" stroke="none"/>
             </g>`,
 };
 
@@ -329,65 +374,135 @@ const CORNER_SVG = {
             </g>`,
 };
 
-/* Cada especie reemplaza solo lo que la distingue. El cuerpo sentado
-   es el mismo: es lo que mantiene la silueta reconocible y evita
-   cuatro dibujos a medias en vez de uno bueno. */
+/* Cada especie reemplaza solo lo que la distingue: orejas, cola y la
+   marca de la cara. El cuerpo redondo es el mismo para todas, y es lo
+   que hace que las seis se sientan de la misma familia en vez de seis
+   dibujos sueltos. */
 const SPECIES_PARTS = {
   gato: {
-    ears: `<path d="M43 34 L40 12 L58 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-           <path d="M85 34 L88 12 L70 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-           <path d="M45 32 L43.5 19 L54 27 Z" fill="var(--pet-belly)" opacity=".65"/>
-           <path d="M83 32 L84.5 19 L74 27 Z" fill="var(--pet-belly)" opacity=".65"/>`,
-    tail: 'M92 100 Q118 96 112 74 Q108 58 96 64',
-    tailTip: '',
-    face: `<path d="M60.5 53 L67.5 53 L64 57 Z" fill="var(--pet-nose)"/>
-           <path d="M64 57 v3 M64 60 q-4 3 -7 0 M64 60 q4 3 7 0" fill="none" stroke="var(--pet-eye)" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
-           <g stroke="var(--pet-eye)" stroke-width="1.3" stroke-linecap="round" opacity=".35">
-             <path d="M44 52 h-14 M44 57 h-13 M84 52 h14 M84 57 h13"/>
+    /* Orejas de esquinas redondeadas. Un triángulo con punta afilada
+       se lee como felino adulto; el mismo triángulo con las esquinas
+       blandas se lee como gatito. */
+    ears: `<path d="M43 32 Q36 10 47 10 Q57 12 61 25 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6" stroke-linejoin="round"/>
+           <path d="M85 32 Q92 10 81 10 Q71 12 67 25 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6" stroke-linejoin="round"/>
+           <path d="M46 29 Q41 16 48 16 Q54 18 57 26 Z" fill="var(--pet-inner)" stroke="none" opacity=".75"/>
+           <path d="M82 29 Q87 16 80 16 Q74 18 71 26 Z" fill="var(--pet-inner)" stroke="none" opacity=".75"/>`,
+    muzzle: '<ellipse cx="64" cy="64" rx="13" ry="8.5" fill="var(--pet-belly)" opacity=".5"/>',
+    tail: 'M88 98 Q116 94 110 72 Q106 57 93 63',
+    face: `<ellipse cx="64" cy="61" rx="3.4" ry="2.6" fill="var(--pet-nose)"/>
+           <path d="M64 64 v2 M64 66 q-4 3.4 -7.5 .4 M64 66 q4 3.4 7.5 .4"
+                 fill="none" stroke="var(--pet-eye)" stroke-width="1.7" stroke-linecap="round" opacity=".72"/>
+           <g stroke="var(--pet-eye)" stroke-width="1.3" stroke-linecap="round" opacity=".3">
+             <path d="M34 58 h-12 M34 63 h-11 M94 58 h12 M94 63 h11"/>
            </g>`,
   },
-  buho: {
-    /* Sin orejas: penachos. Y sin cola, que un búho sentado no la luce. */
-    ears: `<path d="M46 26 L44 10 L57 20 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-           <path d="M82 26 L84 10 L71 20 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>`,
+
+  conejo: {
+    /* Orejas largas y blandas, ligeramente abiertas. Es la especie más
+       redonda de las seis a propósito: es la que pide que la abracen. */
+    ears: `<g stroke="var(--pet-outline)" stroke-width="1.6">
+             <ellipse cx="50" cy="15" rx="7.6" ry="18" fill="var(--pet-fur)" transform="rotate(-13 50 15)"/>
+             <ellipse cx="78" cy="15" rx="7.6" ry="18" fill="var(--pet-fur)" transform="rotate(13 78 15)"/>
+           </g>
+           <ellipse cx="50" cy="16" rx="3.8" ry="12.5" fill="var(--pet-inner)" stroke="none" opacity=".8" transform="rotate(-13 50 16)"/>
+           <ellipse cx="78" cy="16" rx="3.8" ry="12.5" fill="var(--pet-inner)" stroke="none" opacity=".8" transform="rotate(13 78 16)"/>`,
+    muzzle: '<ellipse cx="64" cy="64" rx="12" ry="8" fill="var(--pet-belly)" opacity=".5"/>',
     tail: '',
-    tailTip: `<path d="M36 82 Q28 92 34 104" fill="none" stroke="var(--pet-fur)" stroke-width="7" stroke-linecap="round" opacity=".8"/>
-              <path d="M92 82 Q100 92 94 104" fill="none" stroke="var(--pet-fur)" stroke-width="7" stroke-linecap="round" opacity=".8"/>`,
-    face: `<circle cx="55" cy="46" r="12" fill="var(--pet-belly)" opacity=".45"/>
-           <circle cx="73" cy="46" r="12" fill="var(--pet-belly)" opacity=".45"/>
-           <path d="M64 52 L59 58 L64 62 L69 58 Z" fill="var(--pet-nose)"/>`,
+    /* La colita: un pompón detrás del cuerpo. */
+    tailTip: `<circle cx="96" cy="94" r="8.5" fill="var(--pet-belly)" stroke="var(--pet-outline)" stroke-width="1.4"/>`,
+    face: `<path d="M60.6 60 Q64 57.6 67.4 60 Q64 63.6 60.6 60 Z" fill="var(--pet-nose)"/>
+           <path d="M64 63 v2 M64 65 q-3.6 3.2 -7 .4 M64 65 q3.6 3.2 7 .4"
+                 fill="none" stroke="var(--pet-eye)" stroke-width="1.7" stroke-linecap="round" opacity=".72"/>
+           <path d="M60 70 h8" stroke="var(--pet-eye)" stroke-width="2.6" stroke-linecap="round" opacity=".28"/>`,
   },
-  zorro: {
-    ears: `<path d="M41 34 L37 10 L59 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-           <path d="M87 34 L91 10 L69 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-           <path d="M43 30 L39.5 16 L52 26 Z" fill="var(--pet-eye)" opacity=".55"/>
-           <path d="M85 30 L88.5 16 L76 26 Z" fill="var(--pet-eye)" opacity=".55"/>`,
-    tail: 'M90 100 Q122 96 116 70 Q112 54 97 61',
-    tailWidth: 15,
-    tailTip: `<path d="M116 70 Q112 54 97 61" fill="none" stroke="var(--pet-belly)"
-                    stroke-width="14" stroke-linecap="round" opacity=".95"/>`,
-    face: `<path d="M52 52 Q64 48 76 52 Q70 66 64 66 Q58 66 52 52 Z" fill="var(--pet-belly)" opacity=".9"/>
-           <path d="M60.5 53 L67.5 53 L64 58 Z" fill="var(--pet-nose)"/>
-           <g stroke="var(--pet-eye)" stroke-width="1.2" stroke-linecap="round" opacity=".3">
-             <path d="M46 53 h-13 M46 58 h-12 M82 53 h13 M82 58 h12"/>
+
+  buho: {
+    /* Sin orejas: penachos cortos. Y sin cola, que un búho sentado no
+       la luce. Lo suyo son los dos discos de la cara. */
+    ears: `<path d="M45 24 Q34 1 49 7 Q57 11 59 21 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M83 24 Q94 1 79 7 Q71 11 69 21 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>`,
+    /* Los dos discos son LO que hace a un búho. Antes iban tan suaves
+       que se leía como un hámster: ahora llevan aro y ceja. */
+    discs: `<circle cx="52" cy="53" r="15" fill="var(--pet-belly)" opacity=".62"/>
+            <circle cx="76" cy="53" r="15" fill="var(--pet-belly)" opacity=".62"/>
+            <circle cx="52" cy="53" r="15" fill="none" stroke="var(--pet-eye)" stroke-width="1.2" opacity=".2"/>
+            <circle cx="76" cy="53" r="15" fill="none" stroke="var(--pet-eye)" stroke-width="1.2" opacity=".2"/>
+            <path d="M40 42 Q52 34 64 40 Q76 34 88 42" fill="none" stroke="var(--pet-eye)"
+                  stroke-width="2" stroke-linecap="round" opacity=".3"/>`,
+    tail: '',
+    /* Alas pegadas al cuerpo, en vez de patitas sueltas. */
+    tailTip: `<path d="M40 80 Q30 92 38 104" fill="none" stroke="var(--pet-fur)" stroke-width="9" stroke-linecap="round" opacity=".85"/>
+              <path d="M88 80 Q98 92 90 104" fill="none" stroke="var(--pet-fur)" stroke-width="9" stroke-linecap="round" opacity=".85"/>`,
+    muzzle: '',
+    face: `<path d="M64 57 Q69 62 64 71 Q59 62 64 57 Z" fill="var(--pet-nose)"/>
+           <g fill="var(--pet-belly)" opacity=".45">
+             <circle cx="56" cy="88" r="2.4"/><circle cx="64" cy="82" r="2.4"/>
+             <circle cx="72" cy="88" r="2.4"/><circle cx="64" cy="94" r="2.4"/>
            </g>`,
   },
+
+  zorro: {
+    ears: `<path d="M40 30 Q30 -2 46 4 Q59 9 62 24 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6" stroke-linejoin="round"/>
+           <path d="M88 30 Q98 -2 82 4 Q69 9 66 24 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6" stroke-linejoin="round"/>
+           <path d="M43 27 Q36 8 47 11 Q55 15 57 25 Z" fill="var(--pet-eye)" stroke="none" opacity=".52"/>
+           <path d="M85 27 Q92 8 81 11 Q73 15 71 25 Z" fill="var(--pet-eye)" stroke="none" opacity=".52"/>`,
+    /* El hocico claro en pico, la marca del zorro sin dejar de ser redondo. */
+    muzzle: '<path d="M48 58 Q64 54 80 58 Q76 74 64 74 Q52 74 48 58 Z" fill="var(--pet-belly)" opacity=".92"/>',
+    tail: 'M86 98 Q120 94 114 68 Q110 52 94 60',
+    tailWidth: 17,
+    tailTip: `<path d="M114 68 Q110 52 94 60" fill="none" stroke="var(--pet-belly)"
+                    stroke-width="15" stroke-linecap="round" opacity=".95"/>`,
+    face: `<ellipse cx="64" cy="61" rx="3.6" ry="2.8" fill="var(--pet-nose)"/>
+           <path d="M64 64 v2 M64 66 q-4 3.4 -7.5 .4 M64 66 q4 3.4 7.5 .4"
+                 fill="none" stroke="var(--pet-eye)" stroke-width="1.7" stroke-linecap="round" opacity=".72"/>
+           <g stroke="var(--pet-eye)" stroke-width="1.2" stroke-linecap="round" opacity=".26">
+             <path d="M35 58 h-12 M35 63 h-11 M93 58 h12 M93 63 h11"/>
+           </g>`,
+  },
+
   mapache: {
-    ears: `<path d="M44 32 L41 14 L58 25 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-           <path d="M84 32 L87 14 L70 25 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-           <path d="M46 30 L44 20 L54 26 Z" fill="var(--pet-belly)" opacity=".6"/>
-           <path d="M82 30 L84 20 L74 26 Z" fill="var(--pet-belly)" opacity=".6"/>`,
-    tail: 'M92 100 Q118 96 112 74 Q108 58 96 64',
-    tailTip: `<g stroke="var(--pet-eye)" stroke-width="4.5" opacity=".45" fill="none" stroke-linecap="round">
-                <path d="M108 92 q6 -3 6 -8"/><path d="M112 76 q2 -6 -1 -9"/>
+    ears: `<circle cx="45" cy="26" r="11" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6"/>
+           <circle cx="83" cy="26" r="11" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6"/>
+           <circle cx="46" cy="27" r="6" fill="var(--pet-inner)" stroke="none" opacity=".75"/>
+           <circle cx="82" cy="27" r="6" fill="var(--pet-inner)" stroke="none" opacity=".75"/>`,
+    /* El antifaz es su firma: dos manchas anchas alrededor de los ojos. */
+    discs: `<path d="M35 49 Q46 38 61 47 Q61 63 46 65 Q35 61 35 49 Z" fill="var(--pet-eye)" opacity=".62"/>
+            <path d="M93 49 Q82 38 67 47 Q67 63 82 65 Q93 61 93 49 Z" fill="var(--pet-eye)" opacity=".62"/>
+            <ellipse cx="52" cy="53" rx="7.6" ry="8.6" fill="var(--pet-sclera)" opacity=".92"/>
+            <ellipse cx="76" cy="53" rx="7.6" ry="8.6" fill="var(--pet-sclera)" opacity=".92"/>
+            <path d="M42 38 Q52 33 58 39" fill="none" stroke="var(--pet-belly)" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+            <path d="M86 38 Q76 33 70 39" fill="none" stroke="var(--pet-belly)" stroke-width="3" stroke-linecap="round" opacity=".5"/>`,
+    muzzle: '<ellipse cx="64" cy="63" rx="12.5" ry="8.5" fill="var(--pet-belly)" opacity=".85"/>',
+    tail: 'M88 98 Q116 94 110 72 Q106 57 93 63',
+    tailTip: `<g stroke="var(--pet-eye)" stroke-width="5.5" opacity=".4" fill="none" stroke-linecap="round">
+                <path d="M105 90 q7 -3 7 -9"/><path d="M110 74 q2 -7 -1 -10"/>
               </g>`,
-    /* El antifaz es su firma. */
-    face: `<path d="M44 44 Q55 36 63 44 Q55 56 44 48 Z" fill="var(--pet-eye)" opacity=".45"/>
-           <path d="M84 44 Q73 36 65 44 Q73 56 84 48 Z" fill="var(--pet-eye)" opacity=".45"/>
-           <ellipse cx="64" cy="56" rx="8" ry="5.5" fill="var(--pet-belly)" opacity=".8"/>
-           <path d="M60.5 53 L67.5 53 L64 57 Z" fill="var(--pet-nose)"/>`,
+    face: `<ellipse cx="64" cy="60" rx="3.6" ry="2.8" fill="var(--pet-nose)"/>
+           <path d="M64 63 v2 M64 65 q-3.6 3.2 -7 .4 M64 65 q3.6 3.2 7 .4"
+                 fill="none" stroke="var(--pet-eye)" stroke-width="1.7" stroke-linecap="round" opacity=".72"/>`,
+  },
+
+  panda: {
+    /* Orejas redondas y oscuras. El contraste sale del mismo tono que
+       los ojos, así que sigue funcionando con pelaje claro y oscuro. */
+    ears: `<circle cx="43" cy="24" r="11.5" fill="var(--pet-eye)" opacity=".82"/>
+           <circle cx="85" cy="24" r="11.5" fill="var(--pet-eye)" opacity=".82"/>`,
+    /* Las manchas de los ojos, inclinadas: es lo que le da la cara. */
+    discs: `<ellipse cx="51" cy="54" rx="11" ry="13" fill="var(--pet-eye)" opacity=".8" transform="rotate(-14 51 54)"/>
+            <ellipse cx="77" cy="54" rx="11" ry="13" fill="var(--pet-eye)" opacity=".8" transform="rotate(14 77 54)"/>
+            <ellipse cx="52" cy="53" rx="7.8" ry="9" fill="var(--pet-sclera)"/>
+            <ellipse cx="76" cy="53" rx="7.8" ry="9" fill="var(--pet-sclera)"/>`,
+    muzzle: '<ellipse cx="64" cy="64" rx="12" ry="8" fill="var(--pet-belly)" opacity=".55"/>',
+    tail: '',
+    /* Bracitos oscuros abrazando el cuerpo. */
+    tailTip: `<path d="M42 80 Q32 92 40 103" fill="none" stroke="var(--pet-eye)" stroke-width="10" stroke-linecap="round" opacity=".72"/>
+              <path d="M86 80 Q96 92 88 103" fill="none" stroke="var(--pet-eye)" stroke-width="10" stroke-linecap="round" opacity=".72"/>`,
+    face: `<ellipse cx="64" cy="60" rx="4" ry="3" fill="var(--pet-nose)"/>
+           <path d="M64 63 v2 M64 65 q-3.6 3.2 -7 .4 M64 65 q3.6 3.2 7 .4"
+                 fill="none" stroke="var(--pet-eye)" stroke-width="1.7" stroke-linecap="round" opacity=".72"/>`,
   },
 };
+
 
 /** Luminancia de un hex, para decidir si algo encima debe ser claro u oscuro. */
 function luminance(hex) {
@@ -413,6 +528,15 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
      oscuro sobre Obsidiana. El contorno se invierte con el pelaje,
      así que define la silueta contra cualquiera de los nueve fondos. */
   const outline = darkFur ? 'rgb(255 255 255 / .3)' : 'rgb(36 28 24 / .32)';
+  /* Los cachetes y el interior de las orejas: un rosa que se ve tanto
+     sobre pelaje claro como oscuro, solo cambiando cuánto pesa. */
+  const blush = darkFur ? 'rgb(255 176 176 / .34)' : 'rgb(232 116 122 / .34)';
+  const inner = darkFur ? 'rgb(255 176 186 / .5)' : 'rgb(240 150 158 / .72)';
+  /* Detrás de los ojos, para las especies que llevan una mancha oscura
+     encima. Sin esto los ojos de la panda desaparecían dentro de sus
+     propias manchas: el mismo error que ya costó los ojos del gato
+     sobre Pergamino, en otra parte del dibujo. */
+  const sclera = darkFur ? 'rgb(28 22 38 / .92)' : 'rgb(255 250 244 / .95)';
   const accessory = ACCESSORY_SVG[cfg.accessory] ?? '';
   const corner = CORNER_SVG[currentScene(cfg)] ?? '';
   const alwaysOpen = cfg.species === 'buho' && mood !== 'dormida';
@@ -422,7 +546,7 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
   return `
 <svg class="pet-svg" viewBox="0 0 128 112" role="img"
      aria-label="Tu mascota lectora, ${moodLabel(mood)}"
-     style="--pet-fur:${fur.color};--pet-belly:${fur.belly};--pet-eye:${eye};--pet-shine:${shine};--pet-outline:${outline}">
+     style="--pet-fur:${fur.color};--pet-belly:${fur.belly};--pet-eye:${eye};--pet-shine:${shine};--pet-outline:${outline};--pet-blush:${blush};--pet-inner:${inner};--pet-sclera:${sclera}">
   ${corner}
 
   <!-- cola: contorno debajo, pelaje encima. El búho no tiene. -->
@@ -436,41 +560,46 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
   </g>` : parts.tailTip}
 
   <g class="pet-body">
-    <!-- cuerpo -->
-    <ellipse cx="64" cy="86" rx="30" ry="25" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5"/>
-    <ellipse cx="64" cy="92" rx="18" ry="16" fill="var(--pet-belly)" opacity=".55"/>
-    <!-- patas -->
-    <ellipse cx="52" cy="106" rx="9.5" ry="5" fill="var(--pet-belly)" stroke="var(--pet-outline)" stroke-width="1.2"/>
-    <ellipse cx="76" cy="106" rx="9.5" ry="5" fill="var(--pet-belly)" stroke="var(--pet-outline)" stroke-width="1.2"/>
+    <!-- cuerpo: una gota redonda, más ancha abajo. La cabeza le come
+         la mitad de arriba, que es de donde sale el aire de peluche. -->
+    <path d="M64 62 Q92 62 94 88 Q96 108 64 108 Q32 108 34 88 Q36 62 64 62 Z"
+          fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6"/>
+    <ellipse cx="64" cy="92" rx="17" ry="14" fill="var(--pet-belly)" opacity=".5"/>
+    <!-- patitas -->
+    <ellipse cx="52" cy="105" rx="9" ry="5.4" fill="var(--pet-belly)" stroke="var(--pet-outline)" stroke-width="1.2"/>
+    <ellipse cx="76" cy="105" rx="9" ry="5.4" fill="var(--pet-belly)" stroke="var(--pet-outline)" stroke-width="1.2"/>
 
     <g class="pet-head">
-      <!-- orejas o penachos, según la especie -->
+      <!-- orejas: van detrás de la cabeza para que la silueta sea limpia -->
       ${parts.ears}
-      <!-- cabeza -->
-      <circle cx="64" cy="44" r="25" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5"/>
-      ${cfg.species === 'gato' ? '<ellipse cx="64" cy="55" rx="13" ry="9" fill="var(--pet-belly)" opacity=".5"/>' : ''}
-      ${['buho', 'mapache'].includes(cfg.species) ? parts.face : ''}
+      <!-- cabeza: grande a propósito. Es la proporción, más que
+           cualquier detalle, la que hace que se vea tierna. -->
+      <circle cx="64" cy="48" r="31" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.6"/>
+      <!-- discos o antifaz, bajo los ojos -->
+      ${parts.discs || ''}
+      ${parts.muzzle || ''}
+      ${BLUSH}
       <!-- ojos -->
       <g class="pet-eyes" fill="none" stroke="var(--pet-eye)"
-         stroke-width="${strokeEyes ? 2.6 : 0}" stroke-linecap="round">${eyes}</g>
-      <!-- hocico: el búho y el mapache ya lo pintaron bajo los ojos -->
-      ${['buho', 'mapache'].includes(cfg.species) ? '' : parts.face}
+         stroke-width="${strokeEyes ? 3 : 0}" stroke-linecap="round">${eyes}</g>
+      <!-- nariz y boca -->
+      ${parts.face}
       ${accessory}
     </g>
   </g>
 
   ${mood === 'leyendo' || mood === 'expectante' ? `
     <g class="pet-book">
-      <path d="M44 92 L64 88 L64 108 L44 104 Z" fill="var(--pet-book)"/>
-      <path d="M84 92 L64 88 L64 108 L84 104 Z" fill="var(--pet-book)" opacity=".76"/>
-      <path d="M64 88 v20" stroke="var(--pet-eye)" stroke-width="1.4" opacity=".5"/>
+      <path d="M46 94 Q64 89 64 92 L64 110 Q64 107 46 110 Z" fill="var(--pet-book)"/>
+      <path d="M82 94 Q64 89 64 92 L64 110 Q64 107 82 110 Z" fill="var(--pet-book)" opacity=".76"/>
+      <path d="M64 92 v18" stroke="var(--pet-eye)" stroke-width="1.4" opacity=".45"/>
     </g>` : ''}
 
   ${mood === 'dormida' ? `
     <g class="pet-zzz" fill="var(--pet-line)" opacity=".65"
        font-family="var(--font-display)" font-size="13">
-      <text x="92" y="30">z</text>
-      <text x="102" y="19" font-size="10">z</text>
+      <text x="98" y="26">z</text>
+      <text x="108" y="14" font-size="10">z</text>
     </g>` : ''}
 
   ${mood === 'celebrando' ? `

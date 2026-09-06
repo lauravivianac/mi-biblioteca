@@ -93,8 +93,44 @@ export const MONTH_EMOJIS = {
   Enero:"✨",Febrero:"💜",Marzo:"🌱",Abril:"🌷"
 };
 
-/* Los géneros del plan son propios de esta biblioteca, no los de una API. */
-export const GENRES = [...new Set(SEED.map((b) => b.genre))].sort();
+/* Los géneros del plan son propios de esta biblioteca, no los de una API.
+   Antes salían de los libros del plan inicial, así que la lista se
+   quedaba corta en cuanto se añadía algo distinto: no había dónde
+   poner una novela romántica ni una de aventuras. Ahora es una lista
+   escrita, más ancha que el plan, y los libros propios pueden traer
+   géneros que no estén aquí sin desaparecer del filtro. */
+const CATALOGO = [
+  'Autobiografía',
+  'Aventura',
+  'Ciencia ficción',
+  'Clásico universal',
+  'Ensayo / Filosofía',
+  'Fantasía',
+  'Fantasía / Juvenil',
+  'Historia / Mitología',
+  'Humor',
+  'Infantil',
+  'Latinoamérica',
+  'No ficción / Desarrollo',
+  'Novela contemporánea',
+  'Novela gráfica / Cómic',
+  'Novela histórica',
+  'Oriente / Espiritualidad',
+  'Poesía / Teatro',
+  'Romance',
+  'Terror / Misterio',
+  'Thriller',
+];
+
+export const GENRES = [...new Set([...CATALOGO, ...SEED.map((b) => b.genre)])].sort(
+  (a, b) => a.localeCompare(b, 'es'),
+);
+
+/** Todos los géneros que hay que poder elegir o filtrar, incluidos los
+ *  que la usuaria haya escrito en sus propios libros. */
+export const allGenres = (books = []) =>
+  [...new Set([...GENRES, ...books.map((b) => b.genre).filter(Boolean)])]
+    .sort((a, b) => a.localeCompare(b, 'es'));
 
 /** Libros marcados como leídos en los datos originales de Laura.
  *  Antes se forzaban en cada carga, lo que en una app multiusuaria

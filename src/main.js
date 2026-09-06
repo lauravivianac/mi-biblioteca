@@ -3,14 +3,14 @@
    Une el acceso, los datos por usuaria, el tema y las vistas.
    ───────────────────────────────────────────────────────────── */
 
-import { watchAuth, currentUser } from './auth.js';
-import { loadStore, settings, updateSettings, onSave, addBook, flush } from './store.js';
+import { watchAuth } from './auth.js';
+import { loadStore, settings, onSave, flush } from './store.js';
 import { applyTheme, localTheme } from './theme-engine.js';
 import { seedNewAccount } from './store.js';
 import * as views from './views.js';
 import * as screens from './screens.js';
-import { $, toast, backdropClose, closeSheet } from './ui.js';
-import { GENRES, MONTH_ORDER } from './seed.js';
+import * as addbook from './addbook.js';
+import { $, backdropClose, closeSheet } from './ui.js';
 
 /* ── TEMA ────────────────────────────────────────────────────── */
 // El tema local ya se pintó en el <head>; aquí se aplica completo.
@@ -28,38 +28,6 @@ function nav(view, el) {
   if (view === 'tracker') views.renderTracker();
 }
 
-/* ── AÑADIR LIBRO ────────────────────────────────────────────── */
-
-function openAdd() {
-  const genreSel = $('f-genre');
-  if (genreSel && !genreSel.options.length) {
-    genreSel.innerHTML = GENRES.map((g) => `<option>${g}</option>`).join('');
-  }
-  const monthSel = $('f-month');
-  if (monthSel && monthSel.options.length <= 1) {
-    monthSel.innerHTML = '<option value="">—</option>' + MONTH_ORDER.map((m) => `<option>${m}</option>`).join('');
-  }
-  $('add-overlay').classList.add('open');
-}
-
-function submitAddBook() {
-  const title = $('f-title').value.trim();
-  const author = $('f-author').value.trim();
-  if (!title || !author) { toast('El título y el autor son obligatorios', 'error'); return; }
-  addBook({
-    title, author,
-    genre: $('f-genre').value,
-    year: parseInt($('f-year').value, 10) || null,
-    month: $('f-month').value || null,
-    pages: $('f-pages').value.trim() || '—',
-    role: $('f-role').value,
-  });
-  closeSheet('add-overlay');
-  ['f-title', 'f-author', 'f-pages'].forEach((id) => { $(id).value = ''; });
-  views.refreshAll();
-  toast('Libro añadido');
-}
-
 /* ── INDICADOR DE GUARDADO ───────────────────────────────────── */
 
 onSave((state) => {
@@ -73,9 +41,10 @@ onSave((state) => {
 // Los onclick del marcado necesitan estas funciones en window,
 // porque un <script type="module"> no comparte ámbito global.
 Object.assign(window, {
-  nav, openAdd, submitAddBook, closeSheet,
-  closeAdd: (e) => backdropClose(e, 'add-overlay'),
+  nav, closeSheet,
+  ...addbook,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
+  closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
   closePlanner: (e) => backdropClose(e, 'planner-overlay'),
   ...views, ...screens,

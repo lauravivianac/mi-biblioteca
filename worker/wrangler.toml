@@ -1,0 +1,18 @@
+name = "mi-biblioteca-agente"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Desde qué dominios puede llamarse al Worker.
+#
+# El `*` cubre UN tramo del dominio y está ahí por Vercel, que inventa
+# una URL nueva por cada rama: sin comodín habría que volver aquí cada
+# vez que se abre un PR, y eso acaba siempre en poner `*` a secas.
+#
+# `https://mi-biblioteca-*.vercel.app` NO deja entrar a
+# `otra-cosa.vercel.app` ni a `mi-biblioteca-x.vercel.app.evil.com`;
+# hay pruebas de eso en scripts/test-worker.mjs.
+ALLOWED_ORIGINS = "https://lauravivianac.github.io,https://mi-biblioteca.vercel.app,https://mi-biblioteca-*.vercel.app,http://localhost:8080"
+
+# La key de DeepSeek NO va aquí: este archivo está en el repositorio.
+# Va como secreto del entorno, con `wrangler secret put DEEPSEEK_API_KEY`.

@@ -13,6 +13,7 @@ import { fetchCover } from './covers.js';
 import { $, esc, initial, toast, confirmAction } from './ui.js';
 import { refreshAchievements } from './achievements.js';
 import { renderPet } from './pet.js';
+import { agentAvailable, bookBrief } from './agent.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -159,6 +160,15 @@ export function renderLib() {
     statusChips.innerHTML = opts.map(([v, label]) =>
       `<div class="chip ${filterStatus === v ? 'active' : ''}" onclick="setStatusFilter('${v}')">${label}</div>`
     ).join('');
+  }
+
+  /* El agente solo aparece si está configurado. Un botón que siempre
+     falla es peor que no tener botón. */
+  const agentSlot = $('lib-agent');
+  if (agentSlot) {
+    agentSlot.innerHTML = agentAvailable()
+      ? '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>'
+      : '';
   }
 
   let filtered = allBooks();
@@ -351,6 +361,8 @@ export async function openDetail(id) {
         ${pinned ? '📌 Fijado a ' + pinned + ' · toca para soltar' : '📌 Fijar a ' + book.month + ' para que el plan no lo mueva'}
       </button>` : ''}
 
+      ${agentAvailable() ? renderBrief(id) : ''}
+
       <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Calificación</span></div>
       <div class="stars-row" style="margin-bottom:16px">${stars}</div>
 
@@ -369,6 +381,52 @@ export function closeDetail(e) {
 export function closeDetailSheet() {
   $('detail-overlay').classList.remove('open');
   refreshAll();
+}
+
+/* ── ¿ME LO LEO?  ·  historia #48 ─────────────────────────────
+   La pregunta que de verdad se hace antes de empezar un libro. La
+   respuesta se guarda en la ficha: preguntar dos veces lo mismo
+   cuesta dinero y tarda, y el libro no cambia entre una vez y otra. */
+
+function renderBrief(id) {
+  const b = entry(id).brief;
+  if (!b) {
+    return `<div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">¿Me lo leo?</span></div>
+      <button class="btn-ghost full" id="brief-btn" onclick="askBrief('${id}')">
+        ✦ Pregúntale al agente si vale la pena
+      </button>
+      <p class="set-fineprint" style="margin-bottom:16px">Sin spoilers. Te dice también para quién NO es.</p>`;
+  }
+  return `<div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">¿Me lo leo?</span></div>
+    <div class="brief">
+      <p class="brief-text">${esc(b.resumen || '')}</p>
+      ${b.tono || b.exigencia ? `<div class="detail-tags" style="margin:10px 0">
+        ${b.tono ? `<span class="detail-tag">${esc(b.tono)}</span>` : ''}
+        ${b.exigencia ? `<span class="detail-tag">${esc(b.exigencia)}</span>` : ''}
+      </div>` : ''}
+      ${b.para_quien ? `<div class="brief-row"><span class="brief-tag ok">Para ti si</span><span>${esc(b.para_quien)}</span></div>` : ''}
+      ${b.no_para_quien ? `<div class="brief-row"><span class="brief-tag no">No si</span><span>${esc(b.no_para_quien)}</span></div>` : ''}
+      ${b.parecidos?.length ? `<div class="brief-row"><span class="brief-tag">Se parece a</span><span>${b.parecidos.map(esc).join(' · ')}</span></div>` : ''}
+      <button class="link-btn" onclick="askBrief('${id}', true)">Volver a preguntar</button>
+    </div>`;
+}
+
+export async function askBrief(id, again = false) {
+  const book = findBook(id);
+  if (!book) return;
+  if (again) updateEntry(id, { brief: null });
+  const btn = $('brief-btn');
+  if (btn) { btn.textContent = 'Preguntando…'; btn.disabled = true; }
+  try {
+    const brief = await bookBrief(book);
+    updateEntry(id, { brief });
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+  /* Si cerraste la ficha mientras el agente pensaba, no te la
+     reabrimos en la cara: la respuesta ya quedó guardada y estará
+     ahí la próxima vez que abras el libro. */
+  if (detailId === id) await openDetail(id);
 }
 
 export function detailStatus(s) { setStatus(detailId, s); openDetail(detailId); updateStats(); }

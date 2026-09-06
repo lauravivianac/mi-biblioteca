@@ -49,6 +49,13 @@
   --sheet-radius: 24px 24px 0 0;
   --rune-radius: 8px;
 
+  /* Alias por rol. Las pantallas nuevas piden el radio por lo que es
+     la pieza —una tarjeta, un control— y así siguen a cada tema sin
+     repetir el nombre exacto del token. */
+  --radius: var(--card-radius);
+  --radius-sm: var(--ctl-radius);
+  --radius-lg: calc(var(--card-radius) + 8px);
+
   /* Cuánto del color del mes tiñe la interfaz. Un tema estricto
      lo baja a 0 y recupera su propia paleta. */
   --month-tint: 30%;

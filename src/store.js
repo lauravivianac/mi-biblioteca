@@ -44,6 +44,10 @@ export const DEFAULT_SETTINGS = {
   goalValue: null,
   goalYear: new Date().getFullYear(),
   onboarded: false,
+  /* El agente es opcional: la app añade libros sin él. Apagado
+     mientras no haya un Worker propio al que preguntar. */
+  agentUrl: '',
+  agentEnabled: false,
 };
 
 /* ── LECTURA ─────────────────────────────────────────────────── */
