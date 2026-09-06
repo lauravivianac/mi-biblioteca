@@ -17,6 +17,7 @@ import * as duel from './duel.js';
 import * as yearui from './yearui.js';
 import * as shareui from './shareui.js';
 import * as profileui from './profileui.js';
+import * as socialui from './socialui.js';
 import { setConsentPrompt } from './agent.js';
 import { $, backdropClose, closeSheet } from './ui.js';
 
@@ -56,7 +57,7 @@ setConsentPrompt(screens.ensureAgentConsent);
 Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
-  ...profileui,
+  ...profileui, ...socialui,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
@@ -116,6 +117,9 @@ watchAuth(async (user) => {
      un perfil ajeno necesita estar dentro. Si la ruta era esa, el
      onboarding espera — quien llega desde una invitación viene a ver a
      alguien, no a configurar su plan lector. */
+  /* El punto de avisos, en cuanto hay sesión. No bloquea nada. */
+  socialui.refreshNotices().catch(() => {});
+
   if (profileui.openProfileFromHash()) return;
 
   await screens.maybeOnboard();

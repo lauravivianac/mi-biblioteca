@@ -377,6 +377,7 @@ const profileRef = (userId) => doc(db, 'profiles', userId);
    vez de importar auth.js, que importaría store.js de vuelta. */
 let currentDisplayName = '';
 export const setDisplayName = (n) => { currentDisplayName = String(n || ''); };
+export const displayName = () => currentDisplayName;
 
 /** Los datos que necesita el core, sacados del estado de aquí. */
 function datosDelPerfil() {

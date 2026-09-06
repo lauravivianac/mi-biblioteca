@@ -126,6 +126,66 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    /* ── SEGUIR  ·  historia #46 ──────────────────────────────
+       Un documento por FLECHA, no por pareja: seguir es asimétrico.
+       El identificador es `{quienSigue}_{aQuienSigue}`, y la regla
+       EXIGE que el camino y el contenido digan lo mismo. Sin eso, yo
+       podría crear `ana_bea` con follower «bea» y aparecer en las
+       listas de otras dos personas que no me han seguido.
+
+       Solo puede crear y borrar la flecha quien sigue. Que te sigan no
+       te deja borrarlo: para eso está bloquear (#51), que es otra cosa
+       y se hace explícitamente. `update` no existe — una flecha no se
+       edita, se crea o se borra. */
+    match /follows/{followId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && request.resource.data.follower == request.auth.uid
+                    && followId == request.auth.uid + '_' + request.resource.data.following
+                    && request.resource.data.following != request.auth.uid;
+
+      allow delete: if request.auth != null
+                    && resource.data.follower == request.auth.uid;
+
+      allow update: if false;
+    }
+
+    /* ── LOS AVISOS  ·  historia #46 ──────────────────────────
+       La bandeja de cada quien, en su propio sitio: notifs/{uid}/items.
+
+       AQUÍ HAY QUE ESCRIBIR EN CASA AJENA, y no hay forma de evitarlo
+       sin un servidor propio: para avisarte de que te sigo, el aviso
+       tiene que aparecer en TU bandeja y lo escribo yo. Así que la
+       regla aprieta todo lo demás:
+
+       - el `from` tiene que ser quien escribe, así que nadie puede
+         dejar avisos firmados por otra persona;
+       - el identificador es `follow_{quienSigue}`, así que seguir y
+         dejar de seguir mil veces deja UN aviso, no mil: no se puede
+         usar para inundar la bandeja de nadie;
+       - solo la dueña puede leerlos y marcarlos como leídos. Quien
+         avisa no puede volver a mirar lo que hay dentro.
+
+       Borrar lo puede hacer la dueña, y también quien lo dejó — que es
+       lo que permite retirar el aviso al dejar de seguir. */
+    match /notifs/{userId}/items/{noticeId} {
+      allow read: if isOwner(userId);
+
+      allow create: if request.auth != null
+                    && request.resource.data.from == request.auth.uid
+                    && noticeId == 'follow_' + request.auth.uid
+                    && userId != request.auth.uid;
+
+      // Solo la dueña, y solo para marcarlo leído
+      allow update: if isOwner(userId)
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['leido']);
+
+      allow delete: if isOwner(userId)
+                    || (request.auth != null && resource.data.from == request.auth.uid);
+    }
+
     /* La colección `biblioteca` era de la época sin autenticación.
        Estuvo abierta a cualquier cuenta con sesión para poder migrarla
        una vez — lo que significaba que CUALQUIER usuaria podía leer y

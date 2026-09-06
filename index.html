@@ -81,6 +81,10 @@
               <div class="gem-label">leídos</div>
             </div>
           </div>
+          <button class="icon-btn" onclick="openPeople()" aria-label="Encontrar lectoras" title="Encontrar lectoras">🔍</button>
+          <button class="icon-btn" style="position:relative" onclick="openNotices()" aria-label="Avisos" title="Avisos">
+            🔔<span class="notice-dot" id="notice-dot" hidden>0</span>
+          </button>
           <button class="icon-btn" onclick="openThemeStore()" aria-label="Tienda de temas" title="Tienda de temas">🎨</button>
           <button class="icon-btn" onclick="openSettings()" aria-label="Ajustes" title="Ajustes">⚙</button>
         </div>
@@ -195,6 +199,36 @@
     <button class="sheet-close" onclick="closeSheet('done-overlay')" aria-label="Cerrar">✕</button>
     <div class="sheet-title">✦ Un libro menos en la pila</div>
     <div id="done-body"></div>
+  </div>
+</div>
+
+<!-- BUSCAR PERSONAS -->
+<div class="overlay" id="people-overlay" onclick="closePeople(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('people-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Encontrar lectoras</div>
+    <div id="people-body"></div>
+  </div>
+</div>
+
+<!-- SEGUIDORAS Y SIGUIENDO -->
+<div class="overlay" id="follows-overlay" onclick="closeFollows(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('follows-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title" id="follows-title">Seguidoras</div>
+    <div id="follows-body"></div>
+  </div>
+</div>
+
+<!-- AVISOS -->
+<div class="overlay" id="notices-overlay" onclick="closeNotices(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('notices-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Avisos</div>
+    <div id="notices-body"></div>
   </div>
 </div>
 

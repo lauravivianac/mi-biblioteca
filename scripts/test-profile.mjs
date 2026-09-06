@@ -66,7 +66,7 @@ grupo('APAGAR UNA SECCIÓN LA QUITA DEL DOCUMENTO, NO LA ESCONDE');
   ok('lo demás sigue ahí', 'generos' in sinNumeros);
 
   const nada = base({ settings: { ...AJUSTES, profileHidden: [...IDS_SECCION] } });
-  const conDatos = ['leyendo', 'numeros', 'generos', 'estanterias', 'mascota'].filter((k) => k in nada);
+  const conDatos = ['leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos'].filter((k) => k in nada);
   igual('todo apagado: no queda ni un dato de lectura', conDatos, []);
   ok('pero el perfil sigue existiendo, con nombre y bio', nada.username === 'laura.v' && nada.bio === 'Leo de noche.');
 }
@@ -98,6 +98,19 @@ grupo('LA MASCOTA ESCONDIDA NO SE PUBLICA');
   ok('y si no, sale', base().mascota.name === 'Nube');
 }
 
+grupo('QUE ME ENCUENTREN POR MIS LIBROS (#47) ES OTRO INTERRUPTOR');
+{
+  const d = base();
+  igual('publica los ids de los leídos, nunca lo que opinas',
+    d.librosLeidos, ['b1', 'b2', 'b3']);
+  ok('los pendientes y los empezados no van',
+    !d.librosLeidos.includes('b4') && !d.librosLeidos.includes('b5'));
+  const off = base({ settings: { ...AJUSTES, profileHidden: ['sugerible'] } });
+  ok('apagado, la clave no existe', !('librosLeidos' in off));
+  ok('y sigue sin haber reseñas ahí dentro',
+    !JSON.stringify(d.librosLeidos).includes('review'));
+}
+
 grupo('SIN @USUARIO NO HAY PERFIL');
 ok('sin username, null', publicProfileDoc({ uid: 'u1', name: 'Laura' }) === null);
 ok('sin uid, null', publicProfileDoc({ username: 'laura', name: 'Laura' }) === null);
@@ -105,7 +118,7 @@ ok('sin uid, null', publicProfileDoc({ username: 'laura', name: 'Laura' }) === n
 /* ── LAS SECCIONES ───────────────────────────────────────────── */
 
 grupo('LAS SECCIONES');
-ok('hay seis', SECCIONES.length === 6);
+ok('hay siete', SECCIONES.length === 7);
 ok('todas tienen id, etiqueta y pista', SECCIONES.every((s) => s.id && s.label && s.hint));
 ok('por defecto se ven todas', IDS_SECCION.every((id) => seccionVisible({}, id)));
 ok('sin lista, visible', seccionVisible({ profileHidden: null }, 'numeros'));
