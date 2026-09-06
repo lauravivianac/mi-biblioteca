@@ -1,0 +1,510 @@
+/* ─────────────────────────────────────────────────────────────
+   PANTALLAS NUEVAS
+   Acceso · Onboarding · Tienda de temas · Ajustes · Plan lector
+   ───────────────────────────────────────────────────────────── */
+
+import {
+  registerWithEmail, signInWithEmail, resetPassword, signInWithGoogle,
+  signInWithApple, logOut, deleteAccount, humanError, currentUser,
+} from './auth.js';
+import {
+  settings, updateSettings, exportData, exportCsv, updateEntry, findBook,
+} from './store.js';
+import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
+import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
+import { readingPace, goalFeasibility, goalProgress, stalledBooks, generatePlan, planPatches, estimateDays } from './planner.js';
+import { $, esc, toast, confirmAction, download, closeSheet } from './ui.js';
+import { refreshAll } from './views.js';
+import { MONTH_ORDER } from './seed.js';
+
+/* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
+
+let authMode = 'signin';
+
+export function renderAuth() {
+  const isSignup = authMode === 'signup';
+  $('auth-screen').innerHTML = `
+    <div class="auth-card">
+      <div class="auth-brand">✦ Mi Biblioteca</div>
+      <p class="auth-lede">Tu plan lector, tus reseñas y tu progreso — solo tuyos.</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab ${!isSignup ? 'active' : ''}" onclick="setAuthMode('signin')">Entrar</button>
+        <button class="auth-tab ${isSignup ? 'active' : ''}" onclick="setAuthMode('signup')">Crear cuenta</button>
+      </div>
+
+      <form id="auth-form" onsubmit="return submitAuth(event)">
+        ${isSignup ? `<div class="fg"><label class="flabel" for="au-name">Cómo te llamas</label>
+          <input class="finput" id="au-name" autocomplete="name" placeholder="Tu nombre"></div>` : ''}
+        <div class="fg"><label class="flabel" for="au-email">Correo</label>
+          <input class="finput" id="au-email" type="email" autocomplete="email" required placeholder="tu@correo.com"></div>
+        <div class="fg"><label class="flabel" for="au-pass">Contraseña</label>
+          <input class="finput" id="au-pass" type="password" required minlength="6"
+            autocomplete="${isSignup ? 'new-password' : 'current-password'}" placeholder="Al menos 6 caracteres"></div>
+        <div class="auth-error" id="auth-error" role="alert"></div>
+        <button class="btn-magic full" type="submit" id="auth-submit">
+          ${isSignup ? '✦ Crear mi cuenta' : 'Entrar'}
+        </button>
+      </form>
+
+      ${!isSignup ? `<button class="link-btn" onclick="forgotPassword()">Olvidé mi contraseña</button>` : ''}
+
+      <div class="auth-divider"><span>o</span></div>
+      <button class="btn-provider" onclick="providerSignIn('google')">Continuar con Google</button>
+      <button class="btn-provider" onclick="providerSignIn('apple')">Continuar con Apple</button>
+
+      <p class="auth-fineprint">
+        Nada de lo que escribas es público. Puedes exportar o borrar todo cuando quieras.
+      </p>
+    </div>`;
+}
+
+export function setAuthMode(mode) { authMode = mode; renderAuth(); }
+
+const showAuthError = (msg) => { const el = $('auth-error'); if (el) el.textContent = msg; };
+
+export async function submitAuth(event) {
+  event.preventDefault();
+  const btn = $('auth-submit');
+  const email = $('au-email').value;
+  const pass = $('au-pass').value;
+  const name = $('au-name')?.value;
+  showAuthError('');
+  btn.disabled = true;
+  btn.textContent = authMode === 'signup' ? 'Creando…' : 'Entrando…';
+  try {
+    if (authMode === 'signup') await registerWithEmail(email, pass, name);
+    else await signInWithEmail(email, pass);
+  } catch (e) {
+    showAuthError(humanError(e));
+    btn.disabled = false;
+    btn.textContent = authMode === 'signup' ? '✦ Crear mi cuenta' : 'Entrar';
+  }
+  return false;
+}
+
+export async function providerSignIn(which) {
+  showAuthError('');
+  try {
+    if (which === 'google') await signInWithGoogle();
+    else await signInWithApple();
+  } catch (e) {
+    showAuthError(humanError(e));
+  }
+}
+
+export async function forgotPassword() {
+  const email = $('au-email').value.trim();
+  if (!email) { showAuthError('Escribe tu correo arriba y vuelve a tocar aquí.'); return; }
+  try {
+    await resetPassword(email);
+    toast('Te enviamos un correo para restablecer la contraseña.');
+  } catch (e) { showAuthError(humanError(e)); }
+}
+
+/* ── ONBOARDING  ·  historia #19 ─────────────────────────────── */
+
+export async function maybeOnboard() {
+  const s = settings();
+  if (s.onboarded) return;
+
+  const legacy = await findLegacyData();
+  const legacyBlock = legacy ? `
+    <div class="onb-legacy">
+      <div class="onb-legacy-title">Encontramos tu biblioteca anterior</div>
+      <p>${legacy.count} libros con estado, valoraciones y reseñas${legacy.customCount ? `, y ${legacy.customCount} libros que añadiste tú` : ''}.</p>
+      <button class="btn-magic full" onclick="runMigration()">Traerla a mi cuenta</button>
+      <button class="link-btn" onclick="downloadLegacyBackup()">Descargar una copia primero</button>
+    </div>` : '';
+
+  $('onboard-screen').innerHTML = `
+    <div class="onb-card">
+      <div class="onb-step">Bienvenida</div>
+      <h2 class="onb-title">Tu plan lector, vivo</h2>
+      <p class="onb-lede">Registra lo que lees, y la app arma un plan que sí puedas cumplir.</p>
+      ${legacyBlock}
+      <div class="onb-actions">
+        <button class="btn-magic full" onclick="finishOnboarding(true)">Empezar con el plan de 73 libros</button>
+        <button class="btn-ghost full" onclick="finishOnboarding(false)">Empezar con la biblioteca vacía</button>
+      </div>
+      <button class="link-btn" onclick="finishOnboarding(true)">Saltar por ahora</button>
+    </div>`;
+  $('onboard-screen').classList.add('visible');
+  window.__legacy = legacy;
+}
+
+export function downloadLegacyBackup() {
+  if (!window.__legacy) return;
+  download('mi-biblioteca-copia-antigua.json', backupBeforeMigrating(window.__legacy));
+  toast('Copia descargada. Ahora puedes migrar con tranquilidad.');
+}
+
+export async function runMigration() {
+  const legacy = window.__legacy;
+  if (!legacy) return;
+  toast('Trayendo tus datos…');
+  try {
+    const result = await importLegacy(legacy);
+    await confirmAction({
+      title: 'Listo',
+      body: `Se trajeron <strong>${result.entradas}</strong> libros con datos,
+             de los cuales <strong>${result.leidos}</strong> están marcados como leídos${
+               result.librosPropios ? `, más <strong>${result.librosPropios}</strong> libros tuyos` : ''}.`,
+      confirmLabel: 'Entendido',
+    });
+    // Ya migrado: el documento antiguo deja de hacer falta y se cierra esa puerta
+    dropLegacy().catch(() => {});
+    window.__legacy = null;
+    finishOnboarding(true);
+  } catch (e) {
+    toast('No se pudo migrar: ' + e.message, 'error');
+  }
+}
+
+export function finishOnboarding(keepSeed) {
+  updateSettings({ onboarded: true, seedHidden: !keepSeed });
+  if (!keepSeed) {
+    // "Vacía" oculta los libros semilla, no los borra: siguen en el código
+    import('./store.js').then(({ everyBook, updateEntry: ue }) => {
+      everyBook().filter((b) => !b.custom).forEach((b) => ue(b.id, { hidden: true }));
+      refreshAll();
+    });
+  }
+  $('onboard-screen').classList.remove('visible');
+  refreshAll();
+}
+
+/* ── TIENDA DE TEMAS  ·  historias #76, #77, #80 ─────────────── */
+
+let restorePreview = null;
+let previewing = null;
+
+export function openThemeStore() {
+  renderThemeStore();
+  $('store-overlay').classList.add('open');
+}
+
+export function closeThemeStore() {
+  if (restorePreview) { restorePreview(); restorePreview = null; previewing = null; }
+  $('store-overlay').classList.remove('open');
+}
+
+function renderThemeStore() {
+  const s = settings();
+  const themes = themeAvailability(s.achievements);
+  const active = previewing || s.themeId;
+
+  $('store-body').innerHTML = `
+    <div class="store-shelf-label">Temas de la app</div>
+    <div class="theme-grid">
+      ${themes.map((t) => `
+        <button class="theme-tile ${active === t.id ? 'active' : ''} ${t.locked ? 'locked' : ''}"
+                onclick="${t.locked ? '' : `previewThemeTile('${t.id}')`}"
+                ${t.locked ? 'aria-disabled="true"' : ''}>
+          <span class="theme-swatch" style="background:${t.tokens['--void']}">
+            <span class="sw sw-a" style="background:${t.tokens['--purple']}"></span>
+            <span class="sw sw-b" style="background:${t.tokens['--gold']}"></span>
+            <span class="sw sw-c" style="background:${t.tokens['--lilac']}"></span>
+          </span>
+          <span class="theme-name">${t.emoji} ${esc(t.name)}</span>
+          <span class="theme-blurb">${esc(t.blurb)}</span>
+          ${t.locked ? `<span class="theme-lock">🔒 ${esc(t.unlock.label)}</span>` : ''}
+          ${s.themeId === t.id ? '<span class="theme-current">En uso</span>' : ''}
+        </button>`).join('')}
+    </div>
+
+    ${previewing && previewing !== s.themeId ? `
+      <div class="store-actions">
+        <button class="btn-ghost" onclick="cancelThemePreview()">Descartar</button>
+        <button class="btn-magic" onclick="applyPreviewedTheme()">Aplicar ${esc(themes.find((t) => t.id === previewing).name)}</button>
+      </div>` : ''}
+
+    <div class="store-shelf-label">Cosas de la mascota</div>
+    <div class="store-soon">
+      Aquí vivirán los accesorios de tu mascota lectora. Todo se desbloquea leyendo, nada se paga.
+    </div>`;
+}
+
+export function previewThemeTile(id) {
+  if (!restorePreview) restorePreview = previewTheme(id);
+  else previewTheme(id);
+  previewing = id;
+  renderThemeStore();
+}
+
+export function cancelThemePreview() {
+  if (restorePreview) restorePreview();
+  restorePreview = null; previewing = null;
+  renderThemeStore();
+}
+
+export function applyPreviewedTheme() {
+  if (!previewing) return;
+  applyTheme(previewing);
+  updateSettings({ themeId: previewing });
+  restorePreview = null;
+  const name = themeAvailability().find((t) => t.id === previewing)?.name;
+  previewing = null;
+  renderThemeStore();
+  toast(`Tema ${name} aplicado`);
+}
+
+/* ── AJUSTES  ·  historias #20, #21 ──────────────────────────── */
+
+export function openSettings() {
+  const user = currentUser();
+  const s = settings();
+  const progress = goalProgress();
+  const pace = readingPace();
+
+  $('settings-body').innerHTML = `
+    <div class="set-account">
+      <div class="set-avatar">${esc((user?.displayName || user?.email || '?').charAt(0).toUpperCase())}</div>
+      <div>
+        <div class="set-name">${esc(user?.displayName || 'Sin nombre')}</div>
+        <div class="set-email">${esc(user?.email || '')}</div>
+        ${user && !user.emailVerified ? '<div class="set-warn">Correo sin verificar</div>' : ''}
+      </div>
+    </div>
+
+    <div class="section-heading"><span class="section-heading-text">Lectura</span></div>
+    <div class="set-row" onclick="openPlanner()">
+      <div><div class="set-row-title">Tiempo y objetivo</div>
+        <div class="set-row-sub">${s.minutesWeekday != null ? `${s.minutesWeekday} min entre semana` : 'Sin configurar'}${
+          s.goalValue ? ` · meta de ${s.goalValue} ${s.goalKind === 'books' ? 'libros' : s.goalKind}` : ''}</div></div>
+      <span class="set-chev">›</span>
+    </div>
+    <div class="set-row">
+      <div><div class="set-row-title">Tu ritmo real</div>
+        <div class="set-row-sub">${pace.pagesPerDay.toFixed(0)} páginas al día · ${pace.source}${pace.provisional ? ' · estimación provisional' : ''}</div></div>
+    </div>
+    ${progress ? `<div class="set-row">
+      <div><div class="set-row-title">Avance del año</div>
+        <div class="set-row-sub">${progress.done} de ${progress.goal} · ${progress.ahead
+          ? `vas ${progress.diffUnits} por delante 🎉` : `vas ${progress.diffUnits} por detrás`}</div></div>
+    </div>` : ''}
+
+    <div class="section-heading"><span class="section-heading-text">Apariencia</span></div>
+    <div class="set-row" onclick="openThemeStore()">
+      <div><div class="set-row-title">Tienda de temas</div>
+        <div class="set-row-sub">Ocho temas para cambiarle la cara a la app</div></div>
+      <span class="set-chev">›</span>
+    </div>
+
+    <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
+    <div class="set-row" onclick="doExportJson()">
+      <div><div class="set-row-title">Exportar a JSON</div>
+        <div class="set-row-sub">Una copia tuya, legible, de todo lo registrado</div></div>
+      <span class="set-chev">›</span>
+    </div>
+    <div class="set-row" onclick="doExportCsv()">
+      <div><div class="set-row-title">Exportar a CSV</div>
+        <div class="set-row-sub">Compatible con la importación de Goodreads</div></div>
+      <span class="set-chev">›</span>
+    </div>
+
+    <div class="section-heading"><span class="section-heading-text">Cuenta</span></div>
+    <button class="btn-ghost full" onclick="doLogOut()">Cerrar sesión</button>
+    <button class="btn-delete full" onclick="doDeleteAccount()">Borrar mi cuenta y todos mis datos</button>
+    <p class="set-fineprint">
+      Borrar la cuenta elimina tus libros, reseñas y ajustes. No se puede deshacer.
+    </p>`;
+  $('settings-overlay').classList.add('open');
+}
+
+export const doExportJson = () => {
+  download('mi-biblioteca.json', JSON.stringify(exportData(), null, 2));
+  toast('Exportado. La copia es tuya.');
+};
+export const doExportCsv = () => {
+  download('mi-biblioteca.csv', exportCsv(), 'text/csv');
+  toast('CSV exportado.');
+};
+
+export async function doLogOut() {
+  const yes = await confirmAction({ title: '¿Cerrar sesión?', body: 'Tus datos quedan guardados.', confirmLabel: 'Cerrar sesión' });
+  if (yes) logOut();
+}
+
+export async function doDeleteAccount() {
+  const first = await confirmAction({
+    title: 'Borrar tu cuenta',
+    body: 'Se eliminan tus libros, reseñas, ajustes y la cuenta misma. <strong>Esto no se puede deshacer.</strong><br><br>¿Quieres descargar una copia antes?',
+    confirmLabel: 'Descargar copia primero',
+  });
+  if (first) { doExportJson(); return; }
+
+  const sure = await confirmAction({
+    title: '¿Seguro del todo?',
+    body: 'Última confirmación. Se borra todo y no hay vuelta atrás.',
+    confirmLabel: 'Sí, borrar todo', danger: true,
+  });
+  if (!sure) return;
+
+  try {
+    await deleteAccount();
+    toast('Cuenta borrada. Gracias por haber estado.');
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+/* ── ASISTENTE DEL PLAN  ·  historias #32, #33, #35, #36, #37 ── */
+
+let draftPlan = null;
+
+export function openPlanner() {
+  draftPlan = null;
+  renderPlannerStep1();
+  $('planner-overlay').classList.add('open');
+}
+
+function renderPlannerStep1() {
+  const s = settings();
+  const pace = readingPace();
+  const stalled = stalledBooks();
+
+  $('planner-body').innerHTML = `
+    <div class="sheet-title">✦ Armar mi plan</div>
+    <p class="planner-lede">Dos preguntas y te reparto los pendientes mes a mes.</p>
+
+    <div class="section-heading"><span class="section-heading-text">¿Cuánto tiempo tienes?</span></div>
+    <div class="frow">
+      <div class="fg"><label class="flabel" for="p-weekday">Minutos entre semana</label>
+        <input class="finput" id="p-weekday" type="number" min="0" max="600" value="${s.minutesWeekday ?? 30}" oninput="previewCapacity()"></div>
+      <div class="fg"><label class="flabel" for="p-weekend">Minutos el fin de semana</label>
+        <input class="finput" id="p-weekend" type="number" min="0" max="600" value="${s.minutesWeekend ?? 60}" oninput="previewCapacity()"></div>
+    </div>
+    <p class="planner-hint" id="p-capacity"></p>
+
+    <div class="section-heading"><span class="section-heading-text">¿Qué quieres lograr?</span></div>
+    <div class="frow">
+      <div class="fg"><label class="flabel" for="p-goalkind">Meta en</label>
+        <select class="fselect" id="p-goalkind" onchange="previewCapacity()">
+          <option value="books" ${s.goalKind === 'books' ? 'selected' : ''}>Libros al año</option>
+          <option value="pages" ${s.goalKind === 'pages' ? 'selected' : ''}>Páginas al año</option>
+          <option value="minutes" ${s.goalKind === 'minutes' ? 'selected' : ''}>Minutos al día</option>
+        </select></div>
+      <div class="fg"><label class="flabel" for="p-goalvalue">Cuántos</label>
+        <input class="finput" id="p-goalvalue" type="number" min="1" value="${s.goalValue ?? 24}" oninput="previewCapacity()"></div>
+    </div>
+    <p class="planner-hint" id="p-feasible"></p>
+
+    ${stalled.length ? `
+      <div class="section-heading"><span class="section-heading-text">Libros represados</span></div>
+      <p class="planner-lede">Tienes <strong>${stalled.length}</strong> libros cuyo mes ya pasó. El plan nuevo les da prioridad.</p>
+      <div class="stalled-list">
+        ${stalled.slice(0, 6).map((b) => `
+          <div class="stalled-row">
+            <div>
+              <div class="stalled-title">${esc(b.title)}</div>
+              <div class="stalled-sub">${b.month} ${b.year} · ${b.monthsLate} ${b.monthsLate === 1 ? 'mes' : 'meses'} esperando${b.startedAlready ? ' · empezado' : ''}</div>
+            </div>
+            <button class="btn-mini" onclick="releaseBook('${b.id}')">Soltar</button>
+          </div>`).join('')}
+        ${stalled.length > 6 ? `<div class="stalled-more">y ${stalled.length - 6} más</div>` : ''}
+      </div>` : ''}
+
+    <button class="btn-magic full" onclick="buildPlan()">Ver el plan que me propones</button>
+    <p class="set-fineprint">El plan es una propuesta. Puedes mover libros a mano y fijarlos para que no se muevan.</p>`;
+
+  previewCapacity();
+}
+
+/** Traduce minutos a algo concreto: libros al año, no "páginas por día". */
+export function previewCapacity() {
+  const weekday = parseInt($('p-weekday')?.value, 10) || 0;
+  const weekend = parseInt($('p-weekend')?.value, 10) || 0;
+  const perDay = ((weekday * 5 + weekend * 2) / 7) * (250 / 300);
+  const perYear = perDay * 365;
+  const cap = $('p-capacity');
+  if (cap) {
+    cap.innerHTML = weekday || weekend
+      ? `Son unas <strong>${perDay.toFixed(0)} páginas al día</strong>, o alrededor de <strong>${Math.round(perYear / 320)} libros al año</strong>.`
+      : 'Si lo dejas en cero, usamos tu ritmo real observado.';
+  }
+
+  const kind = $('p-goalkind')?.value || 'books';
+  const value = parseInt($('p-goalvalue')?.value, 10) || 0;
+  const el = $('p-feasible');
+  if (!el || !value) return;
+
+  const yearly = kind === 'books' ? Math.round(perYear / 320) : kind === 'pages' ? Math.round(perYear) : Math.round(perDay / (250 / 300));
+  if (yearly >= value) {
+    el.className = 'planner-hint ok';
+    el.innerHTML = `Con ese tiempo, la meta es alcanzable. 🎉`;
+  } else {
+    el.className = 'planner-hint warn';
+    el.innerHTML = `Con ese tiempo darían unos <strong>${yearly}</strong>. Puedes dejar tu meta igual —es tuya— pero conviene saberlo antes de diciembre.`;
+  }
+}
+
+export function releaseBook(id) {
+  updateEntry(id, { status: 'wished', year: null });
+  toast('Soltado sin culpa. Sigue en tus deseados.');
+  renderPlannerStep1();
+}
+
+export function buildPlan() {
+  updateSettings({
+    minutesWeekday: parseInt($('p-weekday').value, 10) || null,
+    minutesWeekend: parseInt($('p-weekend').value, 10) || null,
+    goalKind: $('p-goalkind').value,
+    goalValue: parseInt($('p-goalvalue').value, 10) || null,
+    goalYear: new Date().getFullYear(),
+  });
+
+  draftPlan = generatePlan({ months: 12 });
+  renderPlanProposal();
+}
+
+function renderPlanProposal() {
+  const p = draftPlan;
+  $('planner-body').innerHTML = `
+    <div class="sheet-title">✦ Tu plan propuesto</div>
+    <p class="planner-lede">
+      ${p.used} libros repartidos en 12 meses, a ${p.pace.pagesPerDay.toFixed(0)} páginas al día.
+      ${p.rescued ? `<strong>${p.rescued}</strong> venían represados.` : ''}
+      ${p.remaining ? `Quedan ${p.remaining} pendientes para después.` : ''}
+    </p>
+
+    <div class="proposal">
+      ${p.assignments.map((slot) => `
+        <div class="prop-month">
+          <div class="prop-month-head">
+            <span class="prop-month-name">${slot.month} ${slot.year}</span>
+            <span class="prop-month-cap">~${slot.capacity} págs.</span>
+          </div>
+          ${slot.books.length ? slot.books.map((b) => `
+            <div class="prop-book">
+              <span class="prop-role">${b.slotRole === 'ancla' ? '⚓' : '⚡'}</span>
+              <div>
+                <div class="prop-title">${esc(b.title)}${b.continuing ? ' <em>(sigue)</em>' : ''}</div>
+                <div class="prop-reason">${esc(b.reason)}</div>
+              </div>
+              <span class="prop-pages">${esc(b.pages)}</span>
+            </div>`).join('') : '<div class="prop-empty">Mes libre</div>'}
+        </div>`).join('')}
+    </div>
+
+    <div class="store-actions">
+      <button class="btn-ghost" onclick="openPlanner()">Volver</button>
+      <button class="btn-magic" onclick="acceptPlan()">Aplicar este plan</button>
+    </div>
+    <p class="set-fineprint">Aplicarlo no toca los meses ya pasados ni los libros que fijaste.</p>`;
+}
+
+export function acceptPlan() {
+  if (!draftPlan) return;
+  const patches = planPatches(draftPlan);
+  for (const patch of patches) {
+    const book = findBook(patch.id);
+    if (!book) continue;
+    book.year = patch.year;
+    book.month = patch.month;
+    updateEntry(patch.id, { plannedYear: patch.year, plannedMonth: patch.month, planApplied: Date.now() });
+  }
+  closeSheet('planner-overlay');
+  refreshAll();
+  toast(`Plan aplicado: ${patches.length} libros repartidos`);
+}

@@ -1,0 +1,13 @@
+{
+  "name": "mi-biblioteca",
+  "version": "2.0.0",
+  "description": "Plan lector y tracker de libros",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:contrast && npm run test:planner",
+    "test:contrast": "node scripts/check-contrast.mjs",
+    "test:planner": "node scripts/test-planner.mjs",
+    "serve": "python3 -m http.server 8080"
+  }
+}

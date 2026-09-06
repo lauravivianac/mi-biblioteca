@@ -1,0 +1,58 @@
+rules_version = '2';
+
+/* ─────────────────────────────────────────────────────────────
+   REGLAS DE SEGURIDAD  ·  historia #18
+
+   Esto es lo que cierra el agujero real: hasta ahora no había
+   autenticación, así que la base estaba efectivamente abierta.
+
+   PARA DESPLEGARLAS:
+     npm i -g firebase-tools
+     firebase login
+     firebase deploy --only firestore:rules
+
+   Mientras no se desplieguen, la base sigue abierta por mucho
+   que la app pida iniciar sesión.
+   ───────────────────────────────────────────────────────────── */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // Cada quien manda sobre lo suyo, y solo sobre lo suyo.
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /books/{bookId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Cualquier subcolección futura hereda la misma regla por defecto
+      match /{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    /* Documento antiguo, de la época sin autenticación.
+       Se deja legible y borrable por quien tenga sesión para poder
+       migrarlo una vez; la app lo borra en cuanto termina.
+       No es una regresión: hoy es legible por cualquiera, sin sesión.
+       Cuando ya no exista ninguno, esta regla se puede eliminar. */
+    match /biblioteca/{docId} {
+      allow read, delete: if signedIn();
+      allow create, update: if false;
+    }
+
+    // Todo lo demás, cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
