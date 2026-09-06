@@ -104,6 +104,9 @@
       <div class="nav-item" onclick="nav('feed',this)" role="button" tabindex="0">
         <span class="nav-icon">👀</span><span class="nav-label">Amigas</span>
       </div>
+      <div class="nav-item" onclick="nav('trueque',this)" role="button" tabindex="0">
+        <span class="nav-icon">⇄</span><span class="nav-label">Trueque</span>
+      </div>
     </nav>
   </header>
 
@@ -140,6 +143,22 @@
     <div class="view" id="view-feed">
       <p class="planner-lede">Lo que están leyendo las personas que sigues.</p>
       <div id="feed-body"></div>
+    </div>
+
+    <!-- TRUEQUE · #83 -->
+    <div class="view" id="view-trueque">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="trueque-buscar" placeholder="Buscar título o autor..."
+               oninput="setFiltroTexto(this.value)" aria-label="Buscar entre los disponibles">
+      </div>
+      <div class="filter-scroll" id="trueque-ambitos"></div>
+      <div class="trueque-atajos">
+        <button class="btn-ghost" onclick="openSwaps()">⇄ Solicitudes</button>
+        <button class="btn-ghost" onclick="openChats()">💬 Conversaciones</button>
+        <button class="btn-ghost" onclick="openSeguridad()">🛡 Seguridad</button>
+      </div>
+      <div id="trueque-body"></div>
     </div>
 
     <!-- TRACKER -->
@@ -242,6 +261,105 @@
 </div>
 
 <!-- COMENTARIOS -->
+<div class="overlay" id="legal-overlay" onclick="closeLegal(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Privacidad y soporte</div>
+    <button class="sheet-close" onclick="closeSheet('legal-overlay')" aria-label="Cerrar">✕</button>
+    <div id="legal-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="posts-overlay" onclick="closePosts(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Lo que escribo</div>
+    <button class="sheet-close" onclick="closeSheet('posts-overlay')" aria-label="Cerrar">✕</button>
+    <div id="posts-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="editor-overlay" onclick="closeEditor(event)">
+  <div class="sheet sheet-alta">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Escribir</div>
+    <button class="sheet-close" onclick="closeEditor()" aria-label="Cerrar">✕</button>
+    <div id="editor-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="citapick-overlay" onclick="closeCitaPick(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Meter una cita</div>
+    <button class="sheet-close" onclick="closeSheet('citapick-overlay')" aria-label="Cerrar">✕</button>
+    <div id="citapick-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="chat-overlay" onclick="closeChat(event)">
+  <div class="sheet sheet-alta">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">El intercambio</div>
+    <button class="sheet-close" onclick="closeChat()" aria-label="Cerrar">✕</button>
+    <div id="chat-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="chats-overlay" onclick="closeChats(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Mis conversaciones</div>
+    <button class="sheet-close" onclick="closeSheet('chats-overlay')" aria-label="Cerrar">✕</button>
+    <div id="chats-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="seguridad-overlay" onclick="closeSeguridad(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Quedar con seguridad</div>
+    <button class="sheet-close" onclick="closeSheet('seguridad-overlay')" aria-label="Cerrar">✕</button>
+    <div id="seguridad-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="valorar-overlay" onclick="closeValorar(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">¿Cómo fue?</div>
+    <button class="sheet-close" onclick="closeSheet('valorar-overlay')" aria-label="Cerrar">✕</button>
+    <div id="valorar-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="ask-overlay" onclick="closeAsk(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Pedir este libro</div>
+    <button class="sheet-close" onclick="closeSheet('ask-overlay')" aria-label="Cerrar">✕</button>
+    <div id="ask-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="swaps-overlay" onclick="closeSwaps(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Mis intercambios</div>
+    <button class="sheet-close" onclick="closeSheet('swaps-overlay')" aria-label="Cerrar">✕</button>
+    <div id="swaps-body"></div>
+  </div>
+</div>
+
+<div class="overlay" id="counter-overlay" onclick="closeCounter(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Contraproponer</div>
+    <button class="sheet-close" onclick="closeSheet('counter-overlay')" aria-label="Cerrar">✕</button>
+    <div id="counter-body"></div>
+  </div>
+</div>
+
 <div class="overlay" id="comments-overlay" onclick="closeComments(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>

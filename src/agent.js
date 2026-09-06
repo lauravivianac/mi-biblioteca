@@ -186,6 +186,12 @@ export async function recommendWith(texto) {
    Lo pinta la pantalla de consentimiento y también los ajustes. */
 export const WHAT_WE_SEND = [
   {
+    que: 'Ordenar mis notas',
+    manda: 'Las notas de lectura que tú elijas, tal como las escribiste, para '
+         + 'que las agrupe. Vuelven agrupadas por número: el asistente no '
+         + 'reescribe ni una frase, así que el borrador es tuyo entero.',
+  },
+  {
     que: '¿Me lo leo?',
     manda: 'El título y el autor de ese libro. Nada más.',
   },
@@ -201,3 +207,30 @@ export const WHAT_WE_SEND = [
          + 'catálogo reconoce el libro. Nunca la foto.',
   },
 ];
+
+/* ── ORDENAR MIS NOTAS  ·  historia #74 ──────────────────────────
+   Se le mandan las notas NUMERADAS y vuelve el agrupamiento por
+   números. El borrador lo arma posts-core con el texto de quien
+   escribió: aquí no vuelve ni una frase suya.
+
+   Devuelve null si algo falla, como los demás: que el asistente no
+   conteste nunca puede romper el escribir. */
+export async function orderNotes(notas = []) {
+  const lista = (Array.isArray(notas) ? notas : [])
+    .map((n) => String(n ?? '').trim()).filter(Boolean);
+  if (lista.length < 2) return null;
+
+  const numeradas = lista.map((n, i) => `${i}. ${n}`).join('\n');
+  try {
+    const r = await call('order_notes', numeradas);
+    if (r?.fuera_de_tema) return null;
+    return {
+      secciones: Array.isArray(r?.secciones) ? r.secciones : [],
+      titulos: Array.isArray(r?.titulos) ? r.titulos : [],
+    };
+  } catch (e) {
+    if (isDenied(e)) throw e;
+    console.warn('No se pudieron ordenar las notas:', e);
+    return null;
+  }
+}

@@ -25,6 +25,21 @@
         { "fieldPath": "uid", "order": "ASCENDING" },
         { "fieldPath": "at", "order": "DESCENDING" }
       ]
+    },
+    {
+      "//": [
+        "Las entradas del blog de una persona, filtradas por qué puedo leer",
+        "(posts.js · entradasDe). Dos igualdades y un `in`: hace falta el",
+        "índice compuesto. Se pide siempre con la visibilidad dentro porque",
+        "en una consulta la regla se evalúa documento a documento y basta",
+        "que uno falle para que caiga entera — ver firestore.rules."
+      ],
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "visibilidad", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
