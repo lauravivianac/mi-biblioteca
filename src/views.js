@@ -7,6 +7,7 @@
 import { MONTH_ORDER, MONTH_COLORS, MONTH_EMOJIS, pageCount } from './seed.js';
 import {
   allBooks, findBook, entry, statusOf, ratingOf, reviewOf, coverOf,
+  reviewIsPublic, setReviewPublic,
   updateEntry, removeBook, progressPct,
 } from './store.js';
 import { fetchCover } from './covers.js';
@@ -18,6 +19,7 @@ import { allShelves, shelvesOfBook, shelfCounts, toggleBookShelf } from './shelv
 import { renderQuotes } from './quotesui.js';
 import { quoteCount } from './quotes.js';
 import { celebrateFinished } from './finished.js';
+import { visibilityLabel } from './reviews-core.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -223,6 +225,7 @@ export function renderLib() {
           <div class="status-dot ${STATUS_DOT[s]}"></div>
           <span class="status-text">${STATUS_LABEL[s]}</span>
           <span class="tag" style="font-size:9px">${esc(book.genre)}</span>
+          ${reviewIsPublic(book.id) ? '<span class="tag tag-public" title="Tu reseña de este libro es pública">◉ Reseña pública</span>' : ''}
           ${book.year ? `<span class="lib-year">${book.year}${book.month ? ' · ' + book.month : ''}</span>` : ''}
         </div>
         ${pct > 0 && s !== 'read' ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%"></div></div>` : ''}
@@ -274,6 +277,11 @@ export function renderTracker() {
       </div>` : ''}
       <div class="stars-row">${stars}</div>
       <textarea class="review-txt" placeholder="Tu reseña o comentario..." onchange="setReview('${book.id}',this.value)">${esc(reviewOf(book.id))}</textarea>
+      ${reviewOf(book.id).trim() ? `
+        <button class="privacy-mini ${reviewIsPublic(book.id) ? 'on' : ''}"
+                onclick="toggleReviewPublicHere('${book.id}')">
+          ${reviewIsPublic(book.id) ? '◉ Pública' : '🔒 Privada'}
+        </button>` : ''}
     </div>`;
   }).join('') || `<div class="empty"><div class="empty-rune">✨</div><div class="empty-text">Tu progreso aparecerá aquí</div></div>`;
 
@@ -414,11 +422,48 @@ export async function openDetail(id) {
       <div class="stars-row" style="margin-bottom:16px">${stars}</div>
 
       <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Reseña</span></div>
-      <textarea class="review-txt" style="min-height:72px;margin-bottom:16px" placeholder="¿Qué te pareció?" onchange="setReview('${id}',this.value)">${esc(reviewOf(id))}</textarea>
+      <textarea class="review-txt" style="min-height:72px" placeholder="¿Qué te pareció?" onchange="setReview('${id}',this.value)">${esc(reviewOf(id))}</textarea>
+      <div id="review-privacy">${privacyRow(id)}</div>
 
       <button class="btn-delete" onclick="deleteBook('${id}')">🗑 Eliminar de la biblioteca</button>
     </div>`;
   $('detail-overlay').classList.add('open');
+}
+
+/* ── PRIVADA O PÚBLICA  ·  historia #28 ───────────────────────
+   El interruptor va DEBAJO del texto y no arriba: primero escribes,
+   y publicar es lo que decides después. Con la reseña en blanco está
+   apagado — no hay nada que publicar, y ofrecerlo sugeriría que sí. */
+
+function privacyRow(id) {
+  const e = entry(id);
+  const pub = reviewIsPublic(id);
+  const vacia = !reviewOf(id).trim();
+  return `
+    <div class="privacy-row ${vacia ? 'privacy-off' : ''}">
+      <button class="privacy-switch ${pub ? 'on' : ''}" role="switch"
+              aria-checked="${pub}" ${vacia ? 'disabled' : ''}
+              aria-label="Publicar esta reseña"
+              onclick="toggleReviewPublic('${id}')"><span class="privacy-knob"></span></button>
+      <div class="privacy-copy">
+        <div class="privacy-title">${pub ? '◉ Pública' : '🔒 Privada'}</div>
+        <div class="privacy-hint">${visibilityLabel(e)}</div>
+      </div>
+    </div>`;
+}
+
+/** El mismo interruptor desde el tracker, que sí repinta su lista. */
+export function toggleReviewPublicHere(id) {
+  setReviewPublic(id, !reviewIsPublic(id));
+  renderTracker();
+  toast(reviewIsPublic(id) ? 'Reseña publicada' : 'Reseña guardada solo para ti');
+}
+
+export function toggleReviewPublic(id) {
+  setReviewPublic(id, !reviewIsPublic(id));
+  const slot = $('review-privacy');
+  if (slot) slot.innerHTML = privacyRow(id);   // sin repintar la ficha: se perdería el scroll
+  toast(reviewIsPublic(id) ? 'Reseña publicada' : 'Reseña guardada solo para ti');
 }
 
 export function closeDetail(e) {
