@@ -7,9 +7,14 @@
    latinoamericanas. Con solo el escáner, esas quedarían fuera.
    ───────────────────────────────────────────────────────────── */
 
+import { decodeImage } from './ean.js';
+
 let stream = null;
 
-export const barcodeSupported = () => 'BarcodeDetector' in window;
+/* El lector del navegador. No existe en Safari de iPhone, y por eso
+   hay uno propio en ean.js: el botón ya no depende de con qué móvil
+   entres, así que la pantalla tampoco pregunta. */
+const lectorNativo = () => 'BarcodeDetector' in window;
 
 /** Enciende la cámara trasera. Devuelve el stream para pintarlo en un <video>. */
 export async function openCamera() {
@@ -29,21 +34,60 @@ export function closeCamera() {
 /**
  * Busca un código de barras en el vídeo, reintentando mientras la
  * cámara enfoca. Devuelve el ISBN o null si se agota el tiempo.
+ *
+ * Dos lectores: el del navegador cuando existe, porque es nativo y
+ * rápido, y el nuestro cuando no —que es el caso de Safari de iPhone,
+ * donde antes este camino sencillamente no funcionaba.
+ *
+ * `onProgress` recibe cuánto queda, para que la espera no parezca que
+ * la app se colgó.
  */
-export async function scanBarcode(video, { seconds = 12 } = {}) {
-  if (!barcodeSupported()) return null;
-  const detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'code_128'] });
-  const until = Date.now() + seconds * 1000;
+export async function scanBarcode(video, { seconds = 15, onProgress = () => {} } = {}) {
+  const detector = lectorNativo()
+    ? new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a'] })
+    : null;
+  const hasta = Date.now() + seconds * 1000;
 
-  while (Date.now() < until) {
-    try {
-      const codes = await detector.detect(video);
-      const hit = codes.find((c) => /^\d{8,13}$/.test(c.rawValue));
-      if (hit) return hit.rawValue;
-    } catch { /* la cámara aún no da un cuadro utilizable */ }
-    await new Promise((r) => setTimeout(r, 260));
+  while (Date.now() < hasta) {
+    if (detector) {
+      try {
+        const codes = await detector.detect(video);
+        const hit = codes.find((c) => /^\d{8,13}$/.test(c.rawValue));
+        if (hit) return hit.rawValue;
+      } catch { /* la cámara aún no da un cuadro utilizable */ }
+    } else {
+      const codigo = readBarcodeFrame(video);
+      if (codigo) return codigo;
+    }
+    onProgress(Math.max(0, (hasta - Date.now()) / 1000));
+    await new Promise((r) => setTimeout(r, 220));
   }
   return null;
+}
+
+/**
+ * Un intento sobre el cuadro actual, con nuestro lector.
+ *
+ * Solo se mira la banda central del vídeo —donde está el marco que se
+ * le pinta a la usuaria—: reduce el trabajo y evita que el texto de
+ * la contraportada estropee el barrido.
+ */
+export function readBarcodeFrame(video) {
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  if (!w || !h) return null;
+
+  const bandaAlto = Math.round(h * 0.4);
+  const y0 = Math.round((h - bandaAlto) / 2);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = bandaAlto;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(video, 0, y0, w, bandaAlto, 0, 0, w, bandaAlto);
+
+  const { data } = ctx.getImageData(0, 0, w, bandaAlto);
+  return decodeImage(data, w, bandaAlto);
 }
 
 /** Congela un cuadro del vídeo. Sirve de portada si no se encuentra otra. */

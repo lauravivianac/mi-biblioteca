@@ -15,7 +15,7 @@ import { lookupByIsbn, lookupByTitle, lookupByCoverText } from './booklookup.js'
 import { identifyFromCoverText, agentAvailable } from './agent.js';
 import {
   openCamera, closeCamera, scanBarcode, grabFrame, frameToDataUrl,
-  readCoverText, barcodeSupported,
+  readCoverText,
 } from './scan.js';
 import { addBook, updateEntry } from './store.js';
 import { GENRES, MONTH_ORDER } from './seed.js';
@@ -87,13 +87,12 @@ function renderCamara() {
       <div class="scan-frame"></div>
     </div>
     <p class="planner-hint" id="scan-hint">
-      ${barcodeSupported()
-        ? 'Apunta al código de barras. Si el libro no tiene, toma una foto de la portada.'
-        : 'Este navegador no lee códigos de barras. Toma una foto de la portada.'}
+      Encuadra el código de barras de la contraportada dentro del marco.
+      Si el libro no tiene, toma una foto de la portada.
     </p>
     <div class="store-actions">
       <button class="btn-ghost" onclick="shootCover()">📕 Foto de la portada</button>
-      ${barcodeSupported() ? '<button class="btn-magic" onclick="shootBarcode()">Buscar código</button>' : ''}
+      <button class="btn-magic" id="scan-btn" onclick="shootBarcode()">Buscar código</button>
     </div>`;
 }
 
@@ -220,12 +219,24 @@ async function startCamera() {
 export async function shootBarcode() {
   const v = $('scan-video');
   const hint = $('scan-hint');
+  const btn = $('scan-btn');
   if (!v) return;
-  if (hint) hint.textContent = 'Buscando el código…';
+  if (btn) btn.disabled = true;
 
-  const code = await scanBarcode(v);
+  /* La cuenta atrás no es adorno: quince segundos mirando un botón
+     quieto se leen como que la app se colgó, y la gente cierra. */
+  const code = await scanBarcode(v, {
+    onProgress: (quedan) => {
+      if (hint) hint.textContent = `Buscando el código… ${Math.ceil(quedan)} s`;
+    },
+  });
+
+  if (btn) btn.disabled = false;
   if (!code) {
-    if (hint) hint.textContent = 'No se encontró código. Prueba con la foto de la portada.';
+    if (hint) {
+      hint.textContent = 'No se encontró el código. Acércate un poco más, '
+        + 'busca mejor luz, o toma una foto de la portada.';
+    }
     return;
   }
   if (hint) hint.textContent = 'Código leído. Buscando el libro…';
