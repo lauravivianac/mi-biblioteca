@@ -17,6 +17,7 @@ import { agentOffered, bookBrief, isDenied } from './agent.js';
 import { allShelves, shelvesOfBook, shelfCounts, toggleBookShelf } from './shelves.js';
 import { renderQuotes } from './quotesui.js';
 import { quoteCount } from './quotes.js';
+import { celebrateFinished } from './finished.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -289,6 +290,7 @@ export function refreshAll() {
 export function setStatus(id, status) {
   const patch = { status };
   const e = entry(id);
+  const antes = statusOf(id);
   if (status === 'reading' && !e.startedAt) patch.startedAt = Date.now();
   if (status === 'read') {
     if (!e.startedAt) patch.startedAt = Date.now() - 7 * 86400000;
@@ -301,6 +303,14 @@ export function setStatus(id, status) {
   /* Un logro que se consigue en silencio no motiva a nadie. */
   for (const a of refreshAchievements()) {
     toast(`${a.icon}  ${a.name}${a.unlocksTheme ? ' · desbloqueaste un tema' : ''}`);
+  }
+
+  /* Terminar un libro es el momento de mayor intención de la app.
+     Hasta ahora no pasaba nada; ahora pregunta qué tal estuvo y
+     propone qué sigue. Solo al PASAR a leído: volver a tocar el
+     mismo botón no vuelve a celebrarlo. */
+  if (status === 'read' && antes !== 'read') {
+    setTimeout(() => celebrateFinished(id), 260);
   }
 }
 
