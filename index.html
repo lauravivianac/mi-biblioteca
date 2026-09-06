@@ -198,6 +198,26 @@
   </div>
 </div>
 
+<!-- EL PERFIL PÚBLICO -->
+<div class="overlay" id="profile-overlay" onclick="closeProfile(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('profile-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Perfil</div>
+    <div id="profile-body"></div>
+  </div>
+</div>
+
+<!-- QUÉ SE VE EN MI PERFIL -->
+<div class="overlay" id="profset-overlay" onclick="closeProfileSettings(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('profset-overlay')" aria-label="Cerrar">✕</button>
+    <div class="sheet-title">Tu perfil público</div>
+    <div id="profset-body"></div>
+  </div>
+</div>
+
 <!-- COMPARTIR UNA TARJETA -->
 <div class="overlay" id="share-overlay" onclick="closeShare(event)">
   <div class="sheet">

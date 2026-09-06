@@ -32,6 +32,7 @@ import {
 } from './agent.js';
 import { verifySuggestion } from './booklookup.js';
 import { openShare } from './shareui.js';
+import { refreshMyProfile } from './profileui.js';
 import { recommendMine } from './taste.js';
 import { describeTaste } from './taste-core.js';
 import {
@@ -218,6 +219,11 @@ export async function saveUsername() {
   userState = null;
   repintarUsername();
   toast(`Ahora eres ${displayHandle(r.username)}`);
+  /* El @usuario es lo que hace que exista un perfil público (#45): sin
+     él no hay dónde publicarlo ni link que dar. Así que se publica aquí
+     mismo, y no en el próximo guardado, para que el link que acabas de
+     ganar lleve a algo desde el primer segundo. */
+  refreshMyProfile().catch(() => {});
 }
 
 /** Presumir de un logro  ·  historia #92 */
@@ -524,6 +530,19 @@ export function openSettings() {
 
     <div class="section-heading"><span class="section-heading-text">Tu nombre</span></div>
     <div id="username-slot">${renderUsername()}</div>
+
+    <div class="set-row" onclick="openProfile()">
+      <div><div class="set-row-title">Tu perfil público</div>
+        <div class="set-row-sub">${myUsername()
+          ? 'Míralo como lo ve quien abre tu link'
+          : 'Elige tu @usuario para tenerlo'}</div></div>
+      <span class="set-chev">›</span>
+    </div>
+    <div class="set-row" onclick="openProfileSettings()">
+      <div><div class="set-row-title">Qué se ve en tu perfil</div>
+        <div class="set-row-sub">Tu bio, tu ciudad y qué secciones se publican</div></div>
+      <span class="set-chev">›</span>
+    </div>
 
     <div class="section-heading"><span class="section-heading-text">Logros</span></div>
     <div class="ach-list">

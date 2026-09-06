@@ -19,6 +19,7 @@ import { seedBooks, pageCount } from './seed.js';
 import { publicReviewDoc, isPublicReview, publicCount } from './reviews-core.js';
 import { streakInfo, addDay } from './streak-core.js';
 import { validateUsername, canChangeUsername, normalize } from './username-core.js';
+import { publicProfileDoc } from './profile-core.js';
 
 const state = {
   uid: null,
@@ -31,6 +32,12 @@ const state = {
      página escribiría en la colección pública, que es a la vez un gasto
      y una escritura que no tendría por qué existir. */
   reviewDirty: new Set(),
+  /* El perfil público (#45) se rehace entero cada vez, así que basta
+     una bandera. Se levanta cuando cambia algo que se ve desde fuera —
+     los ajustes, o el estado de un libro—, no al anotar una página:
+     nadie necesita que tu perfil se reescriba porque pasaste de la 40
+     a la 41. */
+  profileDirty: false,
   settingsDirty: false,
 };
 
@@ -100,13 +107,21 @@ export function recordReadingDay(date = new Date()) {
 
 /* ── EL @USUARIO  ·  historia #44 ─────────────────────────────
    El nombre propio vive en los ajustes, que ya se sincronizan. El
-   ÍNDICE —quién tiene cada nombre— vive en social/usernames, fuera de
-   users/{uid}, porque tiene que poder leerlo cualquiera para saber si
-   está libre y para encontrarte. */
+   ÍNDICE —quién tiene cada nombre— vive en la colección `usernames`,
+   fuera de users/{uid}, porque tiene que poder leerlo cualquiera para
+   saber si está libre y para encontrarte.
+
+   ESTUVO EN `social/usernames/{nombre}` Y NO FUNCIONABA. En Firestore
+   las rutas alternan colección y documento, así que un documento
+   siempre tiene un número PAR de segmentos; `social/usernames/laura`
+   tiene tres y es una colección. `doc()` lanzaba antes de llegar a la
+   red, el try/catch de abajo se lo tragaba, y salía «No se pudo
+   comprobar. ¿Hay conexión?» — culpando a la red de un error de ruta.
+   Con dos segmentos, `usernames/laura` sí es un documento. */
 
 export const myUsername = () => settings().username || null;
 
-const usernameRef = (handle) => doc(db, 'social', 'usernames', normalize(handle));
+const usernameRef = (handle) => doc(db, 'usernames', normalize(handle));
 
 /** ¿Está libre? Es una respuesta con fecha de caducidad: ver claimUsername. */
 export async function isUsernameFree(handle) {
@@ -196,6 +211,11 @@ export function updateEntry(id, patch) {
   /* Cambiar el texto también puede despublicar: si lo borras, la copia
      pública tiene que irse contigo, sin acordarte del interruptor. */
   if ('review' in patch || 'reviewPublic' in patch) state.reviewDirty.add(id);
+  /* Lo que se ve desde fuera: empezar o terminar un libro, cambiarle la
+     portada, moverlo de estantería. Anotar una página, no. */
+  if ('status' in patch || 'cover' in patch || 'shelfIds' in patch || 'finishedAt' in patch) {
+    state.profileDirty = true;
+  }
   writeLS('entries', state.entries);
   schedulePersist();
 }
@@ -212,6 +232,11 @@ export const setReviewPublic = (id, pub) => updateEntry(id, { reviewPublic: !!pu
 export function updateSettings(patch) {
   state.settings = { ...settings(), ...patch };
   state.settingsDirty = true;
+  /* Casi todo lo que se toca en ajustes se ve en el perfil: la bio, la
+     ciudad, las estanterías, la mascota, qué secciones enseñas. Se
+     rehace entero y es una escritura, así que no merece la pena hilar
+     más fino que esto. */
+  state.profileDirty = true;
   writeLS('settings', state.settings);
   schedulePersist();
 }
@@ -265,7 +290,8 @@ const publicReviewRef = (userId, bookId) =>
 
 export async function flush() {
   if (!state.uid) return;                       // sin sesión, solo local
-  if (!state.dirty.size && !state.reviewDirty.size && !state.settingsDirty) return;
+  if (!state.dirty.size && !state.reviewDirty.size
+      && !state.settingsDirty && !state.profileDirty) return;
   onSaveState('saving');
   const ids = [...state.dirty];
   state.dirty.clear();
@@ -273,6 +299,8 @@ export async function flush() {
   state.reviewDirty.clear();
   const hadSettings = state.settingsDirty;
   state.settingsDirty = false;
+  const hadProfile = state.profileDirty;
+  state.profileDirty = false;
   try {
     const batch = writeBatch(db);
     for (const id of ids) {
@@ -298,6 +326,7 @@ export async function flush() {
   }
 
   await flushPublicReviews(reviewIds);
+  if (hadProfile) await flushProfile();
 }
 
 /**
@@ -332,6 +361,112 @@ async function flushPublicReviews(ids) {
       'No se pudo actualizar la visibilidad de una reseña. Se reintentará. '
       + '¿Están desplegadas las reglas de firestore.rules?', e,
     );
+  }
+}
+
+/* ── EL PERFIL PÚBLICO  ·  historia #45 ───────────────────────
+   Mismo trato que las reseñas y por el mismo motivo: es una COPIA en
+   otra colección, con lo justo, y va en su propia escritura para que
+   un fallo suyo no se lleve por delante el guardado de los libros.
+
+   Quien decide qué se copia es profile-core.js, y ahí está probado. */
+
+const profileRef = (userId) => doc(db, 'profiles', userId);
+
+/* El nombre visible lo tiene Auth, no el store. Se le pasa al entrar en
+   vez de importar auth.js, que importaría store.js de vuelta. */
+let currentDisplayName = '';
+export const setDisplayName = (n) => { currentDisplayName = String(n || ''); };
+
+/** Los datos que necesita el core, sacados del estado de aquí. */
+function datosDelPerfil() {
+  return {
+    uid: state.uid,
+    username: myUsername(),
+    name: currentDisplayName,
+    settings: settings(),
+    books: allBooks().map((b) => ({
+      ...b,
+      status: statusOf(b.id),
+      cover: coverOf(b.id),
+      pct: progressPct(b.id),
+      shelfIds: entry(b.id).shelfIds || [],
+      finishedAt: entry(b.id).finishedAt || null,
+      /* Los libros semilla guardan las páginas como «~124», con tilde,
+         porque son aproximadas. Sin pasarlas por pageCount el perfil
+         publicaba «0 páginas» con la biblioteca llena. */
+      pages: pageCount(b.pages) || 0,
+    })),
+    racha: myStreak().actual,
+  };
+}
+
+async function flushProfile() {
+  if (!state.uid) return;
+  try {
+    const copia = publicProfileDoc(datosDelPerfil());
+    /* Sin @usuario todavía no hay perfil que publicar. No es un error:
+       es que aún no ha elegido nombre. */
+    if (!copia) return;
+    await setDoc(profileRef(state.uid), copia);
+  } catch (e) {
+    state.profileDirty = true;      // se reintenta con el próximo cambio
+    console.warn(
+      'No se pudo actualizar tu perfil público. Se reintentará. '
+      + '¿Están desplegadas las reglas de firestore.rules?', e,
+    );
+  }
+}
+
+/** Forzar la publicación ahora — al elegir @usuario, por ejemplo. */
+export async function publishProfile() {
+  state.profileDirty = false;
+  await flushProfile();
+}
+
+/** Quitar el perfil público del todo. */
+export async function unpublishProfile() {
+  if (!state.uid) return;
+  try { await deleteDoc(profileRef(state.uid)); } catch (e) {
+    console.warn('No se pudo retirar el perfil público:', e);
+  }
+}
+
+/**
+ * El perfil de otra persona, por su @usuario.
+ *
+ * Dos lecturas y no una: `usernames/{nombre}` solo dice de quién es
+ * ese nombre, y el perfil vive bajo el uid. Separarlos es lo que
+ * permite cambiar de nombre sin que el perfil cambie de sitio.
+ */
+export async function fetchProfile(handle) {
+  const nombre = normalize(handle);
+  if (!nombre) return { ok: false, error: 'Falta el nombre de usuaria.' };
+  try {
+    const nameSnap = await getDoc(doc(db, 'usernames', nombre));
+    if (!nameSnap.exists()) return { ok: false, error: 'No hay nadie con ese nombre.' };
+    const otherUid = nameSnap.data()?.uid;
+    if (!otherUid) return { ok: false, error: 'No hay nadie con ese nombre.' };
+
+    const perfil = await getDoc(profileRef(otherUid));
+    if (!perfil.exists()) return { ok: false, error: 'Esa persona todavía no tiene perfil público.' };
+    return { ok: true, profile: perfil.data(), uid: otherUid, mio: otherUid === state.uid };
+  } catch (e) {
+    console.warn('No se pudo abrir el perfil:', e);
+    return { ok: false, error: 'No se pudo abrir el perfil. ¿Hay conexión?' };
+  }
+}
+
+/** Las reseñas públicas de alguien, que viven en su propia colección (#28). */
+export async function fetchPublicReviews(otherUid) {
+  if (!otherUid) return [];
+  try {
+    const snap = await getDocs(collection(db, 'reviews', otherUid, 'entries'));
+    return snap.docs.map((d) => d.data())
+      .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
+  } catch (e) {
+    console.warn('No se pudieron leer las reseñas públicas:', e);
+    return [];
   }
 }
 
@@ -473,6 +608,11 @@ export async function deleteAllUserData() {
   chunks.push(batch.commit());
   await Promise.all(chunks);
   await deleteDoc(doc(db, 'reviews', state.uid)).catch(() => {});
+  /* El perfil público también vive fuera, por lo mismo que las reseñas.
+     Dejarlo en pie sería dejar tu nombre, tu bio y tus números
+     colgados después de borrar la cuenta. */
+  await deleteDoc(profileRef(state.uid))
+    .catch((e) => console.warn('No se pudo borrar el perfil público:', e));
   /* El @usuario se libera: si no, el nombre quedaría cogido para
      siempre por una cuenta que ya no existe. Lo pide la historia #44
      y además es lo único decente. */
