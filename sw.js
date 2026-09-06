@@ -5,12 +5,12 @@
 const CACHE = 'bib-v4';
 const SHELL = [
   './', './index.html',
-  './styles/tokens.css', './styles/app.css', './styles/worlds.css', './styles/ui.css',
+  './styles/tokens.css', './styles/app.css', './styles/worlds.css', './styles/ui.css', './styles/pet.css',
   './src/main.js', './src/store.js', './src/seed.js', './src/views.js',
   './src/screens.js', './src/themes.js', './src/theme-engine.js',
   './src/planner.js', './src/plan-core.js', './src/auth.js',
   './src/firebase.js', './src/migrate.js', './src/covers.js', './src/ui.js',
-  './src/achievements.js',
+  './src/achievements.js', './src/pet.js',
 ];
 
 self.addEventListener('install', (e) => {

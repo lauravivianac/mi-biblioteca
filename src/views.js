@@ -12,6 +12,7 @@ import {
 import { fetchCover } from './covers.js';
 import { $, esc, initial, toast, confirmAction } from './ui.js';
 import { refreshAchievements } from './achievements.js';
+import { renderPet } from './pet.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -75,6 +76,9 @@ export function setYear(y, el) {
 }
 
 export function renderPlan() {
+  const shelf = $('pet-slot');
+  if (shelf) shelf.innerHTML = renderPet();
+
   const body = $('plan-body');
   if (!body) return;
   const yearBooks = allBooks().filter((b) => b.year === curYear);
