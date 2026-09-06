@@ -32,6 +32,18 @@ const GENRE_FRICTION = {
   'Fantasía / Juvenil': 0.85,
   'Novela contemporánea': 1,
   'Latinoamérica': 1.05,
+  /* Los géneros nuevos. El romance y la aventura se leen rápido, y
+     eso no es un juicio sobre ellos: es cuántas páginas caben en una
+     tarde, que es lo único que el plan necesita saber. */
+  'Romance': 0.8,
+  'Aventura': 0.85,
+  'Humor': 0.85,
+  'Infantil': 0.7,
+  'Novela gráfica / Cómic': 0.5,
+  'Fantasía': 0.9,
+  'Ciencia ficción': 1,
+  'Novela histórica': 1.15,
+  'Ensayo / Filosofía': 1.45,
 };
 
 /** Afinidades de temporada que ya estaban en el plan escrito a mano. */
@@ -40,8 +52,9 @@ const SEASON = {
   Noviembre: ['Historia / Mitología', 'Clásico universal'],
   Diciembre: ['Historia / Mitología', 'Clásico universal'],
   Enero: ['Oriente / Espiritualidad'],
-  Febrero: ['Oriente / Espiritualidad'],
-  Julio: ['Fantasía / Juvenil'],
+  Febrero: ['Oriente / Espiritualidad', 'Romance'],
+  Junio: ['Aventura'],
+  Julio: ['Fantasía / Juvenil', 'Fantasía', 'Aventura'],
   Agosto: ['Autobiografía'],
 };
 
