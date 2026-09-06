@@ -42,18 +42,57 @@ export const ACCESSORIES = [
   { id: 'flor',    name: 'Flor',     unlock: 'bloque-oriental' },
 ];
 
-export const CORNERS = [
+/* ── ESCENAS ─────────────────────────────────────────────────
+   Esto es lo que se conserva de Catzy: explorar mundos. Pero aquí
+   el mundo no se elige de un menú — lo decide lo que estás leyendo.
+   Terminar el bloque japonés hace aparecer la rama de sakura, y eso
+   premia el bloque entero, no un contador. */
+
+export const SCENES = [
+  { id: 'auto',    name: 'Sigue mi lectura', unlock: null, auto: true },
   { id: 'estante', name: 'Estantería', unlock: null },
   { id: 'planta',  name: 'Planta',     unlock: null },
   { id: 'lampara', name: 'Lámpara',    unlock: 'primer-libro' },
   { id: 'taza',    name: 'Taza',       unlock: 'veinticinco-libros' },
+  { id: 'rama',    name: 'Rama en flor', unlock: 'bloque-oriental' },
+  { id: 'velas',   name: 'Velas',      unlock: 'octubre-terror' },
+  { id: 'hojas',   name: 'Selva',      unlock: 'cinco-generos' },
+  { id: 'columna', name: 'Columna',    unlock: 'primer-clasico' },
+];
+
+/** Qué escenario le corresponde a cada género. */
+const GENRE_SCENE = {
+  'Oriente / Espiritualidad': 'rama',
+  'Terror / Misterio': 'velas',
+  'Latinoamérica': 'hojas',
+  'Historia / Mitología': 'columna',
+  'Clásico universal': 'columna',
+  'Fantasía / Juvenil': 'planta',
+  'Poesía / Teatro': 'planta',
+  'No ficción / Desarrollo': 'lampara',
+  'Thriller': 'lampara',
+  'Novela contemporánea': 'taza',
+  'Autobiografía': 'taza',
+};
+
+/* ── ESPECIES ────────────────────────────────────────────────
+   Una colección, pero UNA activa. Tres a la vez repartirían la
+   atención y diluirían lo único que hace funcionar esto: que haya
+   alguien esperándote. */
+
+export const SPECIES = [
+  { id: 'gato',    name: 'Gata',    emoji: '🐈', unlock: null },
+  { id: 'buho',    name: 'Búho',    emoji: '🦉', unlock: 'primer-clasico' },
+  { id: 'zorro',   name: 'Zorro',   emoji: '🦊', unlock: 'cinco-generos' },
+  { id: 'mapache', name: 'Mapache', emoji: '🦝', unlock: 'diez-libros' },
 ];
 
 export const DEFAULT_PET = {
   name: '',
+  species: 'gato',
   fur: 'atigrado',
   accessory: 'bufanda',
-  corner: 'estante',
+  corner: 'auto',
   hidden: false,
 };
 
@@ -65,7 +104,33 @@ const unlocked = (item) => {
 };
 export const availableFurs = () => FURS.map((f) => ({ ...f, locked: !unlocked(f) }));
 export const availableAccessories = () => ACCESSORIES.map((a) => ({ ...a, locked: !unlocked(a) }));
-export const availableCorners = () => CORNERS.map((c) => ({ ...c, locked: !unlocked(c) }));
+export const availableCorners = () => SCENES.map((c) => ({ ...c, locked: !unlocked(c) }));
+export const availableSpecies = () => SPECIES.map((sp) => ({ ...sp, locked: !unlocked(sp) }));
+
+/**
+ * La escena que toca ahora mismo.
+ * Con 'auto', la decide el libro en curso; si no hay ninguno, el
+ * último terminado. Un escenario bloqueado no aparece por sorpresa:
+ * se cae a la estantería hasta que se gane.
+ */
+export function currentScene(cfg = petConfig()) {
+  if (cfg.corner !== 'auto') return cfg.corner;
+
+  const books = allBooks();
+  /* Con varios libros en curso manda el más reciente, no el primero
+     de la lista: la escena debe seguir lo que estás leyendo AHORA. */
+  const reading = books
+    .filter((b) => statusOf(b.id) === 'reading')
+    .sort((a, b) => (entry(b.id).lastReadAt || 0) - (entry(a.id).lastReadAt || 0))[0];
+  const lastDone = books
+    .filter((b) => entry(b.id).finishedAt)
+    .sort((a, b) => entry(b.id).finishedAt - entry(a.id).finishedAt)[0];
+
+  const genre = (reading || lastDone)?.genre;
+  const wanted = GENRE_SCENE[genre] || 'estante';
+  const scene = SCENES.find((sc) => sc.id === wanted);
+  return scene && unlocked(scene) ? wanted : 'estante';
+}
 
 /* ── ESTADO ──────────────────────────────────────────────────
    Se calcula solo, del progreso y de las fechas. La usuaria no
@@ -75,7 +140,11 @@ const DAY = 86400000;
 
 export function petState() {
   const books = allBooks();
-  const reading = books.filter((b) => statusOf(b.id) === 'reading');
+  /* Ordenado por lectura más reciente, igual que currentScene(): si no,
+     la frase hablaba de un libro y el escenario mostraba otro. */
+  const reading = books
+    .filter((b) => statusOf(b.id) === 'reading')
+    .sort((a, b) => (entry(b.id).lastReadAt || 0) - (entry(a.id).lastReadAt || 0));
   const now = Date.now();
 
   const lastRead = Math.max(0, ...books.map((b) => entry(b.id).lastReadAt || 0));
@@ -228,11 +297,96 @@ const CORNER_SVG = {
               <rect x="14" y="70" width="2" height="26" fill="var(--pet-line)"/>
               <ellipse cx="15" cy="98" rx="9" ry="2.5" fill="var(--pet-line)"/>
             </g>`,
+  rama:    `<g opacity=".6" stroke="none">
+              <path d="M2 78 Q14 84 28 80" fill="none" stroke="var(--pet-line)" stroke-width="2.4" stroke-linecap="round"/>
+              <circle cx="9"  cy="76" r="3.4" fill="var(--pet-accent)"/>
+              <circle cx="17" cy="81" r="2.8" fill="var(--pet-accent)" opacity=".8"/>
+              <circle cx="25" cy="77" r="3.1" fill="var(--pet-accent)" opacity=".9"/>
+              <circle cx="13" cy="90" r="2.2" fill="var(--pet-accent)" opacity=".5"/>
+            </g>`,
+  velas:   `<g opacity=".6" stroke="none">
+              <rect x="8"  y="66" width="6" height="26" rx="2" fill="var(--pet-line)"/>
+              <rect x="18" y="74" width="5" height="18" rx="2" fill="var(--pet-line)" opacity=".8"/>
+              <path d="M11 66 q3 -6 0 -9 q-3 3 0 9" fill="var(--pet-accent)"/>
+              <path d="M20.5 74 q2.4 -5 0 -7.5 q-2.4 2.5 0 7.5" fill="var(--pet-accent)" opacity=".9"/>
+              <ellipse cx="15" cy="94" rx="12" ry="2.5" fill="var(--pet-accent)" opacity=".18"/>
+            </g>`,
+  hojas:   `<g opacity=".55" stroke="none">
+              <path d="M4 92 Q0 70 14 58 Q18 78 10 92 Z" fill="var(--pet-line)"/>
+              <path d="M12 92 Q14 68 30 60 Q26 82 18 92 Z" fill="var(--pet-accent)" opacity=".65"/>
+              <path d="M14 58 L10 92 M30 60 L18 92" stroke="var(--pet-line)" stroke-width="1" opacity=".5"/>
+            </g>`,
+  columna: `<g opacity=".5" stroke="none">
+              <rect x="6"  y="56" width="20" height="4" rx="1" fill="var(--pet-line)"/>
+              <rect x="8"  y="60" width="16" height="32" fill="var(--pet-accent)" opacity=".55"/>
+              <rect x="4"  y="92" width="24" height="5" rx="1" fill="var(--pet-line)"/>
+              <path d="M12 60 v32 M16 60 v32 M20 60 v32" stroke="var(--pet-line)" stroke-width="1" opacity=".6"/>
+            </g>`,
   taza:    `<g opacity=".55" stroke="none">
               <path d="M6 78 h18 v10 a9 9 0 0 1 -18 0 Z" fill="var(--pet-accent)"/>
               <path d="M24 80 a6 6 0 0 1 0 8" fill="none" stroke="var(--pet-accent)" stroke-width="2.4"/>
               <path d="M11 72 q2 -5 0 -9 M17 72 q2 -5 0 -9" fill="none" stroke="var(--pet-line)" stroke-width="1.6" opacity=".7"/>
             </g>`,
+};
+
+/* Cada especie reemplaza solo lo que la distingue. El cuerpo sentado
+   es el mismo: es lo que mantiene la silueta reconocible y evita
+   cuatro dibujos a medias en vez de uno bueno. */
+const SPECIES_PARTS = {
+  gato: {
+    ears: `<path d="M43 34 L40 12 L58 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M85 34 L88 12 L70 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M45 32 L43.5 19 L54 27 Z" fill="var(--pet-belly)" opacity=".65"/>
+           <path d="M83 32 L84.5 19 L74 27 Z" fill="var(--pet-belly)" opacity=".65"/>`,
+    tail: 'M92 100 Q118 96 112 74 Q108 58 96 64',
+    tailTip: '',
+    face: `<path d="M60.5 53 L67.5 53 L64 57 Z" fill="var(--pet-nose)"/>
+           <path d="M64 57 v3 M64 60 q-4 3 -7 0 M64 60 q4 3 7 0" fill="none" stroke="var(--pet-eye)" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+           <g stroke="var(--pet-eye)" stroke-width="1.3" stroke-linecap="round" opacity=".35">
+             <path d="M44 52 h-14 M44 57 h-13 M84 52 h14 M84 57 h13"/>
+           </g>`,
+  },
+  buho: {
+    /* Sin orejas: penachos. Y sin cola, que un búho sentado no la luce. */
+    ears: `<path d="M46 26 L44 10 L57 20 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M82 26 L84 10 L71 20 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>`,
+    tail: '',
+    tailTip: `<path d="M36 82 Q28 92 34 104" fill="none" stroke="var(--pet-fur)" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+              <path d="M92 82 Q100 92 94 104" fill="none" stroke="var(--pet-fur)" stroke-width="7" stroke-linecap="round" opacity=".8"/>`,
+    face: `<circle cx="55" cy="46" r="12" fill="var(--pet-belly)" opacity=".45"/>
+           <circle cx="73" cy="46" r="12" fill="var(--pet-belly)" opacity=".45"/>
+           <path d="M64 52 L59 58 L64 62 L69 58 Z" fill="var(--pet-nose)"/>`,
+  },
+  zorro: {
+    ears: `<path d="M41 34 L37 10 L59 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M87 34 L91 10 L69 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M43 30 L39.5 16 L52 26 Z" fill="var(--pet-eye)" opacity=".55"/>
+           <path d="M85 30 L88.5 16 L76 26 Z" fill="var(--pet-eye)" opacity=".55"/>`,
+    tail: 'M90 100 Q122 96 116 70 Q112 54 97 61',
+    tailWidth: 15,
+    tailTip: `<path d="M116 70 Q112 54 97 61" fill="none" stroke="var(--pet-belly)"
+                    stroke-width="14" stroke-linecap="round" opacity=".95"/>`,
+    face: `<path d="M52 52 Q64 48 76 52 Q70 66 64 66 Q58 66 52 52 Z" fill="var(--pet-belly)" opacity=".9"/>
+           <path d="M60.5 53 L67.5 53 L64 58 Z" fill="var(--pet-nose)"/>
+           <g stroke="var(--pet-eye)" stroke-width="1.2" stroke-linecap="round" opacity=".3">
+             <path d="M46 53 h-13 M46 58 h-12 M82 53 h13 M82 58 h12"/>
+           </g>`,
+  },
+  mapache: {
+    ears: `<path d="M44 32 L41 14 L58 25 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M84 32 L87 14 L70 25 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
+           <path d="M46 30 L44 20 L54 26 Z" fill="var(--pet-belly)" opacity=".6"/>
+           <path d="M82 30 L84 20 L74 26 Z" fill="var(--pet-belly)" opacity=".6"/>`,
+    tail: 'M92 100 Q118 96 112 74 Q108 58 96 64',
+    tailTip: `<g stroke="var(--pet-eye)" stroke-width="4.5" opacity=".45" fill="none" stroke-linecap="round">
+                <path d="M108 92 q6 -3 6 -8"/><path d="M112 76 q2 -6 -1 -9"/>
+              </g>`,
+    /* El antifaz es su firma. */
+    face: `<path d="M44 44 Q55 36 63 44 Q55 56 44 48 Z" fill="var(--pet-eye)" opacity=".45"/>
+           <path d="M84 44 Q73 36 65 44 Q73 56 84 48 Z" fill="var(--pet-eye)" opacity=".45"/>
+           <ellipse cx="64" cy="56" rx="8" ry="5.5" fill="var(--pet-belly)" opacity=".8"/>
+           <path d="M60.5 53 L67.5 53 L64 57 Z" fill="var(--pet-nose)"/>`,
+  },
 };
 
 /** Luminancia de un hex, para decidir si algo encima debe ser claro u oscuro. */
@@ -248,6 +402,7 @@ function luminance(hex) {
 /** El SVG completo. `mood` decide ojos, libro y destellos. */
 export function petSvg(mood = 'contenta', cfg = petConfig()) {
   const fur = FURS.find((f) => f.id === cfg.fur) || FURS[0];
+  const parts = SPECIES_PARTS[cfg.species] || SPECIES_PARTS.gato;
   /* Los ojos contrastan con el PELAJE, no con el tema. Atarlos al fondo
      los hacía desaparecer: en Pergamino el fondo es crema, y con pelaje
      Tinta o Nocturna pasaba justo lo contrario. */
@@ -259,9 +414,10 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
      así que define la silueta contra cualquiera de los nueve fondos. */
   const outline = darkFur ? 'rgb(255 255 255 / .3)' : 'rgb(36 28 24 / .32)';
   const accessory = ACCESSORY_SVG[cfg.accessory] ?? '';
-  const corner = CORNER_SVG[cfg.corner] ?? '';
-  const eyes = mood === 'expectante' ? OPEN_EYES : EYES[mood] || EYES.contenta;
-  const strokeEyes = mood !== 'expectante';
+  const corner = CORNER_SVG[currentScene(cfg)] ?? '';
+  const alwaysOpen = cfg.species === 'buho' && mood !== 'dormida';
+  const eyes = (mood === 'expectante' || alwaysOpen) ? OPEN_EYES : EYES[mood] || EYES.contenta;
+  const strokeEyes = !(mood === 'expectante' || alwaysOpen);
 
   return `
 <svg class="pet-svg" viewBox="0 0 128 112" role="img"
@@ -269,13 +425,15 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
      style="--pet-fur:${fur.color};--pet-belly:${fur.belly};--pet-eye:${eye};--pet-shine:${shine};--pet-outline:${outline}">
   ${corner}
 
-  <!-- cola: contorno debajo, pelaje encima -->
+  <!-- cola: contorno debajo, pelaje encima. El búho no tiene. -->
+  ${parts.tail ? `
   <g class="pet-tail">
-    <path d="M92 100 Q118 96 112 74 Q108 58 96 64"
-          fill="none" stroke="var(--pet-outline)" stroke-width="12" stroke-linecap="round"/>
-    <path d="M92 100 Q118 96 112 74 Q108 58 96 64"
-          fill="none" stroke="var(--pet-fur)" stroke-width="9" stroke-linecap="round"/>
-  </g>
+    <path d="${parts.tail}" fill="none" stroke="var(--pet-outline)"
+          stroke-width="${(parts.tailWidth || 9) + 3}" stroke-linecap="round"/>
+    <path d="${parts.tail}" fill="none" stroke="var(--pet-fur)"
+          stroke-width="${parts.tailWidth || 9}" stroke-linecap="round"/>
+    ${parts.tailTip}
+  </g>` : parts.tailTip}
 
   <g class="pet-body">
     <!-- cuerpo -->
@@ -286,25 +444,17 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
     <ellipse cx="76" cy="106" rx="9.5" ry="5" fill="var(--pet-belly)" stroke="var(--pet-outline)" stroke-width="1.2"/>
 
     <g class="pet-head">
-      <!-- orejas -->
-      <path d="M43 34 L40 12 L58 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-      <path d="M85 34 L88 12 L70 26 Z" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5" stroke-linejoin="round"/>
-      <path d="M45 32 L43.5 19 L54 27 Z" fill="var(--pet-belly)" opacity=".65"/>
-      <path d="M83 32 L84.5 19 L74 27 Z" fill="var(--pet-belly)" opacity=".65"/>
+      <!-- orejas o penachos, según la especie -->
+      ${parts.ears}
       <!-- cabeza -->
       <circle cx="64" cy="44" r="25" fill="var(--pet-fur)" stroke="var(--pet-outline)" stroke-width="1.5"/>
-      <ellipse cx="64" cy="55" rx="13" ry="9" fill="var(--pet-belly)" opacity=".5"/>
+      ${cfg.species === 'gato' ? '<ellipse cx="64" cy="55" rx="13" ry="9" fill="var(--pet-belly)" opacity=".5"/>' : ''}
+      ${['buho', 'mapache'].includes(cfg.species) ? parts.face : ''}
       <!-- ojos -->
       <g class="pet-eyes" fill="none" stroke="var(--pet-eye)"
          stroke-width="${strokeEyes ? 2.6 : 0}" stroke-linecap="round">${eyes}</g>
-      <!-- hocico -->
-      <path d="M60.5 53 L67.5 53 L64 57 Z" fill="var(--pet-nose)"/>
-      <path d="M64 57 v3 M64 60 q-4 3 -7 0 M64 60 q4 3 7 0"
-            fill="none" stroke="var(--pet-eye)" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
-      <!-- bigotes -->
-      <g stroke="var(--pet-eye)" stroke-width="1.3" stroke-linecap="round" opacity=".35">
-        <path d="M44 52 h-14 M44 57 h-13 M84 52 h14 M84 57 h13"/>
-      </g>
+      <!-- hocico: el búho y el mapache ya lo pintaron bajo los ojos -->
+      ${['buho', 'mapache'].includes(cfg.species) ? '' : parts.face}
       ${accessory}
     </g>
   </g>

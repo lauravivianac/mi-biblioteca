@@ -167,6 +167,7 @@
 <div class="overlay" id="add-overlay" onclick="closeAdd(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('add-overlay')" aria-label="Cerrar">✕</button>
     <div class="sheet-title">✦ Agregar libro</div>
     <div class="fg"><label class="flabel" for="f-title">Título</label><input class="finput" id="f-title" placeholder="Título del libro"></div>
     <div class="fg"><label class="flabel" for="f-author">Autor</label><input class="finput" id="f-author" placeholder="Nombre del autor"></div>
@@ -199,6 +200,7 @@
 <div class="overlay" id="store-overlay" onclick="closeStore(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeThemeStore()" aria-label="Cerrar">✕</button>
     <div class="sheet-title">🎨 Tienda</div>
     <div id="store-body"></div>
   </div>
@@ -208,6 +210,7 @@
 <div class="overlay" id="settings-overlay" onclick="closeSettings(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('settings-overlay')" aria-label="Cerrar">✕</button>
     <div class="sheet-title">⚙ Ajustes</div>
     <div id="settings-body"></div>
   </div>
@@ -217,6 +220,7 @@
 <div class="overlay" id="planner-overlay" onclick="closePlanner(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
+    <button class="sheet-close" onclick="closeSheet('planner-overlay')" aria-label="Cerrar">✕</button>
     <div id="planner-body"></div>
   </div>
 </div>

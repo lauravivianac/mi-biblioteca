@@ -22,6 +22,7 @@ import { MONTH_ORDER } from './seed.js';
 import { achievementStatus, earnedCount } from './achievements.js';
 import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
+  availableSpecies, currentScene, SCENES,
 } from './pet.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
@@ -115,7 +116,12 @@ export async function maybeOnboard() {
   const s = settings();
   if (s.onboarded) return;
 
-  const legacy = await findLegacyData();
+  /* La migración se ofrecía a TODA cuenta nueva sin mirar quién era,
+     así que cualquiera que se registrara podía llevarse la biblioteca
+     de otra persona. La migración ya ocurrió y las reglas cerraron la
+     colección antigua; aquí se cierra también del lado del cliente,
+     para no volver a ofrecer lo que no es de quien pregunta. */
+  const legacy = null;
   const legacyBlock = legacy ? `
     <div class="onb-legacy">
       <div class="onb-legacy-title">Encontramos tu biblioteca anterior</div>
@@ -159,8 +165,15 @@ export async function runMigration() {
                result.librosPropios ? `, más <strong>${result.librosPropios}</strong> libros tuyos` : ''}.`,
       confirmLabel: 'Entendido',
     });
-    // Ya migrado: el documento antiguo deja de hacer falta y se cierra esa puerta
-    dropLegacy().catch(() => {});
+    /* Ya migrado: el documento antiguo deja de hacer falta. Si el borrado
+       falla hay que SABERLO — tragárselo en silencio fue justo lo que dejó
+       la biblioteca vieja visible para otras cuentas. */
+    try {
+      await dropLegacy();
+    } catch (e) {
+      console.error('No se pudo borrar el documento antiguo:', e);
+      toast('Se migró, pero no se pudo borrar la copia antigua. Avísame.', 'error');
+    }
     window.__legacy = null;
     finishOnboarding(true);
   } catch (e) {
@@ -192,8 +205,12 @@ export function openThemeStore() {
 }
 
 export function closeThemeStore() {
+  /* Descarta la vista previa antes de salir: cerrar sin aplicar dejaba
+     la app pintada con un tema que los ajustes no habían guardado, y al
+     recargar volvía al anterior sin explicación. */
   if (restorePreview) { restorePreview(); restorePreview = null; previewing = null; }
   $('store-overlay').classList.remove('open');
+  refreshAll();
 }
 
 function renderThemeStore() {
@@ -226,7 +243,7 @@ function renderThemeStore() {
     ${previewing && previewing !== s.themeId ? `
       <div class="store-actions">
         <button class="btn-ghost" onclick="cancelThemePreview()">Descartar</button>
-        <button class="btn-magic" onclick="applyPreviewedTheme()">Aplicar ${esc(themes.find((t) => t.id === previewing).name)}</button>
+        <button class="btn-magic" onclick="applyPreviewedTheme()">Aplicar ${esc(themes.find((t) => t.id === previewing).name)} y volver</button>
       </div>` : ''}
 
     <div class="store-shelf-label">Tu mascota</div>
@@ -251,6 +268,11 @@ function renderPetShelf() {
            placeholder="Ponle un nombre" value="${esc(cfg.name)}"
            onchange="setPetName(this.value)">
 
+    <div class="pet-group-label">Quién te acompaña</div>
+    <div class="pet-options">
+      ${availableSpecies().map((sp) => opt('species', sp, `${sp.emoji} `)).join('')}
+    </div>
+
     <div class="pet-group-label">Pelaje</div>
     <div class="pet-options">
       ${availableFurs().map((f) => opt('fur', f,
@@ -262,6 +284,10 @@ function renderPetShelf() {
 
     <div class="pet-group-label">Su rincón</div>
     <div class="pet-options">${availableCorners().map((c) => opt('corner', c)).join('')}</div>
+    ${cfg.corner === 'auto' ? `<p class="planner-hint">
+      Ahora mismo está en <strong>${esc(SCENES.find((sc) => sc.id === currentScene()).name)}</strong>,
+      por lo que estás leyendo. Cambia sola con el bloque que tengas entre manos.
+    </p>` : ''}
 
     <p class="set-fineprint">
       Todo se desbloquea leyendo. Un accesorio que costó terminar un libro de 900 páginas
@@ -303,6 +329,10 @@ export function cancelThemePreview() {
   renderThemeStore();
 }
 
+/**
+ * Aplicar cierra la tienda y devuelve al inicio: aplicar ES la decisión.
+ * Para seguir mirando está la vista previa, que no compromete nada.
+ */
 export function applyPreviewedTheme() {
   if (!previewing) return;
   applyTheme(previewing);
@@ -310,7 +340,8 @@ export function applyPreviewedTheme() {
   restorePreview = null;
   const name = themeAvailability().find((t) => t.id === previewing)?.name;
   previewing = null;
-  renderThemeStore();
+  closeSheet('store-overlay');
+  refreshAll();
   toast(`Tema ${name} aplicado`);
 }
 

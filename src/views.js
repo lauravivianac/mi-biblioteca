@@ -318,6 +318,7 @@ export async function openDetail(id) {
 
   $('detail-sheet').innerHTML = `
     <div class="sheet-handle" style="margin-top:16px"></div>
+    <button class="sheet-close" onclick="closeDetailSheet()" aria-label="Cerrar">✕</button>
     <div class="detail-cover-banner">
       ${url ? `<img src="${esc(url)}" alt="" onerror="this.style.display='none'">` : '<div class="detail-cover-banner-ph"></div>'}
       <div class="detail-cover-fg">
@@ -362,10 +363,12 @@ export async function openDetail(id) {
 }
 
 export function closeDetail(e) {
-  if (e.target === $('detail-overlay')) {
-    $('detail-overlay').classList.remove('open');
-    refreshAll();
-  }
+  if (e.target === $('detail-overlay')) closeDetailSheet();
+}
+
+export function closeDetailSheet() {
+  $('detail-overlay').classList.remove('open');
+  refreshAll();
 }
 
 export function detailStatus(s) { setStatus(detailId, s); openDetail(detailId); updateStats(); }

@@ -306,3 +306,23 @@ body:not(.signed-in) .fab { display: none; }
   font-size: 11px; color: var(--muted-soft);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
+
+
+/* ── CERRAR UNA HOJA ──────────────────────────────────────────
+   Antes solo se cerraban tocando el fondo, que nadie adivina. */
+.sheet-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
+  background: var(--fog);
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 2;
+  transition: all .18s;
+}
+.sheet-close:hover { color: var(--text); border-color: var(--border-strong); }
+.sheet { position: relative; }
