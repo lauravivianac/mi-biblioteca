@@ -33,6 +33,7 @@ import {
 import { verifySuggestion } from './booklookup.js';
 import { openShare } from './shareui.js';
 import { refreshMyProfile } from './profileui.js';
+import { soporteHref, soporteCorreo } from './commentsui.js';
 import { recommendMine } from './taste.js';
 import { describeTaste } from './taste-core.js';
 import {
@@ -538,6 +539,11 @@ export function openSettings() {
           : 'Elige tu @usuario para tenerlo'}</div></div>
       <span class="set-chev">›</span>
     </div>
+    <div class="set-row" onclick="openBlocked()">
+      <div><div class="set-row-title">Bloqueadas y silenciadas</div>
+        <div class="set-row-sub">Quién no te ve y a quién no ves</div></div>
+      <span class="set-chev">›</span>
+    </div>
     <div class="set-row" onclick="openInvite()">
       <div><div class="set-row-title">Invitar a alguien</div>
         <div class="set-row-sub">Tu link y tu código QR, para enseñarlo en persona</div></div>
@@ -634,6 +640,17 @@ export function openSettings() {
         <div class="set-row-sub">Compatible con la importación de Goodreads</div></div>
       <span class="set-chev">›</span>
     </div>
+
+    <div class="section-heading"><span class="section-heading-text">Ayuda</span></div>
+    <a class="set-row" href="${soporteHref()}" style="text-decoration:none;color:inherit">
+      <div><div class="set-row-title">Escríbenos</div>
+        <div class="set-row-sub">${esc(soporteCorreo())}</div></div>
+      <span class="set-chev">›</span>
+    </a>
+    <p class="set-fineprint">
+      Si alguien te está molestando, puedes reportarlo desde su perfil o desde
+      cualquier comentario, y bloquearla desde ahí mismo.
+    </p>
 
     <div class="section-heading"><span class="section-heading-text">Cuenta</span></div>
     <button class="btn-ghost full" onclick="doLogOut()">Cerrar sesión</button>

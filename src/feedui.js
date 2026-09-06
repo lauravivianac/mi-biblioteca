@@ -16,6 +16,8 @@ import { loadFeed } from './social.js';
 import { allBooks, addBook, updateEntry, findBook } from './store.js';
 import { activityLine, cuandoTexto, estadoVacio } from './feed-core.js';
 import { inicial } from './profile-core.js';
+import { misBloqueos } from './moderation.js';
+import { filtrarFuera } from './moderation-core.js';
 import { $, esc, toast } from './ui.js';
 import { refreshAll } from './views.js';
 
@@ -35,7 +37,10 @@ export async function renderFeed() {
   const r = await loadFeed();
   if (mio !== turno) return;
 
-  entradas = r.entradas;
+  /* Lo de quien bloqueaste o silenciaste no llega a la pantalla. La
+     regla del servidor impide que te escriban; esto es la otra mitad:
+     que tú no las veas. */
+  entradas = filtrarFuera(r.entradas, misBloqueos());
   siguiendo = r.siguiendo;
   hayMas = r.hayMas;
   pintar();
@@ -110,8 +115,22 @@ function tarjeta(a) {
                 onclick="addFromFeed('${esc(a.id)}')" ${yaLoTengo ? 'disabled' : ''}>
           ${yaLoTengo ? '✓ Ya está en tu biblioteca' : '+ A mis pendientes'}
         </button>`}
+      ${pie(a)}
     </div>`;
 }
+
+/* Comentar y reportar van SIEMPRE juntos, en toda superficie donde se
+   escriba algo. Es lo que evita acabar con un sitio donde se comenta y
+   ningún botón para reportar lo que se comentó ahí. */
+const pie = (a) => `
+  <div class="feed-pie">
+    <button class="btn-mini" onclick="openComments('${esc(a.id)}','${esc(a.uid)}')">
+      💬 Comentar
+    </button>
+    <button class="btn-mini" onclick="openReport('resena','${esc(a.id)}','${esc(a.uid)}','${esc((a.review || a.title || '').slice(0,200))}')">
+      Reportar
+    </button>
+  </div>`;
 
 /** ¿Ya tengo este libro? Por id si es de la semilla, y si no por título. */
 function miLibro(a) {

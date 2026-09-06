@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:taste && npm run test:gaps && npm run test:duel && npm run test:streak && npm run test:year && npm run test:username && npm run test:cards && npm run test:profile && npm run test:follows && npm run test:qr && npm run test:feed && npm run test:worker",
+    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:taste && npm run test:gaps && npm run test:duel && npm run test:streak && npm run test:year && npm run test:username && npm run test:cards && npm run test:profile && npm run test:follows && npm run test:qr && npm run test:feed && npm run test:moderation && npm run test:worker",
     "test:contrast": "node scripts/check-contrast.mjs",
     "test:planner": "node scripts/test-planner.mjs",
     "test:booklookup": "node scripts/test-booklookup.mjs",
@@ -26,6 +26,7 @@
     "test:profile": "node scripts/test-profile.mjs",
     "test:follows": "node scripts/test-follows.mjs",
     "test:qr": "node scripts/test-qr.mjs",
-    "test:feed": "node scripts/test-feed.mjs"
+    "test:feed": "node scripts/test-feed.mjs",
+    "test:moderation": "node scripts/test-moderation.mjs"
   }
 }

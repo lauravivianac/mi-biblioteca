@@ -29,6 +29,7 @@ import {
   inicial, profileUrl, usernameFromHash, resumenCorto,
 } from './profile-core.js';
 import { relationSlot, loadRelation } from './socialui.js';
+import { meBloqueo } from './moderation.js';
 import { petSvg } from './pet.js';
 import { $, esc, toast, closeSheet } from './ui.js';
 
@@ -61,6 +62,20 @@ export async function openProfile(handle) {
         ? '' : '<p class="set-fineprint">Comprueba el nombre; se escribe sin la arroba.</p>'}`;
     return;
   }
+
+  /* Si esa persona me bloqueó, no se enseña su perfil. Que el bloqueo
+     solo valiera para lo que ella ve sería medio bloqueo. */
+  if (await meBloqueo(r.uid)) {
+    if (mio !== turno) return;
+    visto = null;
+    $('profile-body').innerHTML = `
+      <div class="empty">
+        <div class="empty-rune">🔍</div>
+        <div class="empty-text">Este perfil no está disponible</div>
+      </div>`;
+    return;
+  }
+  if (mio !== turno) return;
 
   visto = { ...r, resenas: null };
   pintar();
@@ -138,6 +153,16 @@ function pintar() {
     ${ve('generos') && p.generos?.length ? bloqueGeneros(p.generos) : ''}
     ${ve('estanterias') && p.estanterias?.length ? bloqueEstanterias(p.estanterias) : ''}
     ${ve('resenas') ? bloqueResenas() : ''}
+
+    ${!visto.mio && myUid() ? `
+      <div class="prof-mod">
+        <button class="btn-mini" onclick="openReport('perfil','${esc(visto.uid)}','${esc(visto.uid)}','@${esc(p.username)} · ${esc(p.bio || '')}')">
+          Reportar este perfil
+        </button>
+        <button class="btn-mini" onclick="openBlock('${esc(visto.uid)}','@${esc(p.username)}')">
+          Bloquear o silenciar
+        </button>
+      </div>` : ''}
 
     ${!myUid() ? `
       <div class="prof-mine">

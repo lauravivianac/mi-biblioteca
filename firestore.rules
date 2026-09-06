@@ -206,6 +206,100 @@ service cloud.firestore {
                     || (request.auth != null && resource.data.from == request.auth.uid);
     }
 
+    /* ── BLOQUEAR Y SILENCIAR  ·  historia #51 ────────────────
+       Tu lista es tuya: solo tú la lees y solo tú la escribes. Que
+       alguien pueda consultar si le has bloqueado sería decirle
+       exactamente lo que no quieres decirle.
+
+       La excepción es la lectura DIRIGIDA que hacen las reglas de
+       abajo con `exists()`, que no pasa por el cliente. */
+    match /blocks/{blockId} {
+      allow read: if request.auth != null
+                  && (resource.data.de == request.auth.uid
+                      || resource.data.a == request.auth.uid);
+      allow create: if request.auth != null
+                    && request.resource.data.de == request.auth.uid
+                    && blockId == request.auth.uid + '_' + request.resource.data.a
+                    && request.resource.data.a != request.auth.uid;
+      allow delete: if request.auth != null && resource.data.de == request.auth.uid;
+      allow update: if false;
+    }
+
+    match /mutes/{muteId} {
+      // Silenciar no se lo cuenta a nadie, ni siquiera a quien silencias
+      allow read, delete: if request.auth != null && resource.data.de == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.de == request.auth.uid
+                    && muteId == request.auth.uid + '_' + request.resource.data.a;
+      allow update: if false;
+    }
+
+    function meBloqueo(otra) {
+      return exists(/databases/$(database)/documents/blocks/$(otra + '_' + request.auth.uid));
+    }
+
+    /* ── COMENTARIOS  ·  historia #50 ─────────────────────────
+       EL BLOQUEO SE APLICA AQUÍ, no solo en la pantalla. Filtrar en el
+       cliente hace que no la veas —que ya es lo que pides—, pero no
+       impide que ella te escriba, y eso es lo que de verdad hace falta
+       cuando alguien te está molestando. La comprobación cuesta una
+       lectura por comentario y los vale.
+
+       Borrar lo puede hacer quien lo escribió Y la dueña del sitio
+       donde está: por eso el comentario lleva dentro `targetOwner`, y
+       por eso la regla exige al crearlo que ese campo no se lo invente
+       quien comenta... salvo que sea suyo. Sin eso, cualquiera podría
+       ponerse como dueña de los comentarios de otra.
+
+       `update` no existe: un comentario editado después de que alguien
+       lo haya leído —o reportado— es otra cosa distinta. Se borra y se
+       escribe de nuevo. */
+    match /comments/{target}/items/{commentId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.target == target
+                    && request.resource.data.texto is string
+                    && request.resource.data.texto.size() > 0
+                    && request.resource.data.texto.size() <= 500
+                    && !meBloqueo(request.resource.data.targetOwner);
+
+      allow delete: if request.auth != null
+                    && (resource.data.uid == request.auth.uid
+                        || resource.data.targetOwner == request.auth.uid);
+
+      allow update: if false;
+    }
+
+    /* Las reacciones de una publicación, todas en un documento
+       {uid: emoji}. Cada quien solo puede tocar SU entrada: la regla
+       comprueba que lo que cambia sea únicamente la clave con tu uid.
+       Sin eso, cualquiera podría borrar las reacciones de los demás. */
+    match /reactions/{target} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.data.de.diff(
+                        resource == null ? {} : resource.data.de
+                      ).affectedKeys().hasOnly([request.auth.uid]);
+    }
+
+    /* ── REPORTES  ·  historia #51 ────────────────────────────
+       SE ESCRIBEN Y NO SE LEEN. Si se pudieran leer desde la app,
+       cualquiera podría enterarse de quién ha reportado a quién, que es
+       la forma más rápida de que reportar deje de usarse. La cola de
+       revisión se mira desde la consola de Firebase, fuera de la app.
+
+       Tampoco se pueden borrar ni editar: un reporte que quien acosa
+       puede hacer desaparecer no sirve de nada. */
+    match /reports/{reportId} {
+      allow read: if false;
+      allow create: if request.auth != null
+                    && request.resource.data.de == request.auth.uid
+                    && request.resource.data.estado == 'pendiente';
+      allow update, delete: if false;
+    }
+
     /* La colección `biblioteca` era de la época sin autenticación.
        Estuvo abierta a cualquier cuenta con sesión para poder migrarla
        una vez — lo que significaba que CUALQUIER usuaria podía leer y
