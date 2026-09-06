@@ -17,7 +17,7 @@ import { qrSvg } from './qr-core.js';
 import { myUsername, uid as myUid } from './store.js';
 import { usernameFromHash } from './profile-core.js';
 import { openCamera, closeCamera, scanQr, puedeLeerQr } from './scan.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 
 /** La dirección del perfil de quien sea, en ESTA instalación. */
 export const linkDe = (handle) =>
@@ -26,7 +26,7 @@ export const linkDe = (handle) =>
 export const miLink = () => (myUsername() ? linkDe(myUsername()) : '');
 
 export function openInvite() {
-  $('invite-overlay').classList.add('open');
+  openSheet('invite-overlay');
   pintar();
 }
 
@@ -204,7 +204,7 @@ export function takeInviter() {
 export async function maybeOfferInviter() {
   const handle = takeInviter();
   if (!handle || !myUid() || handle === myUsername()) return;
-  $('invite-overlay').classList.add('open');
+  openSheet('invite-overlay');
   $('invite-body').innerHTML = `
     <div class="empty">
       <div class="empty-rune">✦</div>

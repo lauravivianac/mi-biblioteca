@@ -18,7 +18,7 @@
 
 import { candidatesFor, placeInMonth, describeGap, monthlyCapacity } from './gaps.js';
 import { coverOf } from './store.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
 
 let mesActual = null;
@@ -30,7 +30,7 @@ export function openGap(month, year) {
   anioActual = year ?? currentPlanYear();
   vistas = [];
   pintar();
-  $('gap-overlay').classList.add('open');
+  openSheet('gap-overlay');
 }
 
 /* El año que se está mirando en el plan lo sabe views.js; se pregunta

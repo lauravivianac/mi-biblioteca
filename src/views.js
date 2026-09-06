@@ -11,7 +11,7 @@ import {
   updateEntry, removeBook, progressPct, uid,
 } from './store.js';
 import { fetchCover } from './covers.js';
-import { $, esc, initial, toast, confirmAction } from './ui.js';
+import { $, esc, initial, toast, confirmAction, openSheet } from './ui.js';
 import { refreshAchievements } from './achievements.js';
 import { renderPet } from './pet.js';
 import { agentOffered, bookBrief, isDenied } from './agent.js';
@@ -512,7 +512,7 @@ export async function openDetail(id) {
 
       <button class="btn-delete" onclick="deleteBook('${id}')">🗑 Eliminar de la biblioteca</button>
     </div>`;
-  $('detail-overlay').classList.add('open');
+  openSheet('detail-overlay');
 
   /* «Quien leyó esto también leyó» va DESPUÉS y sin bloquear: es una
      consulta a la red para una sección que muchas veces no aparecerá,

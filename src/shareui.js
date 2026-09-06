@@ -21,7 +21,7 @@ import { drawCard, canvasToBlob } from './cardgen.js';
 import { shareCaption, cardFilename, ANCHO, ALTO } from './cards-core.js';
 import { myUsername } from './store.js';
 import { petConfig, petSvg, petState } from './pet.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 
 let actual = null;      // { tipo, datos, blob }
 let previa = null;      // la URL de la vista previa, para poder soltarla
@@ -40,7 +40,7 @@ const puedeCompartirArchivos = () => Boolean(
 export async function openShare(tipo, datos = {}) {
   soltarPrevia();         // una tarjeta de dos megas por cada vez que se abre, no
   actual = { tipo, datos: { ...datos, username: myUsername() }, blob: null };
-  $('share-overlay').classList.add('open');
+  openSheet('share-overlay');
   $('share-body').innerHTML = '<p class="planner-hint">Preparando la tarjeta…</p>';
 
   try {

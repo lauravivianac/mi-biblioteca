@@ -13,7 +13,7 @@
 
 import { allBooks, statusOf, ratingOf, entry, readingDays } from './store.js';
 import { yearReview, yearCards, yearsWithBooks } from './year-core.js';
-import { $, esc, closeSheet } from './ui.js';
+import { $, esc, closeSheet, openSheet } from './ui.js';
 import { openShare } from './shareui.js';
 
 let anio = new Date().getFullYear();
@@ -31,7 +31,7 @@ export function openYear(year) {
   anio = year ?? new Date().getFullYear();
   indice = 0;
   cargar();
-  $('year-overlay').classList.add('open');
+  openSheet('year-overlay');
 }
 
 export function closeYear(e) {

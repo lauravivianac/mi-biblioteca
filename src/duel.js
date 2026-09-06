@@ -19,7 +19,7 @@ import { myTaste, scoreByTaste } from './taste.js';
 import { compareBooks, roomLeft, densityOf } from './duel-core.js';
 import { placeInMonth } from './gaps.js';
 import { MONTH_ORDER } from './seed.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
 
 let elegidos = [];
@@ -44,7 +44,7 @@ export function openDuel() {
   busqueda = '';
   veredicto = null;
   pintar();
-  $('duel-overlay').classList.add('open');
+  openSheet('duel-overlay');
 }
 
 export function closeDuel(e) {

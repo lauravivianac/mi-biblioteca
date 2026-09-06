@@ -25,7 +25,7 @@ import { recommendWith, agentAvailable, isDenied } from './agent.js';
 import { verifySuggestion } from './booklookup.js';
 import { myTaste, scoreByTaste } from './taste.js';
 import { MONTH_ORDER } from './seed.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
 
 let libro = null;          // el que se acaba de terminar
@@ -53,7 +53,7 @@ export function celebrateFinished(bookId) {
   casillas = [];
   turno += 1;
   pintar();
-  $('done-overlay').classList.add('open');
+  openSheet('done-overlay');
   if (paso === 'sugerencias') cargar();
 }
 

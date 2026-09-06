@@ -21,7 +21,7 @@ import {
   quoteToText, bookOfQuote, cleanQuote, MAX_QUOTE,
 } from './quotes.js';
 import { openCamera, closeCamera, grabFrame, readText } from './scan.js';
-import { $, esc, toast, closeSheet } from './ui.js';
+import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { openDetail } from './views.js';
 import { openShare } from './shareui.js';
 
@@ -61,7 +61,7 @@ export function openQuoteCapture(bookId, modo = 'manual') {
   capturaLibro = bookId;
   textoCapturado = '';
   pintarCaptura(modo);
-  $('qcap-overlay').classList.add('open');
+  openSheet('qcap-overlay');
   if (modo === 'camara') arrancarCamara();
   else setTimeout(() => $('q-text')?.focus(), 80);
 }
@@ -214,7 +214,7 @@ export function openQuotes() {
   const campo = $('quote-search');
   if (campo) campo.value = '';
   pintarTodas();
-  $('quotes-overlay').classList.add('open');
+  openSheet('quotes-overlay');
 }
 
 export function closeQuotes(e) {
