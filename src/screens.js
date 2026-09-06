@@ -9,7 +9,7 @@ import {
 } from './auth.js';
 import {
   settings, updateSettings, exportData, exportCsv, updateEntry, findBook,
-  allBooks, statusOf, ratingOf,
+  allBooks, statusOf, ratingOf, addBook,
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
 import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
@@ -26,6 +26,7 @@ import {
   availableSpecies, currentScene, SCENES,
 } from './pet.js';
 import { workerUrl, agentAvailable, setAgentEnabled, recommendFrom } from './agent.js';
+import { verifySuggestion } from './booklookup.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -481,6 +482,118 @@ export function toggleAgent() {
   setAgentEnabled(!estaba);
   toast(estaba ? 'Agente apagado' : 'Agente encendido');
   openSettings();
+  refreshAll();
+}
+
+/* ── QUÉ LEER DESPUÉS  ·  historias #49, #63 ──────────────────
+   Se le manda lo LEÍDO con su puntuación —que es lo que de verdad
+   dice qué te gusta— y lo pendiente, para que no repita algo que ya
+   está en la pila.
+
+   Y TODA sugerencia pasa por los catálogos antes de aparecer. Un
+   modelo inventa libros plausibles con total confianza; pintarlos tal
+   cual convierte una recomendación en una mentira bien escrita. La
+   que ningún catálogo reconoce, no se muestra. */
+
+let sugeridos = [];
+
+export async function openRecs() {
+  $('recs-overlay').classList.add('open');
+  $('recs-body').innerHTML = '<p class="planner-hint">Mirando lo que has leído…</p>';
+  sugeridos = [];
+
+  const books = allBooks();
+  const read = books.filter((b) => statusOf(b.id) === 'read')
+    .map((b) => ({ ...b, rating: ratingOf(b.id) }))
+    .sort((a, b) => b.rating - a.rating);
+  const pending = books.filter((b) => statusOf(b.id) !== 'read');
+
+  if (read.length < 3) {
+    $('recs-body').innerHTML = `<p class="planner-hint">
+      Con <strong>${read.length}</strong> ${read.length === 1 ? 'libro leído' : 'libros leídos'} todavía no hay
+      de dónde sacar una recomendación que valga. Marca unos cuantos como leídos
+      —y ponles estrellas, que es lo que más dice— y vuelve.
+    </p>`;
+    return;
+  }
+
+  try {
+    const crudas = await recommendFrom({ read, pending });
+    if (!crudas.length) {
+      $('recs-body').innerHTML = '<p class="planner-hint">No se le ocurrió nada esta vez. Prueba otra vez más tarde.</p>';
+      return;
+    }
+
+    $('recs-body').innerHTML = '<p class="planner-hint">Comprobando que los libros existan…</p>';
+
+    /* En paralelo: son cinco consultas a catálogos, no cinco al modelo. */
+    const yaTengo = new Set(books.map((b) => `${b.title} ${b.author}`.toLowerCase()));
+    const verificadas = (await Promise.all(crudas.map(async (r) => {
+      const real = await verifySuggestion(r).catch(() => null);
+      if (!real) return null;
+      if (yaTengo.has(`${real.title} ${real.author}`.toLowerCase())) return null;
+      return { ...real, porque: r.porque };
+    }))).filter(Boolean);
+
+    sugeridos = verificadas;
+
+    if (!verificadas.length) {
+      $('recs-body').innerHTML = `<p class="planner-hint warn">
+        El agente propuso ${crudas.length} libros y <strong>ningún catálogo reconoció ninguno</strong>.
+        Suele significar que se los inventó, así que no te los muestro. Inténtalo otra vez.
+      </p>`;
+      return;
+    }
+
+    const descartadas = crudas.length - verificadas.length;
+    $('recs-body').innerHTML = `
+      <p class="planner-hint">
+        A partir de tus ${read.length} libros leídos y de cómo los puntuaste.
+        ${descartadas ? `Se ${descartadas === 1 ? 'descartó 1 sugerencia' : `descartaron ${descartadas} sugerencias`} porque ningún catálogo ${descartadas === 1 ? 'la' : 'las'} reconoció.` : ''}
+      </p>
+      <div class="recs">
+        ${verificadas.map((r, i) => `
+          <div class="rec">
+            <div class="rec-head">
+              ${r.cover
+                ? `<img class="rec-cover" src="${esc(r.cover)}" alt="" loading="lazy">`
+                : '<div class="rec-cover rec-cover-ph">📕</div>'}
+              <div class="rec-info">
+                <div class="rec-title">${esc(r.title)}</div>
+                <div class="rec-author">${esc(r.author)}${r.year ? ' · ' + r.year : ''}${r.pages !== '—' ? ' · ' + esc(r.pages) + ' págs.' : ''}</div>
+              </div>
+            </div>
+            ${r.porque ? `<p class="rec-why">${esc(r.porque)}</p>` : ''}
+            <button class="btn-ghost rec-add" id="rec-add-${i}" onclick="addSuggestion(${i})">
+              ＋ Añadir a mis deseados
+            </button>
+          </div>`).join('')}
+      </div>
+      <p class="set-fineprint">
+        Los datos —portada, autor, páginas— salen de OpenLibrary y Google Books, no del agente.
+        Lo único suyo es el porqué.
+      </p>`;
+  } catch (e) {
+    $('recs-body').innerHTML = `<p class="planner-hint warn">${esc(e.message)}</p>`;
+  }
+}
+
+/** Un toque y el libro entra en la biblioteca, con su portada. */
+export function addSuggestion(i) {
+  const r = sugeridos[i];
+  if (!r) return;
+  const saved = addBook({
+    title: r.title, author: r.author, genre: r.genre,
+    year: null, month: null, pages: r.pages, role: '⚓ Ancla',
+  });
+  updateEntry(saved.id, {
+    status: 'wished',
+    ...(r.cover ? { cover: r.cover } : {}),
+    ...(r.isbn ? { isbn: r.isbn } : {}),
+  });
+  const btn = $(`rec-add-${i}`);
+  if (btn) { btn.textContent = '✓ En tus deseados'; btn.disabled = true; }
+  toast(`«${r.title}» añadido a deseados`);
   refreshAll();
 }
 
