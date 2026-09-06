@@ -205,8 +205,12 @@ export function openThemeStore() {
 }
 
 export function closeThemeStore() {
+  /* Descarta la vista previa antes de salir: cerrar sin aplicar dejaba
+     la app pintada con un tema que los ajustes no habían guardado, y al
+     recargar volvía al anterior sin explicación. */
   if (restorePreview) { restorePreview(); restorePreview = null; previewing = null; }
   $('store-overlay').classList.remove('open');
+  refreshAll();
 }
 
 function renderThemeStore() {
@@ -239,7 +243,7 @@ function renderThemeStore() {
     ${previewing && previewing !== s.themeId ? `
       <div class="store-actions">
         <button class="btn-ghost" onclick="cancelThemePreview()">Descartar</button>
-        <button class="btn-magic" onclick="applyPreviewedTheme()">Aplicar ${esc(themes.find((t) => t.id === previewing).name)}</button>
+        <button class="btn-magic" onclick="applyPreviewedTheme()">Aplicar ${esc(themes.find((t) => t.id === previewing).name)} y volver</button>
       </div>` : ''}
 
     <div class="store-shelf-label">Tu mascota</div>
@@ -325,6 +329,10 @@ export function cancelThemePreview() {
   renderThemeStore();
 }
 
+/**
+ * Aplicar cierra la tienda y devuelve al inicio: aplicar ES la decisión.
+ * Para seguir mirando está la vista previa, que no compromete nada.
+ */
 export function applyPreviewedTheme() {
   if (!previewing) return;
   applyTheme(previewing);
@@ -332,7 +340,8 @@ export function applyPreviewedTheme() {
   restorePreview = null;
   const name = themeAvailability().find((t) => t.id === previewing)?.name;
   previewing = null;
-  renderThemeStore();
+  closeSheet('store-overlay');
+  refreshAll();
   toast(`Tema ${name} aplicado`);
 }
 

@@ -73,7 +73,7 @@ onSave((state) => {
 // Los onclick del marcado necesitan estas funciones en window,
 // porque un <script type="module"> no comparte ámbito global.
 Object.assign(window, {
-  nav, openAdd, submitAddBook,
+  nav, openAdd, submitAddBook, closeSheet,
   closeAdd: (e) => backdropClose(e, 'add-overlay'),
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
