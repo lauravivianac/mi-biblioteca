@@ -102,3 +102,44 @@ export const unread = (avisos = []) => avisos.filter((a) => !a.leido).length;
 
 /** Ordenados de más nuevo a más viejo, sin depender del orden que dé la base. */
 export const byNewest = (avisos = []) => [...avisos].sort((a, b) => (b.at || 0) - (a.at || 0));
+
+/* ── SOLICITUDES DE SEGUIMIENTO  ·  historia #52 ─────────────
+   Con la cuenta privada, seguir no es seguir: es PEDIRLO. El
+   identificador va al revés que el de la flecha —{aQuien}_{quienPide}—
+   porque quien más lo consulta es la dueña, que quiere ver todo lo
+   suyo junto.
+
+   Aceptar es escribir la flecha y borrar la solicitud, en un lote:
+   quedarse con las dos cosas dejaría una petición pendiente de alguien
+   que ya te sigue. */
+
+export const requestId = (aQuien, quienPide) => `${aQuien}_${quienPide}`;
+
+export function requestDoc({ de, a, name = '', username = '', at = Date.now() } = {}) {
+  if (!canFollow(de, a)) return null;
+  return {
+    de,
+    a,
+    name: String(name ?? '').slice(0, 60),
+    username: String(username ?? '').toLowerCase().slice(0, 20),
+    at,
+  };
+}
+
+export const REQUEST_FIELDS = ['de', 'a', 'name', 'username', 'at'];
+
+/**
+ * Qué dice el botón cuando la cuenta es privada.
+ *
+ * «Solicitado» y no «Siguiendo»: decir que sigues a alguien que aún no
+ * te ha aceptado es mentir, y la primera vez que abras su perfil y no
+ * veas nada pensarás que la app está rota.
+ */
+export function followButtonPrivado({ sigo = false, pedido = false } = {}) {
+  if (sigo) return { texto: 'Siguiendo', accion: 'dejar', activo: true };
+  if (pedido) return { texto: 'Solicitado', accion: 'cancelar', activo: true };
+  return { texto: 'Solicitar seguir', accion: 'pedir', activo: false };
+}
+
+/** Lo que ve quien no sigue a una cuenta privada. */
+export const AVISO_PRIVADA = 'Esta cuenta es privada. Si te acepta, verás lo que lee.';

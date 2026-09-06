@@ -112,6 +112,46 @@ KV no tiene incremento atómico y es consistente «a la larga», así que dos co
 simultáneas pueden pasarse un poco del tope. Es un freno, no una contabilidad: sirve para
 que nadie se coma la key, no para cuadrar céntimos.
 
+## La caché compartida por libro (historia #57)
+
+Es lo que hace que la cuenta salga. El resumen de un libro se genera **una vez** y lo
+aprovecha toda la app: con cien lectoras leyendo clásicos —que es justo lo que hay en el
+plan— la diferencia entre cachear y no cachear son uno o dos órdenes de magnitud en la
+factura.
+
+Usa **el mismo KV** que los contadores, así que no hay ningún paso nuevo: si ya
+descomentaste `[[kv_namespaces]]`, la caché ya está funcionando. Si no, no se cachea nada
+y todo sigue igual.
+
+**Solo se cachea `book_brief`**, y no es un olvido:
+
+| encargo | ¿se cachea? | por qué |
+|---|---|---|
+| `book_brief` | sí | el resumen de un libro es el mismo para todo el mundo |
+| `identify_book` | no | cada OCR es distinto |
+| `recommend` | no | depende entera de la biblioteca de quien pregunta — cachearlo daría respuestas de otra persona |
+
+La clave se normaliza (minúsculas, sin acentos, sin puntuación), así que «Cien Años de
+Soledad — Gabriel García Márquez» y «cien años de soledad - gabriel garcia marquez» son el
+mismo libro. Caducan a los seis meses.
+
+**La caché vive aquí y no en Firestore**, y es a propósito: en Firestore tendría que poder
+escribirla el cliente, y entonces cualquiera podría envenenar el resumen de un libro para
+todo el mundo. Aquí solo escribe el Worker, que es quien habló con el modelo.
+
+Un `desconocido` no se guarda: puede ser un fallo puntual del modelo, y cachearlo seis
+meses condenaría al libro.
+
+### Las cuentas de la casa
+
+```bash
+curl https://TU-WORKER.workers.dev/stats
+```
+
+Devuelve el gasto del mes, el techo, y la tasa de acierto de la caché — que es lo que dice
+si está sirviendo. Son números agregados, sin nada de nadie dentro, así que no piden
+sesión.
+
 ## Por qué el texto del usuario es dato, no instrucción
 
 El OCR de una portada puede contener cualquier cosa, incluida una frase que

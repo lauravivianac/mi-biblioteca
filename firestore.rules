@@ -12,6 +12,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    /* Mirar si una cuenta es privada cuesta una lectura, y solo se
+       paga al crear una flecha de seguimiento — no en cada consulta. */
+    function esPrivada(userId) {
+      return exists(/databases/$(database)/documents/profiles/$(userId))
+        && get(/databases/$(database)/documents/profiles/$(userId)).data.privada == true;
+    }
+
     function isOwner(userId) {
       return request.auth != null && request.auth.uid == userId;
     }
@@ -125,6 +132,41 @@ service cloud.firestore {
       allow delete: if isOwner(userId);
       allow create, update: if isOwner(userId)
                             && request.resource.data.uid == userId;
+
+      /* ── CUENTA PRIVADA  ·  historia #52 ────────────────────
+         Con la cuenta privada, quien no te sigue ve solo tu tarjeta
+         —nombre, avatar y bio—, que es el documento de arriba. Todo
+         lo demás vive AQUÍ, y aquí solo entra quien te sigue.
+
+         Es la única forma de cumplirlo: las reglas conceden documentos
+         enteros, así que «esto sí y esto no» dentro del mismo
+         documento no existe. Tiene que ser otro documento con otra
+         regla, y esta es esa regla. */
+      match /full/{doc} {
+        allow read: if isOwner(userId)
+                    || (request.auth != null
+                        && exists(/databases/$(database)/documents/follows/$(request.auth.uid + '_' + userId)));
+        allow write: if isOwner(userId);
+      }
+    }
+
+    /* ── SOLICITUDES DE SEGUIMIENTO  ·  historia #52 ──────────
+         El identificador es {aQuien}_{quienPide}. Las ve las dos: quien
+         pide, para saber que está pendiente, y quien recibe, para
+         aceptarla. Nadie más — a quién intenta seguir cada quien no es
+         asunto público.
+
+         Cancelar puede quien pidió; rechazar, quien recibe. Los dos
+         borran el mismo documento y por eso las dos pueden. */
+    match /followRequests/{reqId} {
+      allow read, delete: if request.auth != null
+                          && (resource.data.de == request.auth.uid
+                              || resource.data.a == request.auth.uid);
+      allow create: if request.auth != null
+                    && request.resource.data.de == request.auth.uid
+                    && reqId == request.resource.data.a + '_' + request.auth.uid
+                    && request.resource.data.a != request.auth.uid;
+      allow update: if false;
     }
 
     match /usernames/{username} {
@@ -160,13 +202,34 @@ service cloud.firestore {
     match /follows/{followId} {
       allow read: if request.auth != null;
 
-      allow create: if request.auth != null
-                    && request.resource.data.follower == request.auth.uid
-                    && followId == request.auth.uid + '_' + request.resource.data.following
-                    && request.resource.data.following != request.auth.uid;
+      /* Dos caminos, y hacen falta los dos (historia #52):
 
+         1. LA CUENTA ES PÚBLICA → la sigo yo, sin pedir permiso.
+         2. LA CUENTA ES PRIVADA → la flecha la escribe LA DUEÑA al
+            aceptar, y solo si existe la solicitud. Por eso el segundo
+            camino permite crear una flecha que apunta a una misma:
+            es literalmente «acepto que me sigas».
+
+         Sin el segundo camino, aceptar una solicitud sería imposible;
+         sin el primero, seguir a nadie lo sería. */
+      allow create: if request.auth != null
+                    && followId == request.resource.data.follower + '_' + request.resource.data.following
+                    && request.resource.data.following != request.resource.data.follower
+                    && (
+                      (request.resource.data.follower == request.auth.uid
+                       && !esPrivada(request.resource.data.following))
+                      ||
+                      (request.resource.data.following == request.auth.uid
+                       && exists(/databases/$(database)/documents/followRequests/$(request.auth.uid + '_' + request.resource.data.follower)))
+                    );
+
+      /* Quien sigue puede dejar de seguir, y quien es seguida puede
+         QUITARSE UNA SEGUIDORA sin bloquearla — lo pide la #52, y es
+         una cosa que suele faltar: si lo único que puedes hacer es
+         bloquear, no quitas a nadie. */
       allow delete: if request.auth != null
-                    && resource.data.follower == request.auth.uid;
+                    && (resource.data.follower == request.auth.uid
+                        || resource.data.following == request.auth.uid);
 
       allow update: if false;
     }

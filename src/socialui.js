@@ -15,9 +15,13 @@ import {
   follow, unfollow, isFollowing, isFollowedBy, followCounts,
   followersOf, followingOf, profilesOf, searchPeople, suggestedPeople,
   myNotices, markNoticesRead,
+  haySolicitud, pedirSeguir, cancelarSolicitud,
+  misSolicitudes, aceptarSolicitud, rechazarSolicitud, quitarSeguidora,
 } from './social.js';
 import { uid as myUid, allBooks, statusOf, settings } from './store.js';
-import { followButton, followBadge, seguidorasTexto, unread, noticeText } from './follows-core.js';
+import {
+  followButton, followButtonPrivado, followBadge, seguidorasTexto, unread, noticeText,
+} from './follows-core.js';
 import { buscable, porQue } from './search-core.js';
 import { inicial } from './profile-core.js';
 /* openProfile se llama desde los onclick del marcado, o sea por window,
@@ -38,14 +42,15 @@ let relacion = { uid: null, sigo: false, meSigue: false, cuentas: null };
  * el perfil nunca espera a esto: si tarda, el hueco se queda vacío un
  * momento en vez de retrasar todo lo demás.
  */
-export async function loadRelation(otherUid) {
-  relacion = { uid: otherUid, sigo: false, meSigue: false, cuentas: null };
+export async function loadRelation(otherUid, privada = false) {
+  relacion = { uid: otherUid, sigo: false, meSigue: false, cuentas: null, privada, pedido: false };
   if (!otherUid) return;
-  const [sigo, meSigue, cuentas] = await Promise.all([
+  const [sigo, meSigue, cuentas, pedido] = await Promise.all([
     isFollowing(otherUid), isFollowedBy(otherUid), followCounts(otherUid),
+    privada ? haySolicitud(otherUid) : Promise.resolve(false),
   ]);
   if (relacion.uid !== otherUid) return;      // se cambió de perfil mientras tanto
-  relacion = { uid: otherUid, sigo, meSigue, cuentas };
+  relacion = { uid: otherUid, sigo, meSigue, cuentas, privada, pedido };
   pintarRelacion();
 }
 
@@ -56,14 +61,14 @@ export function relationSlot() {
 function pintarRelacion() {
   const slot = $('rel-slot');
   if (!slot) return;
-  const { uid, sigo, meSigue, cuentas } = relacion;
+  const { uid, sigo, meSigue, cuentas, privada, pedido } = relacion;
   /* Sin sesión no se pinta el botón. Quien llega por una invitación
      (#48) puede ver el perfil, pero «Seguir» no tendría a quién
      apuntar: un botón que solo puede fallar es peor que no estar, y la
      invitación a crear la cuenta ya está al final del perfil. */
   const sinSesion = !myUid();
   const esMio = uid === myUid();
-  const b = followButton({ sigo });
+  const b = privada ? followButtonPrivado({ sigo, pedido }) : followButton({ sigo });
   const insignia = followBadge({ sigo, meSigue });
 
   slot.innerHTML = `
@@ -91,6 +96,19 @@ function pintarRelacion() {
  * Un botón que miente no es mejor que un botón lento.
  */
 export async function toggleFollow(otherUid) {
+  /* En una cuenta privada, seguir es PEDIRLO: no hay nada que pintar
+     por adelantado porque la respuesta no depende de mí. */
+  if (relacion.privada && !relacion.sigo) {
+    const r = relacion.pedido
+      ? await cancelarSolicitud(otherUid)
+      : await pedirSeguir(otherUid);
+    if (!r.ok) { toast(r.error || 'No se pudo', 'error'); return; }
+    relacion.pedido = !relacion.pedido;
+    pintarRelacion();
+    toast(relacion.pedido ? 'Solicitud enviada' : 'Solicitud retirada');
+    return;
+  }
+
   const antes = relacion.sigo;
   relacion.sigo = !antes;
   if (relacion.cuentas) relacion.cuentas.seguidoras += antes ? -1 : 1;
@@ -119,8 +137,9 @@ export async function openFollowList(cual, userUid) {
   const uids = cual === 'seguidoras' ? await followersOf(userUid) : await followingOf(userUid);
   const perfiles = await profilesOf(uids);
 
+  const misSeguidoras = cual === 'seguidoras' && userUid === myUid();
   $('follows-body').innerHTML = perfiles.length
-    ? perfiles.map(fila).join('')
+    ? perfiles.map((p) => fila(p, '', misSeguidoras)).join('')
     : `<div class="empty">
          <div class="empty-rune">✦</div>
          <div class="empty-text">${cual === 'seguidoras'
@@ -135,15 +154,16 @@ export const closeFollows = (e) => {
 };
 
 /** Una persona en una lista. Se toca y se abre su perfil. */
-function fila(p, motivo = '') {
+function fila(p, motivo = '', conQuitar = false) {
   return `
-    <div class="pers-row" onclick="closeSheet('follows-overlay');closeSheet('people-overlay');openProfile('${esc(p.username)}')">
-      <div class="pers-avatar">${esc(inicial(p.name || p.username))}</div>
-      <div class="pers-txt">
+    <div class="pers-row">
+      <div class="pers-avatar" onclick="closeSheet('follows-overlay');closeSheet('people-overlay');openProfile('${esc(p.username)}')">${esc(inicial(p.name || p.username))}</div>
+      <div class="pers-txt" onclick="closeSheet('follows-overlay');closeSheet('people-overlay');openProfile('${esc(p.username)}')">
         <div class="pers-name">${esc(p.name || p.username)}</div>
         <div class="pers-handle">@${esc(p.username)}${p.city ? ` · ${esc(p.city)}` : ''}</div>
         ${motivo ? `<div class="pers-why">${esc(motivo)}</div>` : ''}
       </div>
+      ${conQuitar ? `<button class="btn-mini" onclick="dropFollower('${esc(p.uid)}')">Quitar</button>` : ''}
     </div>`;
 }
 
@@ -286,3 +306,65 @@ function pintarPunto() {
 }
 
 export { seguidorasTexto };
+
+/* ── SOLICITUDES QUE ME HAN HECHO  ·  #52 ────────────────────── */
+
+let solicitudes = [];
+
+export async function openRequests() {
+  $('requests-overlay').classList.add('open');
+  $('requests-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
+  solicitudes = await misSolicitudes();
+  pintarSolicitudes();
+}
+
+export const closeRequests = (e) => {
+  if (e && e.target !== $('requests-overlay')) return;
+  closeSheet('requests-overlay');
+};
+
+function pintarSolicitudes() {
+  const cuerpo = $('requests-body');
+  if (!cuerpo) return;
+  if (!solicitudes.length) {
+    cuerpo.innerHTML = `
+      <div class="empty">
+        <div class="empty-rune">✦</div>
+        <div class="empty-text">No hay solicitudes pendientes</div>
+      </div>`;
+    return;
+  }
+  cuerpo.innerHTML = solicitudes.map((s) => `
+    <div class="pers-row">
+      <div class="pers-avatar">${esc(inicial(s.name || s.username))}</div>
+      <div class="pers-txt">
+        <div class="pers-name">${esc(s.name || s.username || 'Alguien')}</div>
+        <div class="pers-handle">@${esc(s.username || '')}</div>
+      </div>
+      <button class="btn-mini" onclick="acceptRequest('${esc(s.de)}')">Aceptar</button>
+      <button class="btn-mini" onclick="rejectRequest('${esc(s.de)}')">Rechazar</button>
+    </div>`).join('');
+}
+
+export async function acceptRequest(u) {
+  const r = await aceptarSolicitud(u);
+  if (!r.ok) { toast(r.error || 'No se pudo', 'error'); return; }
+  solicitudes = solicitudes.filter((s) => s.de !== u);
+  pintarSolicitudes();
+  toast('Ahora te sigue');
+}
+
+/** Rechazar no le dice nada a nadie. */
+export async function rejectRequest(u) {
+  await rechazarSolicitud(u);
+  solicitudes = solicitudes.filter((s) => s.de !== u);
+  pintarSolicitudes();
+}
+
+/** Quitar a una seguidora desde la lista, sin bloquearla. */
+export async function dropFollower(u) {
+  const r = await quitarSeguidora(u);
+  if (!r.ok) { toast('No se pudo', 'error'); return; }
+  toast('Ya no te sigue');
+  openFollowList('seguidoras', myUid());
+}

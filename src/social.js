@@ -33,6 +33,7 @@ import { db } from './firebase.js';
 import { uid as myUid, myUsername, displayName } from './store.js';
 import {
   followId, canFollow, followDoc, followNotice, byNewest,
+  requestId, requestDoc,
 } from './follows-core.js';
 import {
   parseQuery, buscable, rankPeople, dedupe, sinMi,
@@ -151,6 +152,110 @@ export async function followersOf(userUid) {
 export async function followCounts(userUid) {
   const [sigue, siguen] = await Promise.all([followingOf(userUid), followersOf(userUid)]);
   return { siguiendo: sigue.length, seguidoras: siguen.length };
+}
+
+/* ── CUENTA PRIVADA  ·  historia #52 ─────────────────────────── */
+
+const requestRef = (aQuien, quienPide) => doc(db, 'followRequests', requestId(aQuien, quienPide));
+
+/** ¿Ya le he pedido seguirla? */
+export async function haySolicitud(otherUid) {
+  const me = myUid();
+  if (!canFollow(me, otherUid)) return false;
+  try { return (await getDoc(requestRef(otherUid, me))).exists(); } catch { return false; }
+}
+
+/** Pedir seguir a una cuenta privada. */
+export async function pedirSeguir(otherUid) {
+  const me = myUid();
+  if (!canFollow(me, otherUid)) return { ok: false };
+  const d = requestDoc({ de: me, a: otherUid, name: displayName(), username: myUsername() || '' });
+  try {
+    await setDoc(requestRef(otherUid, me), d);
+    return { ok: true };
+  } catch (e) {
+    console.warn('No se pudo solicitar:', e);
+    return { ok: false, error: 'No se pudo enviar la solicitud.' };
+  }
+}
+
+/** Retirarla. Sin avisar a nadie, igual que dejar de seguir. */
+export async function cancelarSolicitud(otherUid) {
+  const me = myUid();
+  if (!me || !otherUid) return { ok: false };
+  try { await deleteDoc(requestRef(otherUid, me)); return { ok: true }; } catch { return { ok: false }; }
+}
+
+/** Las que me han pedido a mí. */
+export async function misSolicitudes() {
+  const me = myUid();
+  if (!me) return [];
+  try {
+    const snap = await getDocs(query(collection(db, 'followRequests'), where('a', '==', me), limit(TOPE)));
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  } catch (e) {
+    console.warn('No se pudieron leer las solicitudes:', e);
+    return [];
+  }
+}
+
+/**
+ * Aceptar: escribir la flecha y borrar la solicitud, EN UN LOTE.
+ *
+ * Quedarse con las dos cosas dejaría una petición pendiente de alguien
+ * que ya te sigue, y la lista no se vaciaría nunca.
+ */
+export async function aceptarSolicitud(quienPide) {
+  const me = myUid();
+  if (!canFollow(quienPide, me)) return { ok: false };
+  try {
+    const batch = writeBatch(db);
+    batch.set(followRef(quienPide, me), followDoc({ follower: quienPide, following: me }));
+    batch.delete(requestRef(me, quienPide));
+    await batch.commit();
+    return { ok: true };
+  } catch (e) {
+    console.warn('No se pudo aceptar:', e);
+    return { ok: false, error: 'No se pudo aceptar la solicitud.' };
+  }
+}
+
+/** Rechazar: solo borrar la solicitud. No se le dice nada. */
+export async function rechazarSolicitud(quienPide) {
+  const me = myUid();
+  if (!me) return { ok: false };
+  try { await deleteDoc(requestRef(me, quienPide)); return { ok: true }; } catch { return { ok: false }; }
+}
+
+/**
+ * Quitarme una seguidora, sin bloquearla  ·  #52
+ *
+ * Es una cosa que suele faltar, y sin ella la única forma de que
+ * alguien deje de verte es bloquearla — que es un gesto mucho más
+ * grande del que hace falta la mayoría de las veces.
+ */
+export async function quitarSeguidora(otherUid) {
+  const me = myUid();
+  if (!canFollow(me, otherUid)) return { ok: false };
+  try {
+    await deleteDoc(followRef(otherUid, me));
+    return { ok: true };
+  } catch (e) {
+    console.warn('No se pudo quitar a la seguidora:', e);
+    return { ok: false };
+  }
+}
+
+/** El resto del perfil de una cuenta privada, si me deja verlo. */
+export async function fetchFullProfile(otherUid) {
+  if (!otherUid) return null;
+  try {
+    const s = await getDoc(doc(db, 'profiles', otherUid, 'full', 'data'));
+    return s.exists() ? s.data() : null;
+  } catch {
+    /* Sin permiso: no la sigo. No es un error, es la respuesta. */
+    return null;
+  }
 }
 
 /* ── PERFILES EN BLOQUE ──────────────────────────────────────── */
@@ -328,4 +433,25 @@ export async function loadFeed({ antesDe = null, tope = PAGINA } = {}) {
     /* Hay más si un trozo llenó su página: puede que falte por traer. */
     hayMas: todas.length > tope,
   };
+}
+
+/* ── QUIEN LEYÓ ESTO TAMBIÉN LEYÓ  ·  historia #67 ───────────
+   Solo entran quienes encendieron «que me encuentren por mis libros»:
+   el campo no existe en los demás perfiles, así que la consulta no los
+   puede devolver ni por accidente. Y las cuentas privadas tampoco
+   están aquí, porque sus libros no salen de su documento aparte. */
+
+export async function lectorasDe(bookId) {
+  if (!bookId) return [];
+  try {
+    const snap = await getDocs(query(
+      collection(db, 'profiles'),
+      where('librosLeidos', 'array-contains', String(bookId)),
+      limit(60),
+    ));
+    return snap.docs.map((d) => d.data());
+  } catch (e) {
+    console.warn('No se pudo mirar quién leyó este libro:', e);
+    return [];
+  }
 }

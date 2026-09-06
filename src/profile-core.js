@@ -33,13 +33,29 @@ export const SECCIONES = [
   { id: 'resenas', label: 'Mis reseñas', hint: 'Solo las que ya publicaste' },
   { id: 'mascota', label: 'Mi mascota', hint: 'Tu bicho, tal y como lo tienes' },
   { id: 'actividad', label: 'Lo que voy leyendo', hint: 'Aparece en el feed de quien te sigue' },
-  { id: 'sugerible', label: 'Que me encuentren por mis libros', hint: 'Apareces sugerida a quien haya leído lo mismo que tú' },
+  { id: 'sugerible', label: 'Que me encuentren por mis libros', hint: 'Publica qué has leído y con cuántas estrellas, para que te sugieran a quien lee parecido' },
 ];
 
 export const IDS_SECCION = SECCIONES.map((s) => s.id);
 
 /* Por defecto se ve todo menos nada: quien abre un perfil recién hecho
    tiene que ver algo. Apagar es una decisión, encender no. */
+/* ── CUENTA PRIVADA  ·  historia #52 ──────────────────────────
+   Con la cuenta privada, quien no te sigue ve SOLO tu avatar, tu
+   nombre y tu bio. Y como las reglas de Firestore conceden documentos
+   enteros, eso no se puede hacer escondiendo campos: lo demás tiene
+   que estar en OTRO documento, al que solo llegan tus seguidoras.
+
+   Así que un perfil privado publica dos cosas: la tarjeta —que lee
+   cualquiera— y el resto en profiles/{uid}/full/data, cuya regla
+   comprueba que quien lee tenga una flecha de seguimiento aprobada.
+
+   Consecuencia buscada: una cuenta privada NO aparece en «quizá
+   conozcas», porque sus libros ya no están en el documento por el que
+   busca esa consulta. Es lo correcto — quien se pone en privado no
+   quiere que la encuentren por lo que lee. */
+export const esPrivada = (settings = {}) => settings.privada === true;
+
 export function seccionVisible(settings = {}, id) {
   const off = settings.profileHidden;
   if (!Array.isArray(off)) return true;
@@ -111,7 +127,11 @@ export function publicProfileDoc({
 } = {}) {
   if (!uid || !username) return null;
 
-  const ve = (id) => seccionVisible(settings, id);
+  const privada = esPrivada(settings);
+  /* En privado no se enseña ninguna sección al mundo: se apagan todas
+     a la vez, y por el mismo camino que las apaga la usuaria a mano —
+     así no hay dos formas distintas de no publicar algo. */
+  const ve = (id) => !privada && seccionVisible(settings, id);
   const doc = {
     uid,
     username: String(username).toLowerCase(),
@@ -122,6 +142,7 @@ export function publicProfileDoc({
     bio: limpiarBio(settings.bio),
     city: limpiarCiudad(settings.city),
     secciones: IDS_SECCION.filter(ve),
+    privada,
     updatedAt: at,
   };
 
@@ -170,9 +191,20 @@ export function publicProfileDoc({
      debería aparecer en las sugerencias de otra persona sin haberlo
      encendido. Solo van los identificadores, nunca lo que opinas. */
   if (ve('sugerible')) {
-    doc.librosLeidos = clavesParaBuscar(
-      books.filter((b) => b.status === 'read').map((b) => String(b.id)),
-    );
+    const leidos = books.filter((b) => b.status === 'read');
+    doc.librosLeidos = clavesParaBuscar(leidos.map((b) => String(b.id)));
+    /* Y con cuántas estrellas  ·  historia #67
+       «Se prioriza a quienes valoran parecido a mí, no solo a quienes
+       leen lo mismo», dice la historia — y sin las puntuaciones eso no
+       se puede calcular. Van solo las de los libros que ya se publican
+       aquí, y solo con este interruptor encendido, que por eso dice
+       exactamente lo que publica. Las reseñas escritas siguen sin
+       salir: una puntuación no es una reseña. */
+    doc.valorados = {};
+    for (const b of leidos) {
+      if (!doc.librosLeidos.includes(String(b.id))) continue;
+      if (Number.isFinite(b.rating) && b.rating > 0) doc.valorados[String(b.id)] = b.rating;
+    }
   }
 
   return doc;
@@ -184,9 +216,31 @@ export function publicProfileDoc({
  * nuevo que se cuele rompe una prueba en vez de filtrarse callando.
  */
 export const CAMPOS_PUBLICOS = [
-  'uid', 'username', 'name', 'nameLower', 'bio', 'city', 'secciones', 'updatedAt',
-  'leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos',
+  'uid', 'username', 'name', 'nameLower', 'bio', 'city', 'secciones', 'privada',
+  'updatedAt', 'leyendo', 'numeros', 'generos', 'estanterias', 'mascota', 'librosLeidos', 'valorados',
 ];
+
+/**
+ * Lo que solo ven tus seguidoras, cuando la cuenta es privada.
+ *
+ * Es exactamente lo que publicaría una cuenta pública, menos la
+ * tarjeta: se construye con el mismo código, quitándole la marca de
+ * privada. Hacerlo así evita que las dos versiones se separen con el
+ * tiempo y acabe enseñándose de más en una de ellas.
+ *
+ * Devuelve null si la cuenta no es privada: entonces todo va en el
+ * documento de siempre y este sobra.
+ */
+export function followersOnlyDoc(datos = {}) {
+  if (!esPrivada(datos.settings || {})) return null;
+  const abierto = publicProfileDoc({
+    ...datos,
+    settings: { ...(datos.settings || {}), privada: false },
+  });
+  if (!abierto) return null;
+  const { uid, username, name, nameLower, bio, city, privada, ...resto } = abierto;
+  return { uid, ...resto };
+}
 
 /** El link del perfil, que es lo que se pega en WhatsApp. */
 export function profileUrl(username, origin = '') {

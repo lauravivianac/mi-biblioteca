@@ -54,6 +54,14 @@ export const INTENTS = {
      spoilers, y con el para-quién-NO, que es la mitad útil de una
      recomendación y la que casi nadie escribe. */
   book_brief: {
+    /* SE CACHEA PARA TODA LA APP  ·  historia #57
+       Lo que devuelve no depende de quién pregunta: el resumen de
+       «Cien años de soledad» es el mismo para todo el mundo. Los otros
+       dos encargos NO se cachean y no es un olvido — identify_book
+       recibe un OCR distinto cada vez, y recommend depende entera de
+       la biblioteca de quien pregunta. Cachear eso daría respuestas
+       de otra persona. */
+    cacheable: true,
     maxInput: 300,
     maxTokens: 700,
     system: `${REGLA} Te dan un título y un autor, y ayudas a decidir si vale la pena ` +
@@ -162,6 +170,49 @@ export function budgetConfig(env = {}) {
     // Techo mensual para TODA la app, en dólares
     budgetMicros: Math.round(num(env.MONTHLY_BUDGET_USD, 2) * 1e6),
   };
+}
+
+/* ── CACHÉ COMPARTIDA POR LIBRO  ·  historia #57 ──────────────
+
+   Es lo que hace que la cuenta salga. El resumen de un libro se genera
+   UNA vez y lo aprovecha toda la app: con cien lectoras leyendo
+   clásicos —que es justo lo que hay en el plan— la diferencia entre
+   cachear y no cachear son uno o dos órdenes de magnitud en la factura.
+
+   La caché vive en el Worker, no en Firestore, y es a propósito: en
+   Firestore tendría que poder escribirla el cliente, y entonces
+   cualquiera podría envenenar el resumen de un libro PARA TODO EL
+   MUNDO. Aquí solo escribe el Worker, que es quien habló con el modelo.
+
+   Comparte el mismo KV que los contadores, así que no hay ningún paso
+   de infraestructura nuevo: si ya activaste AGENTE, esto ya funciona.
+   Y si no lo activaste, no se cachea nada y todo sigue igual — flojo,
+   pero funcionando. */
+
+const BRIEF_TTL = 60 * 60 * 24 * 183;    // seis meses, como pide la historia
+
+/**
+ * La clave de un libro.
+ *
+ * Se normaliza para que «Cien Años de Soledad — Gabriel García Márquez»
+ * y «cien años de soledad - gabriel garcia marquez» sean el MISMO
+ * libro. Sin esto la caché acertaría solo cuando dos personas
+ * escribieran igual, que es casi nunca.
+ */
+export function cacheKey(texto) {
+  const limpio = String(texto ?? '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/ /g, '-');
+  return limpio ? `brief:${limpio.slice(0, 180)}` : null;
+}
+
+/** La tasa de acierto, para saber si la caché está sirviendo. */
+export function hitRate({ hits = 0, misses = 0 } = {}) {
+  const total = hits + misses;
+  return { hits, misses, total, tasa: total ? Math.round((hits / total) * 100) : null };
 }
 
 /* ── VERIFICACIÓN DEL TOKEN ──────────────────────────────────── */
@@ -280,6 +331,26 @@ export default {
     const allowOrigin = originAllowed(origin, allowed) ? origin : allowed[0] || '';
 
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors(allowOrigin) });
+
+    /* Las cuentas de la casa: cuánto se ha gastado este mes y si la
+       caché está sirviendo (#57). Son números agregados, sin nada de
+       nadie dentro, así que no piden sesión. */
+    if (request.method === 'GET' && new URL(request.url).pathname === '/stats') {
+      const precios = budgetConfig(env);
+      const gasto = await leer(env, `gasto:${MES()}`);
+      const cache = hitRate({
+        hits: await leer(env, `hit:${MES()}`),
+        misses: await leer(env, `miss:${MES()}`),
+      });
+      return json({
+        mes: MES(),
+        gastadoUSD: Number((gasto / 1e6).toFixed(4)),
+        techoUSD: Number((precios.budgetMicros / 1e6).toFixed(2)),
+        cache,
+        kv: Boolean(env.AGENTE),
+      }, 200, allowOrigin);
+    }
+
     if (request.method !== 'POST') return json({ error: 'method' }, 405, allowOrigin);
     if (allowed.length && !originAllowed(origin, allowed)) return json({ error: 'origin' }, 403, allowOrigin);
 
@@ -312,6 +383,28 @@ export default {
 
     const text = sanitize(body.text, spec.maxInput);
     if (!text) return json({ error: 'sin-texto' }, 400, allowOrigin);
+
+    /* ── LA CACHÉ, ANTES DE GASTAR  ·  #57 ──────────────────────
+       Se mira antes de los frenos de gasto no: DESPUÉS. Un acierto de
+       caché no cuesta dinero, pero sí debe respetar el límite diario
+       por usuaria — si no, un bucle podría martillear el Worker gratis
+       y de paso tumbarlo. */
+    const clave = spec.cacheable ? cacheKey(text) : null;
+    if (clave && env.AGENTE) {
+      const guardado = await env.AGENTE.get(clave);
+      if (guardado) {
+        await sumar(env, `hit:${MES()}`, 1, MES_TTL);
+        await sumar(env, claveDia, 1, DIA_TTL);
+        try {
+          return json({ ...JSON.parse(guardado), cacheado: true }, 200, allowOrigin);
+        } catch {
+          /* Guardado ilegible: se borra y se sigue como si no estuviera.
+             Mejor pagar una consulta que devolver basura. */
+          await env.AGENTE.delete(clave);
+        }
+      }
+      await sumar(env, `miss:${MES()}`, 1, MES_TTL);
+    }
 
     const r = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -350,7 +443,18 @@ export default {
        la salida además de a la entrada. */
     if (out.fuera_de_tema) return json({ error: 'fuera-de-tema' }, 400, allowOrigin);
 
+    const salida = spec.shape(out);
+
+    /* Se guarda lo YA RECORTADO, no lo que vino del modelo: así lo que
+       sale de la caché mañana es idéntico a lo que salió hoy, aunque
+       cambie la forma del encargo. Un «desconocido» no se guarda —
+       puede ser un fallo puntual del modelo, y cachearlo seis meses
+       condenaría al libro. */
+    if (clave && env.AGENTE && !salida.desconocido) {
+      await env.AGENTE.put(clave, JSON.stringify(salida), { expirationTtl: BRIEF_TTL });
+    }
+
     // La salida se recorta a la forma de su encargo antes de devolverse
-    return json(spec.shape(out), 200, allowOrigin);
+    return json(salida, 200, allowOrigin);
   },
 };

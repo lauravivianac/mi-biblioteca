@@ -10,7 +10,9 @@
    merece pruebas.
    ───────────────────────────────────────────────────────────── */
 
-import { originAllowed, sanitize, INTENTS, costMicros, budgetConfig } from '../worker/index.js';
+import {
+  originAllowed, sanitize, INTENTS, costMicros, budgetConfig, cacheKey, hitRate,
+} from '../worker/index.js';
 
 let pasaron = 0;
 let fallaron = 0;
@@ -164,6 +166,54 @@ igual('un techo con letras también', budgetConfig({ MONTHLY_BUDGET_USD: 'gratis
 igual('un techo negativo también', budgetConfig({ MONTHLY_BUDGET_USD: '-5' }).budgetMicros, 2000000);
 igual('los precios se pueden actualizar sin tocar código',
   budgetConfig({ PRICE_OUT_PER_M: '2.5' }).outPerM, 2.5);
+
+/* ── LA CACHÉ COMPARTIDA  ·  historia #57 ─────────────────────── */
+
+grupo('LA CLAVE DE UN LIBRO');
+igual('dos formas de escribir el mismo libro dan la MISMA clave',
+  cacheKey('Cien Años de Soledad — Gabriel García Márquez'),
+  cacheKey('cien años de soledad - gabriel garcia marquez'));
+ok('los espacios de sobra dan igual',
+  cacheKey('  Rayuela   —   Cortázar ') === cacheKey('Rayuela — Cortázar'));
+ok('las mayúsculas dan igual', cacheKey('RAYUELA — CORTÁZAR') === cacheKey('rayuela — cortázar'));
+ok('los acentos dan igual', cacheKey('Cortázar') === cacheKey('Cortazar'));
+ok('DOS LIBROS DISTINTOS NO COMPARTEN CLAVE',
+  cacheKey('Rayuela — Cortázar') !== cacheKey('Pedro Páramo — Rulfo'));
+ok('el mismo título de otro autor tampoco',
+  cacheKey('Aura — Fuentes') !== cacheKey('Aura — Bacigalupi'));
+ok('la clave lleva prefijo, para no chocar con los contadores',
+  cacheKey('x y').startsWith('brief:'));
+ok('un texto vacío no da clave', cacheKey('') === null);
+ok('solo puntuación tampoco', cacheKey('—  ·  ') === null);
+ok('un texto larguísimo se corta', cacheKey('a '.repeat(500)).length <= 187);
+
+grupo('QUÉ SE CACHEA Y QUÉ NO');
+ok('el resumen de un libro sí: es igual para todo el mundo',
+  INTENTS.book_brief.cacheable === true);
+ok('identificar una portada NO: cada OCR es distinto',
+  !INTENTS.identify_book.cacheable);
+ok('las recomendaciones NO: dependen de la biblioteca de quien pregunta',
+  !INTENTS.recommend.cacheable);
+
+grupo('LA TASA DE ACIERTO');
+igual('tres de cuatro son un 75%', hitRate({ hits: 3, misses: 1 }).tasa, 75);
+igual('todo aciertos, 100', hitRate({ hits: 5, misses: 0 }).tasa, 100);
+igual('todo fallos, 0', hitRate({ hits: 0, misses: 5 }).tasa, 0);
+ok('sin datos, null y no un 0 que engañe: son cosas distintas',
+  hitRate({}).tasa === null);
+igual('el total se calcula solo', hitRate({ hits: 2, misses: 3 }).total, 5);
+
+grupo('LO QUE LA CACHÉ AHORRA');
+{
+  const p = budgetConfig({});
+  const brief = costMicros({ prompt_tokens: 300, completion_tokens: 700 }, p);
+  ok('cien lectoras preguntando por el mismo libro cuestan cien veces más sin caché',
+    brief * 100 > brief * 99);
+  igual('con caché, se paga UNA vez y las otras 99 salen gratis',
+    Math.round((brief * 100) / brief), 100);
+  ok('una sola respuesta cacheada ya ahorra más de lo que costó',
+    brief * 2 > brief);
+}
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.`);
 process.exit(fallaron ? 1 : 0);
