@@ -78,8 +78,21 @@ export async function dropComment(target, id) {
   }
 }
 
+/**
+ * Avisar a la dueña de que le han comentado.
+ *
+ * EL IDENTIFICADOR ES `comment_{quienComenta}` Y NO LLEVA EL SITIO
+ * DENTRO. Llevaba `comment_{quien}_{target}`, y el `target` es texto
+ * libre que elige quien comenta: con eso, una sola persona podía
+ * escribir avisos distintos hasta llenar la bandeja de otra. Cerrado
+ * el identificador, cada quien deja como mucho un aviso.
+ *
+ * El precio es que dos comentarios seguidos de la misma persona se ven
+ * como uno —el último—, que es exactamente el mismo trato que ya tenía
+ * el aviso de seguimiento y por el mismo motivo.
+ */
 async function avisarDeComentario(paraUid, c) {
-  await setDoc(doc(db, 'notifs', paraUid, 'items', `comment_${myUid()}_${c.target}`), {
+  await setDoc(doc(db, 'notifs', paraUid, 'items', `comment_${myUid()}`), {
     tipo: 'comment',
     from: myUid(),
     fromName: c.name,

@@ -44,8 +44,15 @@ correo y contraseña, que no depende del dominio.
 ```bash
 npm i -g firebase-tools
 firebase login
-firebase deploy --only firestore:rules
+firebase deploy --only firestore:rules,firestore:indexes
 ```
+
+**Los índices van en el mismo comando y no son opcional.** Firestore crea solo
+índices de un campo; en cuanto una consulta filtra por un campo y ordena por otro,
+hay que declararla en [`firestore.indexes.json`](./firestore.indexes.json) o falla
+en producción con *«the query requires an index»*. El feed es exactamente ese caso.
+El emulador se los inventa al vuelo, así que esto pasa las pruebas y se rompe en el
+móvil de alguien — de ahí que el fichero se escriba a mano.
 
 **Esto es lo que de verdad cierra el agujero.** Hasta ahora no había autenticación y
 la base de datos estaba efectivamente abierta: cualquiera que abriera la app escribía
@@ -56,6 +63,34 @@ estén desplegadas, la base sigue abierta por mucho que la app pida iniciar sesi
 públicas (historia #28), que viven en una colección aparte. Si esas reglas no están
 desplegadas, publicar una reseña simplemente no funciona —falla del lado seguro: se
 queda privada, y el resto de la app sigue guardando con normalidad—.
+
+#### Cómo se comprueba que las reglas hacen lo que dicen
+
+```bash
+npm i                 # solo la primera vez (dependencias de desarrollo)
+npm run test:rules    # las reglas contra el emulador oficial de Firestore
+npm run test:circuito # el código de la app contra ese mismo emulador
+```
+
+Las dos levantan el emulador de Firestore de Google y hacen contra él las mismas
+lecturas y escrituras que hace la app. **No hay dobles.** Es la diferencia entre
+leer una regla y ejecutarla, y no es una diferencia teórica: la primera vez que se
+pasaron estas rutas por el emulador aparecieron cuatro fallos que llevaban meses en
+la rama y que ninguna lectura del código había encontrado.
+
+- **No se podía seguir a nadie.** La regla leía `.data.privada`, y leer un campo
+  que no existe no da «falso» en el motor de reglas: revienta la evaluación, y una
+  regla que revienta deniega.
+- **El feed no existía.** La colección `activity` no tenía regla, así que la
+  denegaba el «todo lo demás, cerrado» del final. Ni una entrada llegó a guardarse.
+- **No llegaba ningún aviso de comentario.** La regla solo casaba con `follow_…` y
+  la app escribía `comment_…`.
+- **No se podía bloquear a nadie.** Bloquear borra en un lote las flechas de
+  seguimiento, que casi nunca existen — y borrar lo que no está reventaba la regla
+  y tiraba el lote entero.
+
+Necesitan Java (el emulador es un `.jar`) y por eso van aparte de `npm test`, que
+sigue corriendo sin instalar nada.
 
 ### 3. Migrar los datos antiguos
 

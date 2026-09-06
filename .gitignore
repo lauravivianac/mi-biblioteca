@@ -1,0 +1,12 @@
+# Las dependencias son solo de desarrollo: la app en sí no tiene
+# ninguna —carga Firebase desde gstatic y no se empaqueta— y eso es
+# deliberado. Lo de aquí abajo hace falta únicamente para
+# `npm run test:rules`, que levanta el emulador de Firestore.
+node_modules/
+package-lock.json
+
+# Rastros del emulador
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.firebase/
