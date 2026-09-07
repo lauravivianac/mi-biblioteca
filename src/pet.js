@@ -610,10 +610,39 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
 </svg>`;
 }
 
+/* ── LAS ESPECIES ILUSTRADAS ──────────────────────────────────
+   Una especie con ilustración se pinta como IMAGEN y no como SVG. Las
+   dos formas conviven a propósito: van llegando por tandas, y hasta
+   que una especie tenga sus cinco poses se sigue dibujando por código
+   en vez de quedarse a medias.
+
+   Lo que se pierde al pasar a imagen —y por eso la lista es explícita
+   y no un `try`— es el pelaje y el accesorio: la ilustración ya viene
+   pintada. Quien elija una especie ilustrada no ve esos dos ajustes
+   (ver `speciesIlustrada`), porque un mando que no hace nada es peor
+   que no tenerlo. */
+export const ILUSTRADAS = ['gato'];
+
+export const speciesIlustrada = (id) => ILUSTRADAS.includes(id);
+
+const RUTA_MASCOTA = './img/mascota';
+
+/** La imagen de una especie ilustrada, con su respiración. */
+function petImg(mood, cfg) {
+  const sp = SPECIES.find((x) => x.id === cfg.species);
+  return `<img class="pet-img" src="${RUTA_MASCOTA}/${cfg.species}-${mood}.webp"`
+    + ` width="320" height="320" decoding="async"`
+    + ` alt="${esc(sp?.name || 'Tu mascota')} lectora, ${moodLabel(mood)}">`;
+}
+
 const moodLabel = (m) => ({
   contenta: 'contenta', leyendo: 'leyendo contigo', dormida: 'dormida',
   celebrando: 'celebrando', expectante: 'expectante',
 }[m] || 'contenta');
+
+/** La mascota, dibujada o ilustrada según la especie. */
+export const petVista = (mood, cfg = petConfig()) =>
+  (speciesIlustrada(cfg.species) ? petImg(mood, cfg) : petSvg(mood, cfg));
 
 /** El bloque completo que se pinta en el inicio. */
 export function renderPet() {
@@ -622,7 +651,7 @@ export function renderPet() {
   const state = petState();
   return `
     <div class="pet-shelf" data-mood="${state.mood}" onclick="pokePet()" role="button" tabindex="0">
-      ${petSvg(state.mood, cfg)}
+      ${petVista(state.mood, cfg)}
       <div class="pet-talk">
         ${cfg.name ? `<div class="pet-name">${esc(cfg.name)}</div>` : ''}
         <p class="pet-phrase">${esc(petPhrase(state))}</p>

@@ -25,6 +25,7 @@ import { MONTH_ORDER } from './seed.js';
 import { achievementStatus, earnedCount } from './achievements.js';
 import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
+  speciesIlustrada, petVista,
   availableSpecies, currentScene, SCENES,
 } from './pet.js';
 import {
@@ -405,7 +406,7 @@ function renderPetShelf() {
     </button>`;
 
   return `
-    <div class="pet-preview">${petSvg(petState().mood, cfg)}</div>
+    <div class="pet-preview">${petVista(petState().mood, cfg)}</div>
 
     <label class="pet-group-label" for="pet-name">Cómo se llama</label>
     <input class="pet-name-input" id="pet-name" maxlength="18"
@@ -417,6 +418,11 @@ function renderPetShelf() {
       ${availableSpecies().map((sp) => opt('species', sp, `${sp.emoji} `)).join('')}
     </div>
 
+    ${speciesIlustrada(cfg.species) ? `
+    <p class="planner-hint">
+      El pelaje y el accesorio no se eligen en esta: viene pintada a mano,
+      con su color y sin postizos.
+    </p>` : `
     <div class="pet-group-label">Pelaje</div>
     <div class="pet-options">
       ${availableFurs().map((f) => opt('fur', f,
@@ -424,7 +430,7 @@ function renderPetShelf() {
     </div>
 
     <div class="pet-group-label">Accesorio</div>
-    <div class="pet-options">${availableAccessories().map((a) => opt('accessory', a)).join('')}</div>
+    <div class="pet-options">${availableAccessories().map((a) => opt('accessory', a)).join('')}</div>`}
 
     <div class="pet-group-label">Su rincón</div>
     <div class="pet-options">${availableCorners().map((c) => opt('corner', c)).join('')}</div>

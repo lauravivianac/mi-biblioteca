@@ -523,6 +523,21 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ---
 
+## Estado
+
+**La Gatita ya está puesta** — las cinco poses, con la respiración lenta que
+sustituye a la animación dibujada. Faltan las otras cinco especies.
+
+Mientras una especie no tenga sus cinco poses **se sigue dibujando por
+código**: las dos formas conviven a propósito (`ILUSTRADAS` en
+[`src/pet.js`](../src/pet.js)), para que las tandas puedan llegar de una en
+una sin dejar nada a medias.
+
+El conversor está en `npm run mascotas <carpeta>`: toma los PNG tal cual
+llegan y deja los WebP en `img/mascota/`. Con la Gatita, **8,1 MB → 134 KB**.
+
+---
+
 ## Lo que hace falta de vuelta
 
 **30 PNG con transparencia**, 512 × 512, nombrados `especie-animo.png`:

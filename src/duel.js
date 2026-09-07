@@ -100,7 +100,8 @@ function pintarEleccion() {
       Elige dos de tus pendientes y te digo cuál abrir esta noche.
     </p>
     <div class="search-wrap" style="margin-bottom:12px">
-      <input class="search-input" id="duel-search" placeholder="Buscar entre tus pendientes…"
+      <span class="search-icon">${ico('lupa')}</span>
+      <input id="duel-search" placeholder="Buscar entre tus pendientes…"
              oninput="searchDuel(this.value)">
     </div>
     <div id="duel-list">${listaHtml()}</div>
