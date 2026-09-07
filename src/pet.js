@@ -127,6 +127,17 @@ export const SPECIES = [
   { id: 'zorro',   name: 'Zorrita', nombre: 'Rita',   emoji: '🦊', unlock: 'primer-clasico' },
   { id: 'mapache', name: 'Mapache', nombre: 'Coco',   emoji: '🦝', unlock: 'cinco-generos' },
   { id: 'panda',   name: 'Panda',   nombre: 'Bambú',  emoji: '🐼', unlock: 'diez-libros' },
+  /* EL PRIMERO ADULTO, Y ABIERTO DESDE EL PRIMER DÍA. Las seis de
+     arriba son crías —hasta el nombre va en diminutivo: Gatita,
+     Coneja, Zorrita—, y eso hacía que el armario entero se leyera como
+     de niñas. El sesgo no estaba en qué animal era cada una: estaba en
+     la edad.
+
+     Va sin candado a propósito. Esconder detrás de diez libros al
+     único personaje que no es un bebé anularía el motivo de tenerlo:
+     quien no se ve representado en la lista no llega a los diez
+     libros para descubrir que sí lo estaba. */
+  { id: 'oso',     name: 'Oso',     nombre: 'Tomás',  emoji: '🐻', unlock: null },
 ];
 
 /** El nombre de fábrica de una especie. */
@@ -625,7 +636,7 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
    pintada. Quien elija una especie ilustrada no ve esos dos ajustes
    (ver `speciesIlustrada`), porque un mando que no hace nada es peor
    que no tenerlo. */
-export const ILUSTRADAS = ['gato', 'conejo', 'buho', 'zorro', 'panda', 'mapache'];
+export const ILUSTRADAS = ['gato', 'conejo', 'buho', 'zorro', 'panda', 'mapache', 'oso'];
 
 export const speciesIlustrada = (id) => ILUSTRADAS.includes(id);
 
