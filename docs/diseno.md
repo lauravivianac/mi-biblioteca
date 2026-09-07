@@ -124,6 +124,7 @@ Así que las telas son tokens y **cada tema declara las suyas**:
 | **Sakura** | seda teñida: rosas apagados y ciruela |
 | **El Principito** | el desierto al anochecer: arena, terracota, salvia, azul de noche |
 | **Máquina** | ni tela ni pan de oro: bloques planos de gris con una etiqueta |
+| **Manta** | un cesto de ovillos: pizarra e índigo abajo, ladrillo, mostaza y trigo arriba |
 
 **Y no se eligen a mano: se derivan.** Ochenta telas escogidas una a una acaban
 pareciéndose sin que nadie lo note —en el primer intento había cuatro pares
@@ -249,7 +250,7 @@ añadido, y **quien pida menos movimiento no la ve nunca**.
 
 ## Qué NO se tocó, a propósito
 
-- **Los diez temas siguen ahí**, Grimorio incluido: sigue descrito como «el
+- **Los temas siguen ahí**, Grimorio incluido: sigue descrito como «el
   aspecto original» y se elige en la tienda. Lo que cambia es con cuál se
   entra — y ahora cada uno tiene su propia encuadernación en vez de la
   prestada del vecino.
@@ -271,7 +272,7 @@ npm run capturas
 
 Levanta la app entera en Chromium contra el emulador, crea una cuenta, le
 pone libros en varios estados y **fotografía treinta y cuatro pantallas** en
-`capturas/` — incluidas la estantería y el plan **en cada uno de los diez
+`capturas/` — incluidas la estantería y el plan **en cada uno de los once
 temas**. No es una prueba: no falla ni pasa, deja imágenes.
 
 Eso último no es un extra: mirar solo el tema de casa es exactamente cómo se
@@ -284,10 +285,129 @@ espaciado era una suposición.
 Y para no romper nada por el camino:
 
 ```bash
-npm run test:contrast    # los diez temas: contraste AA y las ochenta telas
+npm run test:contrast    # los once temas: contraste AA y las 88 telas
 npm run test:pantallas   # el marcado real en Chromium
 npm run test:e2e         # la app entera contra el emulador
 ```
+
+---
+
+## Manta, el segundo tema claro
+
+> «Haz un tema nuevo para esta foto, me gustó mucho.»
+
+Una acuarela de una niña leyendo boca abajo sobre una manta, con el perro
+dormido, la gata, el conejo de trapo y una taza con un corazón.
+
+**Lo primero que hubo que decidir es en qué NO se parece a Pergamino**, que
+ya era el tema claro. Pergamino es papel e imprenta: crema neutro, esquinas
+rectas, remates de tipógrafo, filete de tinta entre libros. Manta es lana:
+crema dorado, **todo redondo**, una serif de remates blandos (Petrona) y,
+entre un libro y el siguiente, **un pespunte** — hilo, hueco, hilo. Puestos
+uno detrás de otro no se confunden.
+
+### La paleta está medida, no elegida
+
+El fondo es el de la lámina **exacto** (`#F6D4A1`, que ocupa la mitad del
+cuadro) para que la escena no enseñe la costura donde termina.
+
+> **Y hay una trampa que costó una vuelta.** En la lámina hay un cojín que
+> se ve azul y un jersey que se ve verde. Medidos, son `#8F8172` —un gris
+> tibio— y `#726246` —un oliva—. Se leen fríos porque están rodeados de
+> naranja: **contraste simultáneo**. Copiados al tema, sin ese alrededor,
+> habrían sido barro. Los tonos fríos de las telas están llevados al frío a
+> propósito.
+
+### Y el orden de las telas importa
+
+Las ocho telas salen de una rampa de claridad, así que **el tono que se pone
+al final siempre sale el más claro**. Con los fríos al final salieron
+lavanda y celeste: caramelo, no lana. Puestos al principio, los mismos tonos
+salen pizarra e índigo, y los cálidos se quedan la parte clara — ladrillo,
+óxido, mostaza, trigo. Un cesto de ovillos.
+
+### La viñeta: el fleco
+
+Seis flecos iguales colgando de una recta son un peine. Cinco de largura
+distinta, colgando de un borde que cede por su propio peso, son un fleco. Es
+el remate exacto para el final de una lista: el borde de lo que mirabas.
+
+---
+
+## El fallo que Manta destapó: la lista pasaba por encima de la lámina
+
+Las escenas se pusieron con un hueco de 270 px al final de cada lista para
+que la viñeta no cayera sobre el dibujo. **Eso solo arregla el final.** A
+mitad de la lista, las filas seguían pasando por encima de la parte opaca de
+la lámina, y ahí no es que quedara feo: **no se leían**.
+
+Llevaba así desde que se pusieron las láminas, en Pergamino y en los ocho
+temas con escena. No se vio porque las capturas que se miraron eran las del
+**final** de la lista, que es justo donde el hueco lo tapa. Es el mismo error
+que costó el selector de años: mirar la pantalla donde el fallo no está.
+
+**El arreglo:** la lista se desvanece antes de llegar. La fila se vuelve
+invisible en vez de ilegible, se lee como la página metiéndose bajo el
+horizonte, y basta seguir bajando para traerla a la zona limpia — el hueco
+del final garantiza que siempre se puede.
+
+Y los números salen de la geometría, no del ojo: la lámina mide 250 px y se
+vuelve opaca al 42 %, o sea a **145 px** del borde de abajo. Ahí es donde el
+contenido tiene que haber desaparecido ya; el desvanecido arranca 130 px
+antes para que sea un degradado y no un corte.
+
+---
+
+## Los ajustes, y por qué no son un menú lateral
+
+> «Esto así cuesta trabajo leerlo, sería mejor rediseñarlo en cards o algo
+> o un menú lateral, los menús no son claros.»
+
+**El problema no era el menú: eran los encabezados.** El que decía «Tu
+nombre» tenía debajo **ocho** filas —perfil público, dónde estás, libros
+ofrecidos, privacidad, lo que escribo, bloqueadas, invitar, qué se ve— y
+solo la primera tenía algo que ver con el nombre. Cada fila nueva se había
+ido pegando a la sección que quedaba encima, hasta que los títulos dejaron
+de ser verdad. Cuando el encabezado miente, no hay dónde apoyar la vista y
+diecisiete filas del mismo peso se leen como un muro.
+
+Tres cosas, en este orden de importancia:
+
+**1 · Encabezados que sí son verdad.** Lectura · Tu perfil · Tu gente ·
+Intercambio · Logros · Apariencia · El agente · Estanterías · Tus datos ·
+Privacidad y ayuda · Cuenta. Ninguno tiene debajo nada que no nombre.
+«Privacidad» estaba suelta en medio del perfil y su subtítulo prometía
+«cómo escribirnos», que era literalmente la fila de Ayuda: ahora son un
+bloque.
+
+**2 · Cada grupo con su superficie.** Es lo que pedía Laura por «cards», y
+es lo que permite que el ojo trocee la pantalla sin leerla. La regla:
+**una lista de filas va en tarjeta; un formulario o un par de botones,
+no.** Por eso Logros la lleva y Estanterías o Cuenta no.
+
+**3 · Un dato no es un menú.** «Tu ritmo real» y «Avance del año» no
+llevan a ninguna parte, pero se pintaban igual que las filas que sí: se
+tocaban y no pasaba nada. Ahora van con la etiqueta a la izquierda y el
+número a la derecha, que es como se lee un dato y no como se lee un menú.
+
+### Por qué NO un menú lateral
+
+Un cajón lateral no arregla nada de lo de arriba: mueve las mismas
+diecisiete filas detrás de un gesto. Añade una capa de navegación para
+llegar a los mismos sitios, en una app que se usa con una mano y en la que
+Ajustes ya es una hoja que sube. El desorden seguiría dentro, solo que
+tapado.
+
+### Y por qué NO un icono por fila
+
+Fue lo primero que probé, porque escanear por forma es más rápido que
+escanear leyendo. Pero el pliego tiene 19 iconos y solo **nueve** de las
+filas tienen uno honesto —`sitio` para «Dónde estás», `candado` para
+«Bloqueadas», `cruce` para «Mis libros ofrecidos»—. Las otras seis
+saldrían con el icono más parecido que hubiera, que es exactamente la
+manera de volver al «se ve prompteada» del que salimos. Si algún día
+queremos iconos aquí, lo que toca es dibujar los que faltan a propósito,
+no reciclar el que menos desentona.
 
 ---
 

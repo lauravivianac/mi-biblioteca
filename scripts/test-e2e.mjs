@@ -218,7 +218,13 @@ const HOJAS = {
   'Dónde estás': 'place-overlay',
   'Mis libros ofrecidos': 'myswaps-overlay',
   'Lo que escribo': 'posts-overlay',
-  'Privacidad, términos y soporte': 'legal-overlay',
+  /* Se llamaba «Privacidad, términos y soporte» y estaba suelta en
+     medio del perfil. Ahora es «Privacidad y términos» y vive con
+     «Escríbenos», que es lo que era el «y soporte». */
+  'Privacidad y términos': 'legal-overlay',
+  'Invitar a alguien': 'invite-overlay',
+  'Bloqueadas y silenciadas': 'blocked-overlay',
+  'Qué se ve en tu perfil': 'profset-overlay',
 };
 
 for (const [fila, id] of Object.entries(HOJAS)) {

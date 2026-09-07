@@ -219,6 +219,51 @@
 .set-chev { color: var(--muted-soft); font-size: 18px; }
 .set-fineprint { color: var(--muted-soft); font-size: 11px; line-height: 1.6; margin-top: 10px; }
 
+/* ── LOS BLOQUES DE AJUSTES ──────────────────────────────────
+   Diecisiete filas seguidas, todas del mismo peso, separadas solo por
+   un filete casi invisible: eso no es un menú, es un muro. Darle
+   superficie a cada grupo es lo que permite que el ojo lo trocee sin
+   leerlo — y entonces el encabezado deja de ser una etiqueta suelta y
+   pasa a nombrar algo que se ve.
+
+   Es opcional a propósito (`.set-card` envuelve, no reemplaza): las
+   mismas filas se usan en el perfil, en explorar y en los comentarios,
+   y ninguna de esas pantallas cambia por esto. */
+.set-card {
+  background: var(--card);
+  border: var(--hairline);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.set-card .set-row {
+  padding: 13px 14px;
+  border-bottom: 0;
+}
+/* El filete va entre HIJOS DIRECTOS de la tarjeta, no entre filas. Es
+   lo mismo mientras las filas sean hermanas, y sigue siendo correcto
+   cuando una viene envuelta —el @usuario vive dentro de su propio
+   `div` para poder repintarse solo—, que es justo donde un selector
+   de hermanos deja un hueco sin línea. */
+.set-card > * + * { border-top: 1px solid var(--border-soft); }
+.set-card .set-row:active { background: var(--fog-soft); }
+/* Los logros traen su propio ritmo —un hueco entre filas y el sangrado
+   a cero— porque nacieron sueltos sobre la hoja. Dentro de la tarjeta
+   el hueco parte la lista y el sangrado los pega al borde. */
+.set-card .ach-list { gap: 0; }
+.set-card .ach { padding-left: 14px; padding-right: 14px; }
+
+/* UN DATO NO ES UN MENÚ. «Tu ritmo real» y «Avance del año» no llevan
+   a ninguna parte: se leen. Pintados como fila parecían un menú roto
+   —se tocan y no pasa nada—, así que van con la etiqueta a la
+   izquierda y el número a la derecha, que es como se lee un dato. */
+.set-fact {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 14px;
+  padding: 12px 14px;
+}
+.set-fact-label { font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.set-fact-value { font-size: 13px; color: var(--text); text-align: right; line-height: 1.45; }
+
 /* ── ASISTENTE DEL PLAN ──────────────────────────────────────── */
 .planner-lede { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 8px; }
 .planner-lede strong { color: var(--text); }
