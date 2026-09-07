@@ -44,6 +44,8 @@ import {
   allShelves, createShelf, renameShelf, removeShelf,
   shelfCounts, toggleBookShelf, SHELF_COLORS, SHELF_EMOJIS, SUGGESTED,
 } from './shelves.js';
+import { ico } from './icons.js';
+import { lomoHtml } from './lomo.js';
 
 /* ── ACCESO  ·  historias #14, #15, #16 ──────────────────────── */
 
@@ -53,8 +55,16 @@ export function renderAuth() {
   const isSignup = authMode === 'signup';
   $('auth-screen').innerHTML = `
     <div class="auth-card">
-      <div class="auth-brand">✦ Mi Biblioteca</div>
-      <p class="auth-lede">Tu plan lector, tus reseñas y tu progreso — solo tuyos.</p>
+      <!-- LA PORTADA. Es lo primero que ve alguien que llega, y hasta
+           ahora era un formulario con un título encima. Ahora es la
+           portada de un libro: la marca del propietario arriba, el
+           nombre en grande, el filete, y debajo lo que promete. -->
+      <div class="auth-portada">
+        <div class="auth-exlibris">Ex libris</div>
+        <div class="auth-brand">Mi Biblioteca</div>
+        <div class="auth-filete"></div>
+        <p class="auth-lede">Tu plan lector, tus reseñas y tu progreso — solo tuyos.</p>
+      </div>
 
       <div class="auth-tabs">
         <button class="auth-tab ${!isSignup ? 'active' : ''}" onclick="setAuthMode('signin')">Entrar</button>
@@ -71,7 +81,7 @@ export function renderAuth() {
             autocomplete="${isSignup ? 'new-password' : 'current-password'}" placeholder="Al menos 6 caracteres"></div>
         <div class="auth-error" id="auth-error" role="alert"></div>
         <button class="btn-magic full" type="submit" id="auth-submit">
-          ${isSignup ? '✦ Crear mi cuenta' : 'Entrar'}
+          ${isSignup ? 'Crear mi cuenta' : 'Entrar'}
         </button>
       </form>
 
@@ -115,7 +125,7 @@ export async function submitAuth(event) {
   } catch (e) {
     showAuthError(humanError(e));
     btn.disabled = false;
-    btn.textContent = authMode === 'signup' ? '✦ Crear mi cuenta' : 'Entrar';
+    btn.textContent = authMode === 'signup' ? 'Crear mi cuenta' : 'Entrar';
   }
   return false;
 }
@@ -369,7 +379,7 @@ function renderThemeStore() {
           </span>
           <span class="theme-name">${t.emoji} ${esc(t.name)}</span>
           <span class="theme-blurb">${esc(t.blurb)}</span>
-          ${t.locked ? `<span class="theme-lock">🔒 ${esc(t.unlock.label)}</span>` : ''}
+          ${t.locked ? `<span class="theme-lock">${ico('candado', 'ico-sm')} ${esc(t.unlock.label)}</span>` : ''}
           ${s.themeId === t.id ? '<span class="theme-current">En uso</span>' : ''}
         </button>`).join('')}
     </div>
@@ -596,7 +606,7 @@ export function openSettings() {
             ${!a.earned ? `<div class="mini-bar"><div class="mini-bar-fill" style="width:${a.pct}%"></div></div>` : ''}
           </div>
           ${a.earned
-            ? `<button class="btn-mini" onclick="shareAchievement('${esc(a.name).replace(/'/g, "&#39;")}')">✦</button>`
+            ? `<button class="btn-mini" onclick="shareAchievement('${esc(a.name).replace(/'/g, "&#39;")}')">Presumir</button>`
             : `<span class="ach-count">${a.done}/${a.need}${a.unit}</span>`}
         </div>`).join('')}
     </div>
@@ -823,7 +833,7 @@ function pintarRecsLocales() {
           <div class="sug-head">
             ${coverOf(b.id)
               ? `<img class="sug-cover" src="${esc(coverOf(b.id))}" alt="" loading="lazy">`
-              : '<div class="sug-cover sug-cover-ph">📕</div>'}
+              : `<div class="sug-cover">${lomoHtml(b, { mini: true })}</div>`}
             <div class="sug-info">
               <div class="sug-title">${esc(b.title)}</div>
               <div class="sug-author">${esc(b.author)}${b.pages && b.pages !== '—' ? ` · ${esc(b.pages)} págs.` : ''}</div>
@@ -840,7 +850,7 @@ function pintarRecsLocales() {
 
     ${agentOffered() ? `
       <button class="btn-ghost full" id="recs-agent-btn" onclick="askAgentRecs()" style="margin-top:16px">
-        ✦ Buscar libros nuevos, fuera de tu biblioteca
+        Buscar libros nuevos, fuera de tu biblioteca
       </button>
       <p class="set-fineprint">Lo de arriba es tuyo y no gasta nada. Esto le pregunta al agente.</p>
     ` : ''}`;
@@ -917,7 +927,7 @@ export async function askAgentRecs() {
             <div class="rec-head">
               ${r.cover
                 ? `<img class="rec-cover" src="${esc(r.cover)}" alt="" loading="lazy">`
-                : '<div class="rec-cover rec-cover-ph">📕</div>'}
+                : `<div class="rec-cover">${lomoHtml(r, { mini: true })}</div>`}
               <div class="rec-info">
                 <div class="rec-title">${esc(r.title)}</div>
                 <div class="rec-author">${esc(r.author)}${r.year ? ' · ' + r.year : ''}${r.pages !== '—' ? ' · ' + esc(r.pages) + ' págs.' : ''}</div>
@@ -1158,7 +1168,7 @@ function renderPlannerStep1() {
   const stalled = stalledBooks();
 
   $('planner-body').innerHTML = `
-    <div class="sheet-title">✦ Armar mi plan</div>
+    <div class="sheet-title">Armar mi plan</div>
     <p class="planner-lede">Dos preguntas y te reparto los pendientes mes a mes.</p>
 
     <div class="section-heading"><span class="section-heading-text">¿Cuánto tiempo tienes?</span></div>
@@ -1254,7 +1264,7 @@ export function buildPlan() {
 function renderPlanProposal() {
   const p = draftPlan;
   $('planner-body').innerHTML = `
-    <div class="sheet-title">✦ Tu plan propuesto</div>
+    <div class="sheet-title">Tu plan propuesto</div>
     <p class="planner-lede">
       ${p.used} libros repartidos en 12 meses, a ${p.pace.pagesPerDay.toFixed(0)} páginas al día.
       ${p.rescued ? `<strong>${p.rescued}</strong> venían represados.` : ''}

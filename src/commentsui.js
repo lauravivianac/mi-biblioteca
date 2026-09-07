@@ -24,6 +24,7 @@ import { MOTIVOS, EXPLICACION, mailtoSoporte, SOPORTE } from './moderation-core.
 import { inicial } from './profile-core.js';
 import { cuandoTexto } from './feed-core.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
+import { ico } from './icons.js';
 
 let hilo = { target: null, owner: null, comentarios: [], reacciones: {}, cerrado: false };
 let abiertos = new Set();      // los spoilers que ya se destaparon
@@ -308,7 +309,7 @@ export async function openBlocked() {
   if (!bloqueados.length && !silenciados.length) {
     $('blocked-body').innerHTML = `
       <div class="empty">
-        <div class="empty-rune">✦</div>
+        <div class="empty-rune">${ico('comillas', 'ico-lg')}</div>
         <div class="empty-text">No has bloqueado ni silenciado a nadie</div>
       </div>`;
     return;

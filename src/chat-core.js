@@ -224,7 +224,7 @@ export function puedeEscribir({ chat = null, yo = '', bloqueados = [], meBloquea
 
 /** Lo que se dice cuando la conversación está vacía. */
 export const VACIO_CHAT = {
-  rune: '💬',
+  rune: 'sobre',
   texto: 'Aún no os habéis escrito',
   detalle: 'Un «hola, ¿cómo quedamos?» basta. No hace falta dar el teléfono.',
 };

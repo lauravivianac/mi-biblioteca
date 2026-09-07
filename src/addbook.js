@@ -21,6 +21,8 @@ import { addBook, updateEntry } from './store.js';
 import { GENRES, MONTH_ORDER } from './seed.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll } from './views.js';
+import { ico } from './icons.js';
+import { lomoHtml } from './lomo.js';
 
 let mode = 'titulo';       // titulo · camara · manual
 let draft = null;          // el candidato elegido, antes de guardar
@@ -91,7 +93,7 @@ function renderCamara() {
       Si el libro no tiene, toma una foto de la portada.
     </p>
     <div class="store-actions">
-      <button class="btn-ghost" onclick="shootCover()">📕 Foto de la portada</button>
+      <button class="btn-ghost" onclick="shootCover()">${ico('camara')} Foto de la portada</button>
       <button class="btn-magic" id="scan-btn" onclick="shootBarcode()">Buscar código</button>
     </div>`;
 }
@@ -103,7 +105,7 @@ function renderManual() {
     <div class="fg"><label class="flabel" for="f-author">Autor</label>
       <input class="finput" id="f-author" placeholder="Nombre del autor"></div>
     ${commonFields()}
-    <button class="btn-magic full" onclick="saveManual()">✦ Agregar a mi biblioteca</button>`;
+    <button class="btn-magic full" onclick="saveManual()">Agregar a mi biblioteca</button>`;
 }
 
 /** Los campos que comparten el camino manual y la confirmación. */
@@ -145,7 +147,7 @@ function renderDraft() {
     <div class="draft-head">
       ${b.cover
         ? `<img class="draft-cover" src="${esc(b.cover)}" alt="">`
-        : '<div class="draft-cover draft-cover-ph">📕</div>'}
+        : `<div class="draft-cover">${lomoHtml(b, { mini: true })}</div>`}
       <div>
         <div class="draft-source">${{
           agente: 'Identificado por el agente',
@@ -159,7 +161,7 @@ function renderDraft() {
     ${commonFields(b)}
     <div class="store-actions">
       <button class="btn-ghost" onclick="discardDraft()">Buscar otro</button>
-      <button class="btn-magic" onclick="saveDraft()">✦ Agregar a mi biblioteca</button>
+      <button class="btn-magic" onclick="saveDraft()">Agregar a mi biblioteca</button>
     </div>`;
 }
 
@@ -186,7 +188,7 @@ export function queryBooks(text) {
     }
     $('add-results').innerHTML = found.map((b, i) => `
       <button class="cand" onclick="pickCandidate(${i})">
-        ${b.cover ? `<img src="${esc(b.cover)}" alt="" loading="lazy">` : '<span class="cand-ph">📕</span>'}
+        ${b.cover ? `<img src="${esc(b.cover)}" alt="" loading="lazy">` : lomoHtml(b, { mini: true, cls: 'cand-ph' })}
         <span class="cand-info">
           <span class="cand-title">${esc(b.title)}</span>
           <span class="cand-sub">${esc(b.author)}${b.year ? ' · ' + b.year : ''}${b.pages !== '—' ? ' · ' + esc(b.pages) + ' págs.' : ''}</span>

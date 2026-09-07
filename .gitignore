@@ -10,3 +10,10 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 .firebase/
+
+# Capturas que deja la prueba de punta a punta
+e2e-*.png
+
+# Las que deja `npm run capturas`, para mirar el diseño antes y después
+capturas/
+capturas-*/

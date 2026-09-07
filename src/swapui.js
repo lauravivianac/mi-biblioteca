@@ -27,6 +27,7 @@ import {
 } from './swap-core.js';
 import { placeTexto, tieneCiudad, SIN_CIUDAD, PROMESA } from './place-core.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
+import { ico } from './icons.js';
 
 let mias = [];
 let libroActual = null;
@@ -69,7 +70,7 @@ function pintarPlace() {
 
     ${navigator.geolocation ? `
       <button class="btn-ghost full" style="margin-top:8px" onclick="proposePlace()">
-        📍 Proponer mi ciudad con la ubicación
+        ${ico('sitio', 'ico-sm')} Proponer mi ciudad con la ubicación
       </button>
       <p class="set-fineprint">
         Se usa una vez para rellenar la ciudad y no se guardan las coordenadas:
@@ -213,7 +214,7 @@ function pintarYaPublicado(p) {
       <div class="swap-title">${esc(p.title)}</div>
       <div class="swap-sub">${esc(resumenPublicacion(p))}</div>
       ${p.nota ? `<p class="swap-nota">${esc(p.nota)}</p>` : ''}
-      <div class="swap-lugar">📍 ${esc(placeTexto(p))}</div>
+      <div class="swap-lugar">${ico('sitio', 'ico-sm')} ${esc(placeTexto(p))}</div>
     </div>
     <button class="btn-ghost full" onclick="withdrawSwap('${esc(p.id)}')">Retirarlo</button>`;
 }

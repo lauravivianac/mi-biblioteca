@@ -12,18 +12,34 @@
 
 /* ── ACCESO ──────────────────────────────────────────────────── */
 .auth-card { width: 100%; max-width: 380px; margin: auto; }
-.auth-brand {
-  font-family: var(--font-display); font-size: 26px; color: var(--gold);
-  text-align: center; letter-spacing: var(--display-spacing); margin-bottom: 8px;
+.auth-portada { text-align: center; margin-bottom: 34px; }
+.auth-exlibris {
+  font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px;
 }
-.auth-lede { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.auth-brand {
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: var(--display-weight);
+  line-height: 1.05;
+  color: var(--text);
+  letter-spacing: var(--display-spacing);
+}
+.auth-filete {
+  width: 54px; height: 1px; margin: 16px auto;
+  background: rgb(var(--gold-rgb) / .6);
+}
+.auth-lede {
+  font-size: 13.5px; font-style: italic; line-height: 1.55;
+  color: var(--muted); max-width: 30ch; margin: 0 auto;
+}
 .auth-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
 .auth-tab {
   flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--card); color: var(--muted); font-family: var(--font-body);
   font-size: 13px; cursor: pointer; transition: all .2s;
 }
-.auth-tab.active { background: var(--accent-wash); border-color: var(--violet); color: var(--gold); }
+.auth-tab.active { background: transparent; border-color: rgb(var(--gold-rgb) / .55); color: var(--gold); }
 .auth-error { color: var(--danger); font-size: 12px; min-height: 18px; margin: 4px 0 8px; }
 .auth-divider {
   display: flex; align-items: center; gap: 10px; margin: 20px 0 14px;
@@ -63,13 +79,22 @@
 .onb-actions { display: flex; flex-direction: column; gap: 8px; }
 
 /* ── BOTONES COMPARTIDOS ─────────────────────────────────────── */
+/* Un botón secundario es papel con un filete, no una cápsula de
+   cristal: sin desenfoque, sin relleno translúcido, sin brillo. */
 .btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 11px 16px; border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: transparent; color: var(--text);
-  font-family: var(--font-body); font-size: 13px; cursor: pointer; transition: all .2s;
+  font-family: var(--font-body); font-size: 13px; cursor: pointer;
+  transition: border-color .2s, color .2s;
 }
-.btn-ghost:hover { background: var(--fog); border-color: var(--border-strong); }
-.btn-ghost.full, .btn-magic.full, .btn-delete.full { width: 100%; display: block; margin-bottom: 8px; }
+.btn-ghost:hover, .btn-ghost:active { border-color: rgb(var(--gold-rgb) / .5); color: var(--gold); }
+.btn-ghost .ico { width: 16px; height: 16px; }
+.btn-magic.full, .btn-delete.full { width: 100%; display: block; margin-bottom: 8px; }
+/* `full` era `display:block`, y eso tiraba abajo el flex que centra el
+   icono junto al texto: el icono se quedaba pegado al margen izquierdo
+   y la etiqueta en medio de la nada. */
+.btn-ghost.full { width: 100%; display: flex; margin-bottom: 8px; }
 .btn-danger {
   padding: 11px 16px; border: 1px solid rgb(var(--danger-rgb) / .4); border-radius: var(--radius-sm);
   background: var(--danger-wash); color: var(--danger);
@@ -252,13 +277,16 @@
 
 /* ── CABECERA: ACCIONES ──────────────────────────────────────── */
 .header-actions { display: flex; align-items: center; gap: 8px; }
+/* Sin caja: cuatro cajas seguidas en la cabecera pesaban más que el
+   nombre de la app. El icono solo, y el latón al tocarlo. */
 .icon-btn {
-  width: 34px; height: 34px; border-radius: var(--radius-sm);
-  border: 1px solid var(--border); background: var(--fog);
-  color: var(--lilac); font-size: 15px; cursor: pointer;
-  display: grid; place-items: center; transition: all .2s;
+  position: relative;
+  width: 30px; height: 30px; border-radius: var(--radius-sm);
+  border: none; background: transparent;
+  color: var(--lilac); cursor: pointer;
+  display: grid; place-items: center; transition: color .2s;
 }
-.icon-btn:hover { border-color: var(--border-strong); color: var(--gold); }
+.icon-btn:hover, .icon-btn:active { color: var(--gold); }
 #save-state {
   font-size: 10px; color: var(--muted-soft); min-height: 12px;
   text-align: right; padding: 0 18px 4px;
@@ -312,19 +340,18 @@ body:not(.signed-in) .fab { display: none; }
    Antes solo se cerraban tocando el fondo, que nadie adivina. */
 .sheet-close {
   position: absolute;
-  top: 14px; right: 14px;
-  width: 32px; height: 32px;
+  top: 12px; right: 14px;
+  width: 30px; height: 30px;
   display: grid; place-items: center;
-  border: var(--hairline);
-  border-radius: var(--ctl-radius);
-  background: var(--fog);
+  border: none;
+  background: transparent;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 15px;
   cursor: pointer;
   z-index: 2;
-  transition: all .18s;
+  transition: color .18s;
 }
-.sheet-close:hover { color: var(--text); border-color: var(--border-strong); }
+.sheet-close:hover, .sheet-close:active { color: var(--gold); }
 .sheet { position: relative; }
 
 
@@ -350,7 +377,6 @@ body:not(.signed-in) .fab { display: none; }
   border-radius: calc(var(--radius-sm) * .6);
   border: var(--card-border); box-shadow: var(--cover-frame);
 }
-.cand-ph { display: grid; place-items: center; background: var(--fog); font-size: 16px; }
 .cand-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .cand-title {
   font-size: 13.5px; line-height: 1.35;
@@ -392,7 +418,6 @@ body:not(.signed-in) .fab { display: none; }
   border-radius: var(--radius-sm);
   border: var(--card-border); box-shadow: var(--cover-frame);
 }
-.draft-cover-ph { display: grid; place-items: center; background: var(--fog); font-size: 26px; }
 .draft-source {
   font-size: 10px; letter-spacing: var(--label-spacing); text-transform: uppercase;
   color: var(--lilac); margin-bottom: 7px;
@@ -443,7 +468,6 @@ body:not(.signed-in) .fab { display: none; }
   border-radius: calc(var(--radius-sm) * .7);
   border: var(--card-border); box-shadow: var(--cover-frame);
 }
-.rec-cover-ph { display: grid; place-items: center; background: var(--fog); font-size: 18px; }
 .rec-info { min-width: 0; }
 .rec-add { width: 100%; margin-top: 11px; font-size: 12.5px; }
 .rec-add:disabled { color: var(--success); border-color: rgb(var(--success-rgb) / .4); cursor: default; }
@@ -473,6 +497,16 @@ body:not(.signed-in) .fab { display: none; }
    (`--shelf-rgb`), no de un hex suelto: así una estantería se ve bien
    en los nueve mundos sin revisar el contraste por cada una. */
 
+/* Una estantería no es un filtro excluyente: se marcan varias a la vez
+   y cada una tiene su color, así que aquí sí hace falta una etiqueta
+   con forma. `.chip` ya no la da —es una pestaña de texto— y estas se
+   la ponen entera. */
+.chip-shelf, .chip-new {
+  padding: 5px 11px;
+  border: 1px solid var(--border);
+  border-bottom-width: 1px;
+  border-radius: var(--pill-radius);
+}
 .chip-shelf { border-color: rgb(var(--shelf-rgb) / .35); color: rgb(var(--shelf-rgb) / .95); }
 .chip-shelf.active {
   background: rgb(var(--shelf-rgb) / .18);
@@ -483,7 +517,7 @@ body:not(.signed-in) .fab { display: none; }
   margin-left: 5px; opacity: .6;
   font-variant-numeric: tabular-nums;
 }
-.chip-new { border-style: dashed; }
+.chip-new { border-style: dashed; color: var(--muted); }
 
 /* En la ficha del libro, donde se meten y se sacan. */
 .shelf-picker {
@@ -609,7 +643,6 @@ body:not(.signed-in) .fab { display: none; }
   border-radius: calc(var(--radius-sm) * .7);
   border: var(--card-border); box-shadow: var(--cover-frame);
 }
-.sug-cover-ph { display: grid; place-items: center; background: var(--fog); font-size: 16px; }
 .sug-info { min-width: 0; }
 .sug-title { font-family: var(--font-display); font-size: 14.5px; color: var(--gold); line-height: 1.35; }
 .sug-author { font-size: 11.5px; color: var(--muted); margin-top: 3px; }

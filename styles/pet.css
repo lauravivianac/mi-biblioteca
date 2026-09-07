@@ -17,23 +17,24 @@
   --pet-book: var(--violet);
 }
 
+/* La gata estaba metida en una caja con borde, como un widget. Ahora
+   se sienta EN la balda: sin caja, apoyada sobre el mismo filete que
+   separa cada mes, y lo que dice va al lado, en cursiva, como una nota
+   al margen. */
 .pet-shelf {
   display: grid;
-  grid-template-columns: 104px 1fr;
-  gap: 14px;
-  align-items: center;
-  padding: 12px 16px 12px 8px;
-  margin-bottom: 14px;
-  background: var(--card-bg);
-  border: var(--hairline);
-  border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
+  grid-template-columns: 84px 1fr;
+  gap: 12px;
+  align-items: end;
+  padding: 4px 2px 10px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border-soft);
   cursor: pointer;
-  transition: transform .18s;
+  transition: opacity .18s;
 }
-.pet-shelf:active { transform: scale(.985); }
+.pet-shelf:active { opacity: .65; }
 
-.pet-svg { width: 104px; height: 91px; display: block; overflow: visible; }
+.pet-svg { width: 84px; height: 74px; display: block; overflow: visible; }
 
 /* Respira. Nada más: una mascota que se agita cansa. */
 .pet-body { transform-origin: 64px 100px; animation: respirar 4.2s ease-in-out infinite; }
@@ -69,17 +70,18 @@
   50%      { opacity: 1; }
 }
 
-.pet-talk { min-width: 0; }
+.pet-talk { min-width: 0; padding-bottom: 8px; }
 .pet-name {
-  font-family: var(--font-display);
-  font-size: 12px;
+  font-size: 9px;
+  text-transform: uppercase;
   color: var(--gold);
-  letter-spacing: var(--display-spacing);
-  margin-bottom: 3px;
+  letter-spacing: var(--label-spacing);
+  margin-bottom: 4px;
 }
 .pet-phrase {
   font-size: 13.5px;
-  line-height: 1.5;
+  font-style: italic;
+  line-height: 1.45;
   color: var(--text);
   margin: 0;
 }

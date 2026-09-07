@@ -24,6 +24,7 @@ import { openCamera, closeCamera, grabFrame, readText } from './scan.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { openDetail } from './views.js';
 import { openShare } from './shareui.js';
+import { ico } from './icons.js';
 
 let capturaLibro = null;     // el libro al que se le está poniendo una cita
 let textoCapturado = '';
@@ -44,13 +45,13 @@ export function renderQuotes(bookId) {
         <figcaption class="quote-foot">
           ${q.page ? `<span class="quote-page">p. ${q.page}</span>` : '<span class="quote-page quote-nopage">sin página</span>'}
           ${q.note ? `<span class="quote-note">${esc(q.note)}</span>` : ''}
-          <button class="btn-mini" onclick="shareQuote('${bookId}','${q.id}')">✦ Presumir</button>
+          <button class="btn-mini" onclick="shareQuote('${bookId}','${q.id}')">Presumir</button>
           <button class="btn-mini" onclick="copyQuote('${bookId}','${q.id}')">Copiar</button>
           <button class="btn-mini" onclick="dropQuote('${bookId}','${q.id}')">Borrar</button>
         </figcaption>
       </figure>`).join('')}
     <div class="store-actions" style="justify-content:flex-start;margin-bottom:18px">
-      <button class="btn-ghost" onclick="openQuoteCapture('${bookId}','camara')">📷 Fotografiar</button>
+      <button class="btn-ghost" onclick="openQuoteCapture('${bookId}','camara')">${ico('camara')} Fotografiar</button>
       <button class="btn-ghost" onclick="openQuoteCapture('${bookId}','manual')">✎ Escribir</button>
     </div>`;
 }
@@ -266,7 +267,7 @@ function pintarTodas() {
             ${esc(q.bookTitle)} · ${esc(q.bookAuthor)}
           </button>
           ${q.page ? `<span class="quote-page">p. ${q.page}</span>` : ''}
-          <button class="btn-mini" onclick="shareQuote('${q.bookId}','${q.id}')">✦ Presumir</button>
+          <button class="btn-mini" onclick="shareQuote('${q.bookId}','${q.id}')">Presumir</button>
           <button class="btn-mini" onclick="copyQuote('${q.bookId}','${q.id}')">Copiar</button>
         </figcaption>
       </figure>`).join('')}`;

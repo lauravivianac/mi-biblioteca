@@ -20,6 +20,7 @@ import { candidatesFor, placeInMonth, describeGap, monthlyCapacity } from './gap
 import { coverOf } from './store.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
+import { lomoHtml } from './lomo.js';
 
 let mesActual = null;
 let anioActual = null;
@@ -56,7 +57,7 @@ function pintar() {
   if (!cuerpo) return;
 
   const { hueco, candidatos } = candidatesFor(anioActual, mesActual, { exclude: vistas });
-  if (titulo) titulo.textContent = `✦ ${mesActual} ${anioActual}`;
+  if (titulo) titulo.textContent = `${mesActual} ${anioActual}`;
 
   if (!hueco) {
     cuerpo.innerHTML = '<p class="planner-hint">Ese mes ya no tiene hueco.</p>';
@@ -86,7 +87,7 @@ function pintar() {
         <div class="sug-head">
           ${coverOf(b.id)
             ? `<img class="sug-cover" src="${esc(coverOf(b.id))}" alt="" loading="lazy">`
-            : '<div class="sug-cover sug-cover-ph">📕</div>'}
+            : `<div class="sug-cover">${lomoHtml(b, { mini: true })}</div>`}
           <div class="sug-info">
             <div class="sug-title">${esc(b.title)}</div>
             <div class="sug-author">${esc(b.author)}${b.pages && b.pages !== '—' ? ` · ${esc(b.pages)} págs.` : ''}</div>

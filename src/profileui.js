@@ -34,6 +34,7 @@ import { fetchFullProfile, isFollowing } from './social.js';
 import { meBloqueo } from './moderation.js';
 import { petSvg } from './pet.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
+import { ico } from './icons.js';
 
 let visto = null;        // { profile, uid, mio } de lo último que se abrió
 let turno = 0;           // una carga lenta no pinta encima de otra más nueva
@@ -140,7 +141,7 @@ function pintarSinNombre() {
   visto = null;
   $('profile-body').innerHTML = `
     <div class="empty">
-      <div class="empty-rune">✦</div>
+      <div class="empty-rune">${ico('fichas', 'ico-lg')}</div>
       <div class="empty-text">Todavía no has elegido tu @usuario</div>
     </div>
     <p class="set-fineprint">Es lo que te da un perfil y un link para compartir.</p>
@@ -161,7 +162,7 @@ function pintar() {
       <div class="prof-id">
         <div class="prof-name">${esc(p.name || p.username)}</div>
         <div class="prof-handle">@${esc(p.username)}</div>
-        ${p.city ? `<div class="prof-city">📍 ${esc(p.city)}</div>` : ''}
+        ${p.city ? `<div class="prof-city">${ico('sitio', 'ico-sm')} ${esc(p.city)}</div>` : ''}
       </div>
       ${p.mascota ? `<div class="prof-pet">${petSvg('contenta', p.mascota)}</div>` : ''}
     </div>
@@ -172,7 +173,7 @@ function pintar() {
     ${relationSlot()}
 
     ${p.privada && !p.secciones?.length && !visto.mio ? `
-      <p class="planner-hint" style="margin-top:6px">🔒 ${esc(AVISO_PRIVADA)}</p>` : ''}
+      <p class="planner-hint" style="margin-top:6px">${ico('candado', 'ico-sm')} ${esc(AVISO_PRIVADA)}</p>` : ''}
 
     ${ve('numeros') && p.numeros ? bloqueNumeros(p.numeros) : ''}
     ${ve('leyendo') ? bloqueLeyendo(p.leyendo) : ''}
@@ -197,12 +198,12 @@ function pintar() {
           Puedes tener el tuyo.
         </p>
         <button class="btn-magic full" onclick="openAuthScreen()">
-          ✦ Crear mi biblioteca
+          Crear mi biblioteca
         </button>
       </div>` : visto.mio ? `
       <div class="prof-mine">
         <p class="set-fineprint">Esto es exactamente lo que ve quien abre tu link.</p>
-        <button class="btn-ghost full" onclick="copyProfileLink()">🔗 Copiar mi link</button>
+        <button class="btn-ghost full" onclick="copyProfileLink()">Copiar mi link</button>
         <button class="btn-ghost full" onclick="closeSheet('profile-overlay');openProfileSettings()"
                 style="margin-top:8px">Elegir qué se ve</button>
       </div>` : ''}`;

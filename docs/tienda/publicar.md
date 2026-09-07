@@ -40,7 +40,7 @@ bundler todo este tiempo.
 
 - `manifest.webmanifest` ya declara nombre, colores e iconos.
 - `sw.js` ya da el funcionamiento sin conexión.
-- El color de fondo (`#0D0A1A`) ya coincide con el del splash, así que no habrá
+- El color de fondo (`#12100E`) ya coincide con el del splash, así que no habrá
   parpadeo al abrir.
 
 ### Lo que hay que hacer
@@ -63,7 +63,7 @@ En `capacitor.config.json`, dos cosas que importan:
   "webDir": ".",
   "server": { "androidScheme": "https" },
   "plugins": {
-    "SplashScreen": { "backgroundColor": "#0D0A1A", "showSpinner": false }
+    "SplashScreen": { "backgroundColor": "#12100E", "showSpinner": false }
   }
 }
 ```
@@ -116,6 +116,10 @@ Eso ya está en la bandeja de avisos y una notificación por cada uno es la form
 más rápida de que se desactiven todas.
 
 ---
+
+> **Cómo se crean las cuentas, paso a paso:** [`cuentas.md`](./cuentas.md).
+> Léelo antes de pagar nada — hay una decisión (personal o empresa) que cambia
+> si tienes que esperar 14 días y si tu dirección acaba publicada.
 
 ## 3 · Google Play · #99
 

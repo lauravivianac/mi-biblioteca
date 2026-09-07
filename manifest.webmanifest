@@ -1,12 +1,12 @@
 {
-  "name": "Mi Biblioteca ✨",
+  "name": "Mi Biblioteca",
   "short_name": "Biblioteca",
   "description": "Plan lector y tracker de libros",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
-  "background_color": "#0D0A1A",
-  "theme_color": "#0D0A1A",
+  "background_color": "#12100E",
+  "theme_color": "#12100E",
   "orientation": "portrait",
   "lang": "es",
   "icons": [
