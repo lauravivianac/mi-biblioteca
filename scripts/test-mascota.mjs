@@ -30,7 +30,7 @@
 
 import { readFileSync } from 'node:fs';
 import {
-  estadoMascota, fraseMascota, fraseDeFallo, avisoDelDia, FRASES, DIA,
+  estadoMascota, fraseMascota, fraseDeFallo, avisoDelDia, librosEnCurso, FRASES, DIA,
 } from '../src/pet-core.js';
 
 let bien = 0;
@@ -443,6 +443,61 @@ console.log('\n─── CUÁNDO SUENA EL TELÉFONO, Y CUÁNDO NO ───');
   const rachas = cuerpos.filter((c) => RECLAMO.test(c));
   comprobar('NINGÚN aviso habla de rachas, metas ni días perdidos',
     rachas.length === 0, rachas.join(' · '));
+}
+
+/* ── 8 · CON VARIOS LIBROS A LA VEZ ──────────────────────────
+
+   «Estoy leyendo más de dos libros, ¿entonces cómo sabe cuál poner?»
+
+   La regla es «el que tocaste más recientemente», y no cambia. Lo que
+   cambia es que deja de afirmarse: la pantalla enseña la lista y se
+   puede corregir. Aquí se comprueba la lista. */
+
+console.log('\n─── CUANDO LLEVAS VARIOS A LA VEZ ───');
+
+{
+  const enCurso = (id, title, hace) => ({
+    id, title, total: 300, page: 50, status: 'reading', pct: 17,
+    lastReadAt: AHORA - hace, finishedAt: 0,
+  });
+  const lista = [
+    enCurso('c', 'El tercero', 9 * DIA),
+    enCurso('a', 'El primero', 2 * 3600e3),
+    enCurso('b', 'El segundo', 2 * DIA),
+  ];
+
+  const abiertos = librosEnCurso(lista);
+  comprobar('salen los tres, no uno',
+    abiertos.length === 3, `${abiertos.length}`);
+  comprobar('y en orden: el más reciente primero',
+    abiertos.map((b) => b.id).join('') === 'abc', abiertos.map((b) => b.id).join(''));
+  /* Y aquí salió una incoherencia de verdad: con tres abiertos y uno
+     callado nueve días, la mascota pregunta por ESE, no por el más
+     reciente. Si el chat se abriera por el más reciente, el inicio
+     diría «¿por dónde vas con El tercero?» y el chat «hablando de El
+     primero» — la app contradiciéndose en dos líneas seguidas.
+
+     Por eso el chat abre por el libro del que ella YA habla, y solo
+     cae al más reciente si su ánimo no va de ninguno de los abiertos. */
+  const suyo = estadoMascota(lista, AHORA);
+  comprobar('con uno callado nueve días, ella pregunta por ESE',
+    suyo.mood === 'preguntando' && suyo.libro.id === 'c',
+    `${suyo.mood} · ${suyo.libro?.id}`);
+  comprobar('y ese libro está entre los abiertos, así que el chat puede abrirse por él',
+    abiertos.some((b) => b.id === suyo.libro.id));
+
+  /* La misma prueba de vida que en el resto del módulo. */
+  const conMarcado = [...lista, {
+    id: 'z', title: 'Solo marcado', total: 200, page: 0, status: 'reading',
+    pct: 0, lastReadAt: 0, finishedAt: 0,
+  }];
+  comprobar('un libro marcado y sin abrir NO entra en la lista',
+    librosEnCurso(conMarcado).every((b) => b.id !== 'z'));
+
+  comprobar('con uno solo, la lista tiene uno',
+    librosEnCurso([enCurso('a', 'Único', 3600e3)]).length === 1);
+  comprobar('y sin ninguno, está vacía',
+    librosEnCurso([]).length === 0);
 }
 
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);

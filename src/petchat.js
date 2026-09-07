@@ -27,13 +27,62 @@
    ───────────────────────────────────────────────────────────── */
 
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
-import { petConfig, petState, petVista, petNombre } from './pet.js';
+import { petConfig, petState, petVista, petNombre, petLibrosEnCurso } from './pet.js';
 import { petChat, isDenied } from './agent.js';
 import { fraseDeFallo } from './pet-core.js';
 
 /** El hilo de esta sesión. Se vacía al cerrar. */
 let hilo = [];
 let esperando = false;
+
+/* ── DE QUÉ LIBRO SE HABLA  ·  la suposición, a la vista ─────
+   «Estoy leyendo más de dos libros, ¿entonces cómo sabe cuál poner?
+    No me pregunta. Creo que es equivocado e impreciso.»
+
+   La app elegía el que tocaste más recientemente —regla defendible— y
+   luego lo AFIRMABA: «está leyendo Canción de Navidad contigo», en
+   singular y sin margen. Con tres libros abiertos eso no es un dato,
+   es una suposición disfrazada de hecho. Y encima es el libro que
+   viaja al asistente como contexto: si falla, las tres sugerencias
+   hablan de un libro que no tienes en la cabeza.
+
+   Preguntar cada vez, que es lo primero que se ocurre, sería peor:
+   convierte en un formulario lo que tiene que ser abrir y escribir.
+   Así que se enseña la suposición y se deja corregirla de un toque —
+   que es lo que hace una persona cuando no está segura de a qué te
+   refieres: propone y espera a que la pares.
+
+   `null` = usa el más reciente. Solo se fija cuando ella elige. */
+let libroElegido = null;
+
+const librosDisponibles = () => petLibrosEnCurso();
+
+function libroDeLaCharla() {
+  const abiertos = librosDisponibles();
+  if (!abiertos.length) return null;
+  if (libroElegido) {
+    const suyo = abiertos.find((b) => b.id === libroElegido);
+    if (suyo) return suyo;
+  }
+  /* POR DEFECTO, EL LIBRO DEL QUE ELLA YA ESTÁ HABLANDO. No siempre es
+     el más reciente: con tres abiertos y uno callado nueve días, la
+     mascota pregunta por ESE. Si el inicio dice «¿por dónde vas con El
+     tercero?» y al tocarla el chat se abre por otro, la app se
+     contradice en dos líneas seguidas.
+
+     Y si su ánimo no habla de ninguno de los abiertos —celebrando algo
+     que terminaste, por ejemplo— vale el más reciente, que es la
+     suposición de siempre. */
+  const suyo = petState().libro;
+  return abiertos.find((b) => b.id === suyo?.id) || abiertos[0];
+}
+
+/** Cambiar de libro reinicia la conversación: era sobre otro. */
+export function hablarDeLibro(id) {
+  libroElegido = id;
+  hilo = [];
+  pintar();
+}
 
 /* Las sugerencias salen de lo que está leyendo AHORA. Una sugerencia
    genérica se ignora; una que nombra tu libro se toca. */
@@ -60,7 +109,8 @@ function sugerencias(libro) {
 function pintar() {
   const cfg = petConfig();
   const estado = petState();
-  const libro = estado.libro || estado.current;
+  const abiertos = librosDisponibles();
+  const libro = libroDeLaCharla();
 
   /* CADA RESPUESTA SUYA LLEVA SU NOMBRE DELANTE. La cabecera ya dice
      con quién hablas, pero se lee una vez y se olvida; el nombre sobre
@@ -80,16 +130,27 @@ function pintar() {
       <div class="petchat-retrato" data-mood="${estado.mood}">${petVista(estado.mood, cfg)}</div>
       <div>
         <div class="petchat-nombre">${esc(nombre)}</div>
-        <!-- El libro solo se nombra si CONSTA que lo estás leyendo, y
-             aun así la línea dice que se puede hablar de cualquiera:
-             es contexto, no el tema obligatorio de la conversación.
-             Sin libro, «Solo habla de libros y de leer» describía el
-             cerco en vez de invitar — la misma frase, del revés. -->
-        <div class="petchat-sub">${libro
-          ? `Está leyendo <strong>${esc(libro.title)}</strong> contigo · pregúntale de cualquier libro`
-          : 'Pregúntale de cualquier libro, lo estés leyendo o no'}</div>
+        <!-- CON VARIOS LIBROS ABIERTOS NO SE AFIRMA NADA. Con uno,
+             «está leyendo X contigo» es un dato. Con tres es una
+             suposición, y decirla en singular la disfraza de hecho:
+             debajo va el selector para corregirla de un toque. -->
+        <div class="petchat-sub">${(() => {
+    if (!libro) return 'Pregúntale de cualquier libro, lo estés leyendo o no';
+    if (abiertos.length > 1) return `Hablando de <strong>${esc(libro.title)}</strong> · o de cualquier otro libro`;
+    return `Está leyendo <strong>${esc(libro.title)}</strong> contigo · pregúntale de cualquier libro`;
+  })()}</div>
       </div>
     </div>
+
+    ${abiertos.length > 1 ? `
+      <div class="petchat-cuales">
+        <span class="petchat-cuales-que">Llevas ${abiertos.length} a la vez:</span>
+        ${abiertos.map((b) => `
+          <button class="petchat-cual${b.id === libro.id ? ' on' : ''}"
+                  onclick="hablarDeLibro(${JSON.stringify(b.id).replace(/"/g, '&quot;')})">
+            ${esc(b.title)}
+          </button>`).join('')}
+      </div>` : ''}
 
     ${hilo.length || esperando ? `
       <div class="chat-mensajes" id="petchat-hilo">
@@ -138,6 +199,7 @@ export function closePetChat(e) {
      accidental dejaría el hilo vivo esperando a que alguien lo lea. */
   hilo = [];
   esperando = false;
+  libroElegido = null;
 }
 
 /** Una sugerencia es una pregunta ya escrita: se manda tal cual. */
@@ -155,9 +217,11 @@ export async function enviarMascota(textoDado) {
   esperando = true;
   pintar();
 
-  const estado = petState();
   try {
-    const dice = await petChat(texto, { libro: estado.libro || estado.current });
+    /* El libro que se manda es EL QUE ELLA VE en la cabecera, no el
+       que la app supuso al abrir: si lo cambió, el contexto cambia con
+       ella o la pantalla estaría diciendo una cosa y mandando otra. */
+    const dice = await petChat(texto, { libro: libroDeLaCharla() });
     esperando = false;
     hilo.push({ mia: false, texto: dice || 'De eso no sé nada, pero de libros te cuento lo que quieras.' });
   } catch (err) {
