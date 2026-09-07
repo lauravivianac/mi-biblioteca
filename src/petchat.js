@@ -27,17 +27,12 @@
    ───────────────────────────────────────────────────────────── */
 
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
-import { petConfig, petState, petVista, SPECIES } from './pet.js';
+import { petConfig, petState, petVista, petNombre } from './pet.js';
 import { petChat, isDenied } from './agent.js';
 
 /** El hilo de esta sesión. Se vacía al cerrar. */
 let hilo = [];
 let esperando = false;
-
-const nombreDeElla = () => {
-  const cfg = petConfig();
-  return cfg.name || SPECIES.find((s) => s.id === cfg.species)?.name || 'Tu mascota';
-};
 
 /* Las sugerencias salen de lo que está leyendo AHORA. Una sugerencia
    genérica se ignora; una que nombra tu libro se toca. */
@@ -61,16 +56,24 @@ function pintar() {
   const estado = petState();
   const libro = estado.libro || estado.current;
 
-  const burbujas = hilo.map((m) => `
-    <div class="burbuja ${m.mia ? 'mia' : 'suya'}${m.fallo ? ' burbuja-fallo' : ''}">
-      ${esc(m.texto)}
-    </div>`).join('');
+  /* CADA RESPUESTA SUYA LLEVA SU NOMBRE DELANTE. La cabecera ya dice
+     con quién hablas, pero se lee una vez y se olvida; el nombre sobre
+     cada burbuja es lo que hace que no parezca una caja de respuestas
+     sino alguien contestando. Las tuyas no lo llevan: ya sabes quién
+     eres. */
+  const nombre = petNombre(cfg);
+  const burbujas = hilo.map((m) => (m.mia
+    ? `<div class="burbuja mia">${esc(m.texto)}</div>`
+    : `<div class="burbuja-dice">
+         <span class="burbuja-quien">${esc(nombre)}</span>
+         <div class="burbuja suya${m.fallo ? ' burbuja-fallo' : ''}">${esc(m.texto)}</div>
+       </div>`)).join('');
 
   $('petchat-body').innerHTML = `
     <div class="petchat-cabeza">
       <div class="petchat-retrato" data-mood="${estado.mood}">${petVista(estado.mood, cfg)}</div>
       <div>
-        <div class="petchat-nombre">${esc(nombreDeElla())}</div>
+        <div class="petchat-nombre">${esc(nombre)}</div>
         <div class="petchat-sub">${libro
           ? `Está leyendo <strong>${esc(libro.title)}</strong> contigo`
           : 'Solo habla de libros y de leer'}</div>
@@ -80,7 +83,10 @@ function pintar() {
     ${hilo.length || esperando ? `
       <div class="chat-mensajes" id="petchat-hilo">
         ${burbujas}
-        ${esperando ? '<div class="burbuja suya petchat-pensando"><span></span><span></span><span></span></div>' : ''}
+        ${esperando ? `<div class="burbuja-dice">
+             <span class="burbuja-quien">${esc(nombre)}</span>
+             <div class="burbuja suya petchat-pensando"><span></span><span></span><span></span></div>
+           </div>` : ''}
       </div>` : ''}
 
     ${hilo.length ? '' : `

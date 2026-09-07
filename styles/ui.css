@@ -1072,6 +1072,18 @@ body:not(.signed-in) .fab { display: none; }
 }
 .burbuja-hora { display: block; font-size: 9.5px; color: var(--muted); margin-top: 3px; }
 
+/* Quién lo dice, encima de lo que dice. Solo para ella: en un chat de
+   dos, poner tu propio nombre sobre tus mensajes es ruido. */
+.burbuja-dice { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 82%; }
+.burbuja-dice .burbuja { max-width: 100%; }
+.burbuja-quien {
+  font-size: 9.5px;
+  letter-spacing: var(--label-spacing);
+  text-transform: uppercase;
+  color: var(--gold);
+  padding-left: 2px;
+}
+
 /* El aviso de «esto parece un teléfono». Se ve, y se puede mandar
    igual: eso es lo que lo hace un aviso y no un filtro. */
 .chat-cuidado {

@@ -110,14 +110,37 @@ const GENRE_SCENE = {
    lista: el búho con el tomo gordo, la zorra con el primer clásico
    —que es de donde viene—, el mapache con los cinco géneros porque
    junta de todo, y la panda con los diez libros, que es constancia. */
+/* Y CADA UNA CON SU NOMBRE. No es un adorno: una lista que dice
+   «Gatita, Coneja, Búho» es un catálogo de animales, y una que dice
+   «Cleo, Nube, Ulises» son seis personajes esperando. Es la misma
+   diferencia que hay entre un perro y tu perro.
+
+   El nombre viene puesto de fábrica y SE PUEDE CAMBIAR: el campo de
+   arriba sigue mandando. Lo que se gana es que desde el primer día
+   haya alguien, sin tener que inventárselo — antes el inicio decía
+   una frase y no decía quién la decía. */
 export const SPECIES = [
-  { id: 'gato',    name: 'Gatita',  emoji: '🐱', unlock: null },
-  { id: 'conejo',  name: 'Coneja',  emoji: '🐰', unlock: null },
-  { id: 'buho',    name: 'Búho',    emoji: '🦉', unlock: 'tomo-500' },
-  { id: 'zorro',   name: 'Zorrita', emoji: '🦊', unlock: 'primer-clasico' },
-  { id: 'mapache', name: 'Mapache', emoji: '🦝', unlock: 'cinco-generos' },
-  { id: 'panda',   name: 'Panda',   emoji: '🐼', unlock: 'diez-libros' },
+  { id: 'gato',    name: 'Gatita',  nombre: 'Cleo',   emoji: '🐱', unlock: null },
+  { id: 'conejo',  name: 'Coneja',  nombre: 'Nube',   emoji: '🐰', unlock: null },
+  { id: 'buho',    name: 'Búho',    nombre: 'Ulises', emoji: '🦉', unlock: 'tomo-500' },
+  { id: 'zorro',   name: 'Zorrita', nombre: 'Rita',   emoji: '🦊', unlock: 'primer-clasico' },
+  { id: 'mapache', name: 'Mapache', nombre: 'Coco',   emoji: '🦝', unlock: 'cinco-generos' },
+  { id: 'panda',   name: 'Panda',   nombre: 'Bambú',  emoji: '🐼', unlock: 'diez-libros' },
 ];
+
+/** El nombre de fábrica de una especie. */
+export const nombreDeFabrica = (id) => SPECIES.find((s) => s.id === id)?.nombre || '';
+
+/** ¿Este nombre lo puso la app, o lo escribió ella? */
+export const esNombreDeFabrica = (n) => SPECIES.some((s) => s.nombre === n);
+
+/**
+ * Cómo se llama la que te acompaña ahora.
+ * Si nunca se tocó el campo, el de fábrica de su especie.
+ */
+export function petNombre(cfg = petConfig()) {
+  return cfg.name || nombreDeFabrica(cfg.species) || 'Tu mascota';
+}
 
 export const DEFAULT_PET = {
   name: '',
@@ -636,7 +659,10 @@ export function renderPet() {
     <div class="pet-shelf" data-mood="${state.mood}" onclick="pokePet()" role="button" tabindex="0">
       ${petVista(state.mood, cfg)}
       <div class="pet-talk">
-        ${cfg.name ? `<div class="pet-name">${esc(cfg.name)}</div>` : ''}
+        ${/* Siempre hay nombre: si no se lo pusiste tú, el de fábrica de
+              su especie. Antes el inicio decía una frase sin decir
+              quién la decía. */''}
+        <div class="pet-name">${esc(petNombre(cfg))}</div>
         <p class="pet-phrase">${esc(petPhrase(state))}</p>
       </div>
     </div>`;

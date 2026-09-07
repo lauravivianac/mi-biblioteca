@@ -99,11 +99,22 @@ async function call(intent, text) {
   if (!user) throw new Error('Necesitas iniciar sesión.');
   const token = await user.getIdToken();
 
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify({ intent, text }),
-  });
+  /* Un fallo de RED revienta aquí, antes de que el Worker conteste, así
+     que no pasa por el mapa de mensajes de arriba: lo que sale es el
+     texto del navegador —«Failed to fetch», «Load failed»—, en inglés
+     y sin sentido para quien lo lee. Antes no se veía porque los otros
+     encargos se lo tragaban en un console.warn; el chat de la mascota
+     lo pinta en la conversación, delante de una niña. */
+  let r;
+  try {
+    r = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify({ intent, text }),
+    });
+  } catch {
+    throw new Error('No hay conexión con el asistente. Inténtalo en un rato.');
+  }
 
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(MESSAGES[data.error] || data.message || 'No se pudo consultar.');
