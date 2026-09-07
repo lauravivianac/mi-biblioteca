@@ -664,11 +664,45 @@ export async function loadStore(userId) {
       writeLS('settings', state.settings);
       writeLS('custom', custom);
     }
+    retirarLoQueNoDebioPublicarse();
     return { source: 'firestore', empty: !booksSnap.size && !userSnap.exists() };
   } catch (e) {
     console.warn('Sin conexión a Firestore, se usa la copia de este dispositivo:', e);
     return { source: 'local', error: e };
   }
+}
+
+/* ── RETIRAR LO QUE YA ESTABA PUBLICADO ──────────────────────
+   Cambiar el valor por defecto arregla las cuentas de mañana y NO
+   arregla ninguna de las de hoy: lo que ya salió sigue en
+   `profiles/{uid}`, que lo lee cualquiera, hasta que alguien lo
+   sobrescriba. Y el perfil solo se reescribe cuando cambias algo, así
+   que una cuenta a la que no se le toca nada podría quedarse con la
+   lista publicada para siempre.
+
+   Por eso esto no es un ajuste más, es una LIMPIEZA que corre sola una
+   vez por cuenta. `flushProfile` escribe el documento entero (`setDoc`
+   sin `merge`), así que republicar sin `librosLeidos` ni `valorados`
+   los borra de verdad; no quedan escondidos.
+
+   El número permite volver a hacerlo si mañana hay otra cosa que
+   retirar: se sube y todas las cuentas pasan otra vez. */
+const VERSION_PRIVACIDAD = 1;
+
+function retirarLoQueNoDebioPublicarse() {
+  if (!state.uid) return;
+  if (Number(settings().privacidadRevisada) >= VERSION_PRIVACIDAD) return;
+
+  /* No se le pregunta a nadie y no se avisa con un cartel, y las dos
+     cosas son a propósito: nadie ENCENDIÓ esto —venía encendido—, así
+     que apagarlo no le quita a nadie una decisión suya, se la
+     devuelve. Quien lo quiera lo tiene a un toque en su perfil, ahora
+     diciendo lo que publica de verdad. */
+  state.settings = { ...settings(), privacidadRevisada: VERSION_PRIVACIDAD };
+  state.settingsDirty = true;
+  state.profileDirty = true;
+  writeLS('settings', state.settings);
+  schedulePersist();
 }
 
 /** Semilla inicial de una cuenta nueva. */

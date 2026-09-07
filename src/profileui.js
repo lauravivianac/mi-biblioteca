@@ -356,21 +356,42 @@ function pintarAjustes() {
     <p class="set-fineprint">
       Lo que apagues no se publica: deja de estar en tu perfil, no solo de pintarse.
     </p>
-    ${SECCIONES.map((sec) => `
-      <div class="set-row" onclick="toggleProfileSection('${sec.id}')">
-        <div>
-          <div class="set-row-title">${esc(sec.label)}</div>
-          <div class="set-row-sub">${esc(sec.hint)}</div>
-        </div>
-        <span class="prof-flag ${seccionVisible(s, sec.id) ? 'on' : ''}">
-          ${seccionVisible(s, sec.id) ? 'Se ve' : 'Oculto'}
-        </span>
-      </div>`).join('')}
+    ${SECCIONES.filter((sec) => !sec.opt).map((sec) => filaSeccion(s, sec)).join('')}
+
+    <!-- APARTE, Y NO POR ORDEN: lo de arriba enseña un resumen en tu
+         tarjeta; lo de abajo ENTREGA UNA LISTA de tus libros a quien la
+         pida. Son dos cosas distintas y mezclarlas en la misma columna
+         de ocho interruptores iguales es lo que hacía que nadie se
+         enterara de cuál era cuál. -->
+    <h4 class="prof-sec-title" style="margin-top:20px">Qué entregas de tu biblioteca</h4>
+    <p class="set-fineprint">
+      Esto no es un resumen: es la lista. Viene apagado y solo lo enciendes tú.
+    </p>
+    ${SECCIONES.filter((sec) => sec.opt).map((sec) => filaSeccion(s, sec)).join('')}
 
     ${bloqueEstanteriasAjustes()}
 
     <button class="btn-magic full" onclick="closeSheet('profset-overlay');openProfile()"
             style="margin-top:16px">Ver cómo queda</button>`;
+}
+
+/* «Se ve» y «Oculto» valen para lo que se pinta en tu tarjeta. Para lo
+   que se entrega no: nadie VE tu lista de libros leídos —la usa el
+   cruce de lecturas—, así que decir «Se ve» sería describir mal
+   exactamente lo que más importa entender. */
+function filaSeccion(s, sec) {
+  const on = seccionVisible(s, sec.id);
+  const etiqueta = sec.opt
+    ? (on ? 'Encendido' : 'Apagado')
+    : (on ? 'Se ve' : 'Oculto');
+  return `
+    <div class="set-row" onclick="toggleProfileSection('${sec.id}')">
+      <div>
+        <div class="set-row-title">${esc(sec.label)}</div>
+        <div class="set-row-sub">${esc(sec.hint)}</div>
+      </div>
+      <span class="prof-flag ${on ? 'on' : ''}">${etiqueta}</span>
+    </div>`;
 }
 
 function bloqueEstanteriasAjustes() {
@@ -405,7 +426,11 @@ export function togglePrivada() {
 }
 
 export function toggleProfileSection(id) {
-  updateSettings({ profileHidden: toggleSeccion(settings(), id) });
+  /* El core devuelve el parche entero —`profileHidden` o
+     `profileShown`, según la clase de sección— y aquí se escribe tal
+     cual. Elegir el campo desde la pantalla era la forma de dejar
+     encendida para siempre la que publica la biblioteca. */
+  updateSettings(toggleSeccion(settings(), id));
   pintarAjustes();
 }
 

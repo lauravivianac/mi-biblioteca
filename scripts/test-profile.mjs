@@ -9,7 +9,7 @@
 
 import {
   esPrivada, followersOnlyDoc,
-  SECCIONES, IDS_SECCION, seccionVisible, toggleSeccion,
+  SECCIONES, IDS_SECCION, SECCIONES_OPT, esOpt, seccionVisible, toggleSeccion,
   limpiarBio, limpiarCiudad, inicial, profileStats, generosFavoritos,
   publicProfileDoc, CAMPOS_PUBLICOS, profileUrl, usernameFromHash, resumenCorto,
 } from '../src/profile-core.js';
@@ -99,17 +99,45 @@ grupo('LA MASCOTA ESCONDIDA NO SE PUBLICA');
   ok('y si no, sale', base().mascota.name === 'Nube');
 }
 
-grupo('QUE ME ENCUENTREN POR MIS LIBROS (#47) ES OTRO INTERRUPTOR');
+/* ── LA QUE ENTREGA LA BIBLIOTECA ENTERA ─────────────────────
+   «Cuando alguien me agrega como amiga se lleva toda mi biblioteca.»
+
+   Y no hacía falta ser amiga: `sugerible` venía encendida de fábrica y
+   publica un identificador por CADA libro leído y su nota, en un
+   documento que lee cualquiera sin cuenta. Estas pruebas cuidan el
+   valor por defecto, que es donde estaba el fallo — no la función. */
+
+grupo('LA LISTA DE TU BIBLIOTECA NO SALE SI NO LA ENCIENDES');
 {
   const d = base();
+  ok('de fábrica, la clave NO existe', !('librosLeidos' in d));
+  ok('ni las puntuaciones', !('valorados' in d));
+  ok('y no se anuncia como sección', !d.secciones.includes('sugerible'));
+
+  /* El descuido que esto caza: unos ajustes a medio hacer —el fichero
+     de quien nunca abrió esta pantalla— no pueden publicarla. */
+  for (const settings of [{}, { ...AJUSTES }, { profileHidden: [] }, { profileShown: [] }, { profileShown: null }]) {
+    ok(`con settings=${JSON.stringify(settings).slice(0, 28)}… sigue sin salir`,
+      !('librosLeidos' in base({ settings })));
+  }
+}
+
+grupo('ENCENDIDA A MANO, SÍ (#47) — Y SOLO LO PACTADO');
+{
+  const on = base({ settings: { ...AJUSTES, profileShown: ['sugerible'] } });
   igual('publica los ids de los leídos, nunca lo que opinas',
-    d.librosLeidos, ['b1', 'b2', 'b3']);
+    on.librosLeidos, ['b1', 'b2', 'b3']);
   ok('los pendientes y los empezados no van',
-    !d.librosLeidos.includes('b4') && !d.librosLeidos.includes('b5'));
-  const off = base({ settings: { ...AJUSTES, profileHidden: ['sugerible'] } });
-  ok('apagado, la clave no existe', !('librosLeidos' in off));
+    !on.librosLeidos.includes('b4') && !on.librosLeidos.includes('b5'));
+  ok('ahora sí se anuncia como sección', on.secciones.includes('sugerible'));
   ok('y sigue sin haber reseñas ahí dentro',
-    !JSON.stringify(d.librosLeidos).includes('review'));
+    !JSON.stringify(on.librosLeidos).includes('review'));
+
+  /* El error que el parche del core impide: apagarla por el campo
+     equivocado la dejaría encendida en silencio. */
+  const viejo = base({ settings: { ...AJUSTES, profileShown: ['sugerible'], profileHidden: ['sugerible'] } });
+  ok('quien la tenía apagada y hoy la enciende, la tiene encendida',
+    'librosLeidos' in viejo);
 }
 
 /* ── CUENTA PRIVADA  ·  historia #52 ─────────────────────────── */
@@ -141,11 +169,20 @@ grupo('LO QUE SOLO VEN LAS SEGUIDORAS');
     followersOnlyDoc({ ...datos, settings: AJUSTES }) === null);
   ok('sigue sin filtrarse la estantería privada',
     !JSON.stringify(full).includes('Regalos para Ana'));
+
+  /* Esto es literalmente lo que ella contó: alguien te sigue y se
+     lleva tu biblioteca. Aquí es donde iría, y no va. */
+  ok('quien te sigue TAMPOCO se lleva la lista si no la encendiste',
+    !('librosLeidos' in full) && !('valorados' in full));
+  const conLista = followersOnlyDoc({
+    ...datos, settings: { ...AJUSTES, privada: true, profileShown: ['sugerible'] },
+  });
+  ok('encendida a mano, sí la recibe', Array.isArray(conLista.librosLeidos));
 }
 
 grupo('UNA CUENTA PRIVADA NO APARECE EN «QUIZÁ CONOZCAS»');
-ok('porque sus libros ya no están donde busca esa consulta',
-  !('librosLeidos' in base({ settings: { ...AJUSTES, privada: true } })));
+ok('porque sus libros ya no están donde busca esa consulta, ni encendiéndolo',
+  !('librosLeidos' in base({ settings: { ...AJUSTES, privada: true, profileShown: ['sugerible'] } })));
 
 grupo('EL INTERRUPTOR');
 ok('por defecto, pública', !esPrivada({}));
@@ -161,12 +198,28 @@ ok('sin uid, null', publicProfileDoc({ username: 'laura', name: 'Laura' }) === n
 grupo('LAS SECCIONES');
 ok('hay ocho', SECCIONES.length === 8);
 ok('todas tienen id, etiqueta y pista', SECCIONES.every((s) => s.id && s.label && s.hint));
-ok('por defecto se ven todas', IDS_SECCION.every((id) => seccionVisible({}, id)));
+ok('las de la tarjeta se ven por defecto',
+  IDS_SECCION.filter((id) => !esOpt(id)).every((id) => seccionVisible({}, id)));
+ok('las que entregan una lista, NO',
+  SECCIONES_OPT.length > 0 && SECCIONES_OPT.every((id) => !seccionVisible({}, id)));
 ok('sin lista, visible', seccionVisible({ profileHidden: null }, 'numeros'));
 ok('en la lista de apagadas, no visible', !seccionVisible({ profileHidden: ['numeros'] }, 'numeros'));
-igual('el interruptor apaga', toggleSeccion({}, 'numeros'), ['numeros']);
-igual('y vuelve a encender', toggleSeccion({ profileHidden: ['numeros'] }, 'numeros'), []);
-igual('sin tocar las demás', toggleSeccion({ profileHidden: ['numeros', 'generos'] }, 'numeros'), ['generos']);
+ok('una «opt» se enciende con profileShown', seccionVisible({ profileShown: ['sugerible'] }, 'sugerible'));
+igual('el interruptor apaga', toggleSeccion({}, 'numeros'), { profileHidden: ['numeros'] });
+igual('y vuelve a encender', toggleSeccion({ profileHidden: ['numeros'] }, 'numeros'), { profileHidden: [] });
+igual('sin tocar las demás', toggleSeccion({ profileHidden: ['numeros', 'generos'] }, 'numeros'), { profileHidden: ['generos'] });
+
+/* EL PARCHE VA AL CAMPO QUE TOCA. Devolver un array suelto obligaba a
+   quien llama a elegir el campo, y elegir mal —escribir `profileHidden`
+   con el id de una «opt»— la dejaría encendida para siempre sin que
+   nadie viera nada raro en la pantalla. */
+igual('una «opt» se enciende por su propio campo',
+  toggleSeccion({}, 'sugerible'), { profileShown: ['sugerible'] });
+igual('y se apaga por el mismo',
+  toggleSeccion({ profileShown: ['sugerible'] }, 'sugerible'), { profileShown: [] });
+ok('nunca toca el campo de las otras',
+  !('profileHidden' in toggleSeccion({}, 'sugerible'))
+  && !('profileShown' in toggleSeccion({}, 'numeros')));
 
 /* ── LOS NÚMEROS ─────────────────────────────────────────────── */
 
