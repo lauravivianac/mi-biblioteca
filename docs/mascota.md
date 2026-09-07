@@ -525,9 +525,9 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ## Estado
 
-**Puestos: la Gatita, la Coneja y el Búho** — las cinco poses de cada uno, con
-la respiración lenta que sustituye a la animación dibujada. Faltan la Zorrita,
-el Mapache y el Panda.
+**Puestos: la Gatita, la Coneja, el Búho y la Zorrita** — las cinco poses de
+cada uno, con la respiración lenta que sustituye a la animación dibujada.
+Faltan el Mapache y el Panda.
 
 Mientras una especie no tenga sus cinco poses **se sigue dibujando por
 código**: las dos formas conviven a propósito (`ILUSTRADAS` en
