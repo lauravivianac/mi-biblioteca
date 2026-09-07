@@ -138,6 +138,23 @@ cabeza, misma altura de los ojos, solo cambia la pose». Si las generas sueltas,
 la mascota cambia de tamaño y de cara al cambiar de ánimo, y eso se nota más
 que si estuviera mal dibujada.
 
+#### Y ENTRE especies, con una de las que ya hay delante
+
+Esta regla llevaba escrita desde el principio **solo dentro de una especie** —
+y ese hueco no se notó en seis intentos seguidos. Las seis primeras salieron
+cada una de su propia conversación, guiadas nada más que por el bloque de
+estilo, y casaron igual: son seis mamíferos peludos, o casi, y el parecido
+venía puesto por el propio animal.
+
+**El dinosaurio es el primero que no lo trae de fábrica**, y ahí se vio que un
+párrafo de texto no transmite un estilo. La tercera versión estaba bien
+dibujada, era una cría de verdad y aun así se salía de la fila.
+
+Así que a partir de aquí: **se adjunta una de las seis a la conversación** y se
+pide *«el mismo ilustrador, la misma técnica y la misma paleta que esta imagen,
+pero el personaje es…»*. Una imagen dice de una vez lo que veinte líneas de
+prompt no consiguen.
+
 ### Las seis especies
 
 **Y cada una tiene nombre**, puesto de fábrica y cambiable: Cleo, Nube, Ulises,
@@ -602,7 +619,7 @@ la pena que sea un dinosaurio y no otro bicho redondo.**
 
 | | Nombre | Descripción para el prompt |
 |---|---|---|
-| **Dinosaurio** | Rex | `una cría de dinosaurio, rechoncha y de piel lisa verde musgo con moteado suave y el vientre color crema, ojos grandes y oscuros, hocico corto y placas bajas y redondeadas siguiendo el lomo` |
+| **Dinosaurio** | Rex | `una cría de dinosaurio cubierta de plumón suave y esponjoso, color verde musgo apagado con el pecho color crema, ojos grandes y oscuros, hocico corto y una hilera de placas bajas y blandas por el lomo` |
 
 **Un dinosaurio verde menta con lunares no es un animal: es un juguete.** Los
 otros seis tienen color de animal —jengibre, gris de conejo, pardo de búho—, y
@@ -633,23 +650,45 @@ reptil adulto de verdad *tiene* la piel arrugada: el modelo lo dibuja bien y
 sale un señor mayor. Con un gato no pasa.
 
 ```
-· NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
-  ataque. Es una cría tranquila, no un depredador.
+· NADA de aspecto feroz: sin dientes afilados, sin garras a la vista,
+  sin gesto de ataque. Es una cría tranquila, no un depredador.
 · NADA de viejo: sin arrugas, sin pliegues colgando en el cuello o la
   panza, sin papada, sin párpados caídos, sin piel curtida. Es un
   animal recién salido del huevo.
-· Y tampoco un peluche: escamas finas y apenas insinuadas, no relleno
-  liso; cuello, patas y cola de animal real, no muñones.
+· NADA de escamas ni de piel de reptil: va cubierto de PLUMÓN suave,
+  dibujado a trazos finos como el pelo de un gatito.
+· Ni brillos especulares en el ojo, ni acabado fotográfico: la misma
+  mano suelta y suave que las otras seis.
 ```
+
+**Y la tercera advertencia es la que de verdad lo arregla.** Las seis que ya
+existen se parecen entre sí por una razón muy tonta: **todas tienen pelo.**
+Trazo blando, silueta difusa, poco detalle, ninguna garra a la vista, paleta
+cálida de jengibre y pardo. Un reptil de escamas —bordes duros, detalle alto,
+uñas marcadas, verde frío— no se sienta con ellas por bien escrito que esté el
+prompt, porque lo que las une no es el estilo: es la textura.
+
+El plumón lo resuelve sin renunciar a nada. Un dinosaurio con plumón se dibuja
+con el mismo trazo que un conejo, sigue siendo inconfundiblemente un
+dinosaurio, y de paso es lo que dice la paleontología de los últimos treinta
+años. Lo que rompía el molde de los seis animalitos de bosque era la ESPECIE,
+no la piel.
 
 ### Dinosaurio · `dino`
 
 **Mensaje 1**
 
 ```
-Dibuja una CRÍA de dinosaurio, un bebé recién salido del huevo: rechoncha, de piel lisa y tersa verde musgo con moteado suave y el vientre color crema, escamas finas apenas insinuadas, ojos GRANDES, redondos y oscuros, hocico corto, frente alta y placas bajas y redondeadas siguiendo el lomo. Sentada con las patas estiradas hacia delante, la cola enroscada a un lado, la cabeza ladeada, sonriendo y con un bracito levantado saludando.
+[ADJUNTA AQUÍ UNA DE LAS SEIS QUE YA EXISTEN — por ejemplo la gatita o
+la zorrita — Y EMPIEZA ASÍ:]
 
-Es un animal JOVEN: nada de arrugas, pliegues colgando, papada ni párpados caídos.
+Fíjate en la imagen que te adjunto: quiero el MISMO ilustrador, la misma
+técnica, el mismo trazo suave, la misma paleta cálida y apagada y el mismo
+nivel de detalle (bajo). Ese es el estilo, y no se negocia.
+
+Ahora dibuja, en ese mismo estilo, una CRÍA de dinosaurio recién salida del huevo: rechoncha, cubierta de PLUMÓN suave y esponjoso —dibujado a trazos finos, igual que el pelo del animal de la referencia—, de color verde musgo apagado con el pecho color crema, ojos GRANDES, redondos y oscuros, hocico corto, frente alta y una hilera de placas bajas y blandas por el lomo. Sentada con las patas estiradas hacia delante, la cola enroscada a un lado, la cabeza ladeada, sonriendo y con un bracito levantado saludando.
+
+Es un animal JOVEN y de PLUMÓN: nada de escamas, nada de piel de reptil, nada de garras marcadas, nada de arrugas ni párpados caídos, y ningún brillo de foto en el ojo.
 
 Ilustración de animales en acuarela y lápiz de color, con técnica
 realista, del estilo de un libro ilustrado clásico de cuentos de
