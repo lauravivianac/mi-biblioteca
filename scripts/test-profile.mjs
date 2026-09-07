@@ -99,6 +99,44 @@ grupo('LA MASCOTA ESCONDIDA NO SE PUBLICA');
   ok('y si no, sale', base().mascota.name === 'Nube');
 }
 
+/* ── LA ESPECIE VIAJA ENTERA ─────────────────────────────────
+   «¿Cómo quedamos con la mascota cuando agregue amigos? Te la estás
+    inventando, es un dato que ya deberías estar guardando.»
+
+   Se guarda — pero de las cuatro cosas que se publican de la mascota,
+   la única con prueba era el NOMBRE. La ESPECIE, que es la que decide
+   qué bicho ve tu amiga, no la comprobaba nadie. Y en el publicador
+   había un `species || 'gato'`: sin especie se escribía un gato en el
+   documento público, y a partir de ahí ya no hay forma de distinguir
+   «tiene un gato» de «no sabíamos cuál tenía».
+
+   Estas pruebas cubren el viaje entero: lo que hay en los ajustes es
+   exactamente lo que sale publicado, para las nueve especies. */
+
+grupo('LA ESPECIE DE TU AMIGA ES LA SUYA, NO UNA POR DEFECTO');
+{
+  const ESPECIES = ['gato', 'conejo', 'buho', 'zorro', 'mapache', 'panda', 'oso', 'lobo', 'cuervo'];
+  const salieron = ESPECIES.map((sp) =>
+    base({ settings: { ...AJUSTES, pet: { ...AJUSTES.pet, species: sp } } }).mascota?.species);
+  igual('las nueve viajan tal cual', salieron, ESPECIES);
+
+  /* El caso exacto que contó: una amiga con el oso. */
+  const suyo = base({ settings: { ...AJUSTES, pet: { species: 'oso', name: 'Tomás' } } });
+  ok('con el oso, sale el oso', suyo.mascota.species === 'oso');
+  ok('y su nombre', suyo.mascota.name === 'Tomás');
+
+  /* Y sin especie NO se inventa una. Ausente es verdad; un gato que
+     nadie eligió es un dato falso publicado. */
+  for (const pet of [{ name: 'Sin especie' }, { species: '', name: 'X' }, { species: '   ' }]) {
+    const d = base({ settings: { ...AJUSTES, pet } });
+    ok(`sin especie (${JSON.stringify(pet).slice(0, 26)}…) no se publica mascota`, !('mascota' in d));
+  }
+
+  ok('y sobre todo: nunca sale un gato que nadie eligió',
+    !ESPECIES.slice(1).some((sp) =>
+      base({ settings: { ...AJUSTES, pet: { ...AJUSTES.pet, species: sp } } }).mascota.species === 'gato'));
+}
+
 /* ── LA QUE ENTREGA LA BIBLIOTECA ENTERA ─────────────────────
    «Cuando alguien me agrega como amiga se lleva toda mi biblioteca.»
 
