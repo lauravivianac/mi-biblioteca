@@ -171,6 +171,45 @@ console.log('\n─── EL LÍMITE QUE NO SE CRUZA ───');
     reproches.length === 0, reproches.join(' · '));
 }
 
+/* ── 5 bis · «EMPEZADO» NO ES «LEYENDO» ──────────────────────
+
+   «¿Por qué dice que está leyendo Canción de Navidad conmigo? Yo no
+   estoy leyendo ese libro.»
+
+   Y no lo estaba: `readNow()` —el «¡A leer!» de un toque, el ganador
+   de un duelo, el libro que sigue al que acabas de terminar— marca
+   `reading` con la página a cero y sin ninguna lectura apuntada. La
+   mascota lo tomaba por el libro en curso y lo anunciaba en la
+   cabecera del chat, además de mandárselo al agente como el asunto de
+   la conversación. */
+
+console.log('\n─── LO QUE DICE QUE ESTÁS LEYENDO ───');
+
+{
+  const empezado = (id, title) => ({
+    id, title, total: 300, page: 0, status: 'reading', pct: 0, lastReadAt: 0, finishedAt: 0,
+  });
+
+  const e = estadoMascota([empezado('nav', 'Canción de Navidad'), empezado('qui', 'El Quijote')], AHORA);
+  comprobar('un libro solo marcado, sin una página leída, no es «en curso»',
+    e.libro === null, e.libro?.title);
+  comprobar('y no se inventa que lo lees contigo',
+    !/leyendo/.test(e.mood), e.mood);
+
+  /* La misma lista con una página leída en el segundo: ese sí. */
+  const conLectura = [
+    empezado('nav', 'Canción de Navidad'),
+    { ...empezado('qui', 'El Quijote'), page: 40, pct: 13, lastReadAt: AHORA - DIA },
+  ];
+  const f = estadoMascota(conLectura, AHORA);
+  comprobar('con una página leída, nombra ESE y no el que iba primero',
+    f.libro?.id === 'qui', f.libro?.title);
+
+  /* El que abrió el caso: dormida y afirmando que lees, a la vez. */
+  comprobar('nunca dice el ánimo «dormida» con un libro en curso a cuestas',
+    !(e.mood === 'dormida' && e.libro));
+}
+
 /* ── 6 · Y CUANDO NO PUEDE CONTESTAR, TAMPOCO CASTIGA ─────────
 
    El chat pintaba `err.message` tal cual, y esos mensajes están

@@ -53,7 +53,26 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
   const celebra = Boolean(terminado && terminado.finishedAt >= ultimaLectura);
 
   const casiTermina = leyendo.find((b) => (b.pct ?? 0) >= 85);
-  const enCurso = leyendo[0] || null;
+
+  /* «LEYENDO» NO ES LO MISMO QUE «EMPEZADO», y la app las confundía.
+     `readNow()` —el «¡A leer!» de un toque, y también el ganador de un
+     duelo y el libro que sigue al que acabas de terminar— marca el
+     libro como reading con la página a cero y sin ninguna lectura
+     apuntada. Con eso, la mascota anunciaba «Está leyendo Canción de
+     Navidad contigo» sobre un libro que nadie había abierto, y que
+     además había empezado la propia app en su nombre.
+
+     Peor todavía: si había varios así, cuál de ellos nombraba salía
+     del ORDEN DEL ARRAY, porque todos empataban a cero en la última
+     lectura. Y lo decía con el ánimo en «dormida», o sea afirmando que
+     lee contigo un libro mientras reconoce que nadie lee nada.
+
+     Así que ahora hace falta una prueba de vida: una página o una
+     lectura apuntada. Sin eso el libro está empezado, no en curso, y
+     la mascota no lo nombra — callarse es siempre mejor que inventar,
+     y más cuando lo que se inventa es lo que TÚ estás haciendo. */
+  const hayLectura = (b) => Boolean(b.lastReadAt) || (b.page || 0) > 0;
+  const enCurso = leyendo.find(hayLectura) || null;
 
   if (celebra) return { mood: 'celebrando', libro: terminado, diasCallada };
   if (casiTermina) return { mood: 'expectante', libro: casiTermina, diasCallada };

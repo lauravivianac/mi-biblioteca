@@ -260,9 +260,13 @@ export async function petChat(pregunta, { libro = null } = {}) {
   const texto = String(pregunta || '').trim();
   if (!texto) return null;
 
+  /* CONTEXTO, y así se llama. Con la etiqueta «LEYENDO:» el modelo
+     leía el libro como el asunto de la conversación y contestaba sobre
+     él vinieras a lo que vinieras. */
   const contexto = libro
-    ? `LEYENDO: ${libro.title}${libro.author ? ` — ${libro.author}` : ''}`
-    : 'LEYENDO: nada ahora mismo';
+    ? `CONTEXTO (solo por si viene al caso, está leyendo): ${libro.title}`
+      + `${libro.author ? ` — ${libro.author}` : ''}`
+    : 'CONTEXTO: no consta que esté leyendo nada ahora mismo';
 
   const r = await call('pet_chat', `${contexto}\nPREGUNTA: ${texto}`);
   return r?.dice || null;
