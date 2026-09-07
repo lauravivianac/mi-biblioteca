@@ -4,14 +4,14 @@
    y con progreso por página (historia #24).
    ───────────────────────────────────────────────────────────── */
 
-import { MONTH_ORDER, MONTH_COLORS, MONTH_EMOJIS, pageCount } from './seed.js';
+import { MONTH_ORDER, MONTH_COLORS, pageCount } from './seed.js';
 import {
   allBooks, findBook, entry, statusOf, ratingOf, reviewOf, coverOf,
   reviewIsPublic, setReviewPublic, myStreak, recordReadingDay,
   updateEntry, removeBook, progressPct, uid,
 } from './store.js';
 import { fetchCover } from './covers.js';
-import { $, esc, initial, toast, confirmAction, openSheet } from './ui.js';
+import { $, esc, toast, confirmAction, openSheet } from './ui.js';
 import { refreshAchievements } from './achievements.js';
 import { renderPet } from './pet.js';
 import { agentOffered, bookBrief, isDenied } from './agent.js';
@@ -25,6 +25,8 @@ import { streakLine, freezeNotice } from './streak-core.js';
 import { openShare } from './shareui.js';
 import { lectorasDe } from './social.js';
 import { alsoRead, porQueTexto, encabezado } from './alsoread-core.js';
+import { ico } from './icons.js';
+import { lomoHtml } from './lomo.js';
 
 const STATUS_LABEL = {
   read: 'Leído', reading: 'Leyendo', pending: 'Pendiente',
@@ -43,6 +45,13 @@ let searchQ = '';
 let detailId = null;
 
 /** Los estados que no cuentan como pendientes de verdad. */
+/* El rol viene con un emoji pegado desde el archivo semilla —«⚓ Ancla»,
+   «⚡ Corto»— y media app compara contra esa cadena exacta (gaps-core,
+   duel-core, el formulario de alta). Cambiarlo en el dato sería una
+   migración de las bibliotecas de todo el mundo por un motivo estético.
+   Se le quita al pintar, que es donde molesta. */
+const rolLimpio = (rol) => String(rol || '').replace(/^[^\p{L}]+/u, '').trim();
+
 const countsAsPending = (id) => !['read', 'abandoned', 'wished'].includes(statusOf(id));
 
 export function updateStats() {
@@ -61,13 +70,16 @@ export function updateStats() {
   if (ring) { const c = 289.0; ring.style.strokeDashoffset = c - (c * pct) / 100; }
 }
 
-function coverMarkup(book, cls, fallbackIcon) {
+/**
+ * La portada si la hay; si no, el lomo (ver src/lomo.js).
+ * @param {object} book
+ * @param {{mini?: boolean}} opciones
+ */
+function coverMarkup(book, { mini = false } = {}) {
   const url = coverOf(book.id);
-  const ph = fallbackIcon
-    ? `<div class="cover-placeholder"><div class="cover-placeholder-icon">${fallbackIcon}</div><div class="cover-placeholder-letter">${initial(book.title)}</div></div>`
-    : `<div class="${cls}">${initial(book.title)}</div>`;
-  if (!url) return ph;
-  return `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.outerHTML=this.dataset.ph" data-ph="${esc(ph)}">`;
+  const lomo = lomoHtml(book, { mini });
+  if (!url) return lomo;
+  return `<img src="${esc(url)}" alt="" loading="lazy" onerror="this.outerHTML=this.dataset.ph" data-ph="${esc(lomo)}">`;
 }
 
 /** Pide las portadas que falten y repinta cuando lleguen. */
@@ -104,7 +116,7 @@ export function renderPlan() {
 
   if (!Object.keys(byMonth).length) {
     body.innerHTML = `<div class="empty">
-      <div class="empty-rune">📅</div>
+      <div class="empty-rune">${ico('marcador', 'ico-lg')}</div>
       <div class="empty-text">No hay libros para ${curYear}</div>
       <button class="btn-ghost" onclick="openPlanner()">Armar un plan</button>
     </div>`;
@@ -122,27 +134,26 @@ export function renderPlan() {
   for (const month of MONTH_ORDER) {
     const books = byMonth[month];
     const col = MONTH_COLORS[month] || '#888888';
-    const emoji = MONTH_EMOJIS[month] || '✦';
 
     if (!books) {
       const h = huecos.get(month);
       if (!h) continue;                    // mes pasado o fuera del plan: no es un hueco
       html += `<div class="month-gap" onclick="openGap('${month}')">
-        <div class="month-rune gap-rune" style="--month-accent:${col}">${emoji}</div>
+        <div class="gap-rune">${ico('mas')}</div>
         <div class="gap-text">
           <div class="gap-month">${month}</div>
           <div class="gap-hint">${esc(describeGap(h))}</div>
         </div>
-        <div class="gap-add">＋</div>
+
       </div>`;
       continue;
     }
 
     const readCount = books.filter((b) => statusOf(b.id) === 'read').length;
     html += `<div class="month-group">
-      <div class="month-label">
-        <div class="month-rune" style="--month-accent:${col}">${emoji}</div>
+      <div class="month-label" style="--month-accent:${col}">
         <div class="month-name-text">${month}</div>
+        <div class="month-rule"></div>
         <div class="month-progress">${readCount}/${books.length}</div>
       </div>`;
     for (const book of books) {
@@ -151,9 +162,9 @@ export function renderPlan() {
       const pct = progressPct(book.id);
       const pinned = !!entry(book.id).pinnedMonth;
       html += `<div class="book-card ${isRead ? 'read' : ''}" style="--month-accent:${col}" onclick="openDetail('${book.id}')">
-        <div class="book-card-cover">${coverMarkup(book, 'cover-placeholder', emoji)}</div>
+        <div class="book-card-cover">${coverMarkup(book, { mini: true })}</div>
         <div class="book-card-body">
-          <div class="book-card-role ${isAnchor ? 'role-anchor' : 'role-short'}">${esc(book.role)}${pinned ? ' · 📌' : ''}</div>
+          <div class="book-card-role ${isAnchor ? 'role-anchor' : 'role-short'}">${esc(rolLimpio(book.role))}${pinned ? ' · fijado' : ''}</div>
           <div class="book-card-title">${esc(book.title)}</div>
           <div class="book-card-author">${esc(book.author)}</div>
           <div class="book-card-tags">
@@ -229,11 +240,11 @@ export function renderLib() {
   if (agentSlot) {
     const cuantas = quoteCount();
     agentSlot.innerHTML = [
-      cuantas ? `<button class="btn-ghost full" onclick="openQuotes()">❞ Mis citas · ${cuantas}</button>` : '',
+      cuantas ? `<button class="btn-ghost full" onclick="openQuotes()">${ico('comillas')} Mis citas · ${cuantas}</button>` : '',
       /* Ya no depende del agente: desde #62 la primera respuesta sale
          de tus propios libros, sin red y sin gastar nada. */
-      '<button class="btn-ghost full" onclick="openRecs()">✦ Qué leer después</button>',
-      '<button class="btn-ghost full" onclick="openDuel()">⚖ ¿Cuál primero?</button>',
+      `<button class="btn-ghost full" onclick="openRecs()">${ico('marcador')} Qué leer después</button>`,
+      `<button class="btn-ghost full" onclick="openDuel()">${ico('balanza')} ¿Cuál primero?</button>`,
     ].join('');
   }
 
@@ -248,7 +259,7 @@ export function renderLib() {
   }
 
   if (!filtered.length) {
-    body.innerHTML = `<div class="empty"><div class="empty-rune">📚</div><div class="empty-text">No se encontraron libros</div></div>`;
+    body.innerHTML = `<div class="empty"><div class="empty-rune">${ico('estante', 'ico-lg')}</div><div class="empty-text">No se encontraron libros</div></div>`;
     return;
   }
 
@@ -256,7 +267,7 @@ export function renderLib() {
     const s = statusOf(book.id);
     const pct = progressPct(book.id);
     return `<div class="lib-card" onclick="openDetail('${book.id}')">
-      <div class="lib-cover">${coverMarkup(book, 'lib-cover-ph')}</div>
+      <div class="lib-cover">${coverMarkup(book)}</div>
       <div class="lib-info">
         <div class="lib-title">${esc(book.title)}</div>
         <div class="lib-author">${esc(book.author)}</div>
@@ -330,7 +341,7 @@ export function renderTracker() {
       `<span class="star ${i <= r ? 'on' : ''}" onclick="setRating('${book.id}',${i})">★</span>`).join('');
     return `<div class="tracker-card">
       <div class="tracker-card-header">
-        <div class="tracker-card-cover">${coverMarkup(book, 'tracker-card-cover-ph')}</div>
+        <div class="tracker-card-cover">${coverMarkup(book, { mini: true })}</div>
         <div class="tracker-card-info">
           <div class="tracker-card-title">${esc(book.title)}</div>
           <div class="tracker-card-author">${esc(book.author)}${book.year ? ' · ' + book.year + (book.month ? ' ' + book.month : '') : ''}</div>
@@ -448,39 +459,47 @@ export async function openDetail(id) {
   $('detail-sheet').innerHTML = `
     <div class="sheet-handle" style="margin-top:16px"></div>
     <button class="sheet-close" onclick="closeDetailSheet()" aria-label="Cerrar">✕</button>
-    <div class="detail-cover-banner">
-      ${url ? `<img src="${esc(url)}" alt="" onerror="this.style.display='none'">` : '<div class="detail-cover-banner-ph"></div>'}
-      <div class="detail-cover-fg">
-        <div class="detail-cover-thumb">${url ? `<img src="${esc(url)}" alt="">` : `<div class="detail-cover-thumb-ph">${initial(book.title)}</div>`}</div>
+
+    <!-- LA PORTADILLA
+         Antes esto era una portada borrosa estirada de banner, con una
+         miniatura de 60 px encima y medio palmo de hueco al lado. El
+         libro —lo único de lo que trata la pantalla— era lo más pequeño
+         que había en ella. Ahora está de pie, entero, y a su lado los
+         datos; como la portadilla de un libro de verdad. -->
+    <div class="detail-portadilla">
+      <div class="detail-libro">${coverMarkup(book)}</div>
+      <div class="detail-ficha">
+        <div class="detail-title">${esc(book.title)}</div>
+        <div class="detail-author">${esc(book.author)}</div>
+        <div class="detail-tags">
+          <span class="detail-tag">${esc(book.genre)}</span>
+          <span class="detail-tag">${esc(rolLimpio(book.role))}</span>
+          ${book.year ? `<span class="detail-tag">${book.year}${book.month ? ' · ' + book.month : ''}</span>` : ''}
+          <span class="detail-tag">${esc(book.pages)} págs.</span>
+        </div>
       </div>
     </div>
-    <div style="padding:0 20px">
-      <div class="detail-title">${esc(book.title)}</div>
-      <div class="detail-author">${esc(book.author)}</div>
-      <div class="detail-tags">
-        <span class="detail-tag">${esc(book.genre)}</span>
-        <span class="detail-tag">${esc(book.role)}</span>
-        ${book.year ? `<span class="detail-tag">${book.year}${book.month ? ' · ' + book.month : ''}</span>` : ''}
-        <span class="detail-tag">${esc(book.pages)} págs.</span>
-      </div>
 
-      <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Estado</span></div>
+    <div class="detail-cuerpo">
+      <!-- ESTADO Y PLAN JUNTOS. Eran dos titulillos seguidos para dos
+           filas de botones: dos rótulos para una sola pregunta, «¿por
+           dónde vas con este libro?». -->
+      <div class="section-heading"><span class="section-heading-text">Por dónde vas</span></div>
       <div class="status-row">
-        ${statusBtn('read', '✓ Leído')}
-        ${statusBtn('reading', '📖 Leyendo')}
-        ${statusBtn('pending', '○ Pendiente')}
+        ${statusBtn('read', 'Leído')}
+        ${statusBtn('reading', 'Leyendo')}
+        ${statusBtn('pending', 'Pendiente')}
       </div>
       <div class="status-row" style="margin-top:8px">
-        ${statusBtn('wished', '🤍 Deseado')}
-        ${statusBtn('abandoned', '⏸ Abandonado')}
+        ${statusBtn('wished', 'Deseado')}
+        ${statusBtn('abandoned', 'Abandonado')}
       </div>
 
-      ${book.year && book.month ? `<div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">En el plan</span></div>
-      <button class="btn-ghost full" onclick="togglePin('${id}')">
-        ${pinned ? '📌 Fijado a ' + pinned + ' · toca para soltar' : '📌 Fijar a ' + book.month + ' para que el plan no lo mueva'}
+      ${book.year && book.month ? `<button class="btn-ghost full" style="margin-top:10px" onclick="togglePin('${id}')">
+        ${ico('marcador')} ${pinned ? 'Fijado a ' + pinned + ' · toca para soltar' : 'Fijar a ' + book.month + ' para que el plan no lo mueva'}
       </button>` : ''}
 
-      <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Estanterías</span></div>
+      <div class="section-heading"><span class="section-heading-text">Estanterías</span></div>
       <div class="shelf-picker">
         ${allShelves().map((sh) => `
           <button class="chip chip-shelf ${shelvesOfBook(id).includes(sh.id) ? 'active' : ''}"
@@ -494,23 +513,23 @@ export async function openDetail(id) {
 
       ${agentOffered() ? renderBrief(id) : ''}
 
-      <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Calificación</span></div>
-      <div class="stars-row" style="margin-bottom:16px">${stars}</div>
-
-      <div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">Reseña</span></div>
-      <textarea class="review-txt" style="min-height:72px" placeholder="¿Qué te pareció?" onchange="setReview('${id}',this.value)">${esc(reviewOf(id))}</textarea>
+      <!-- LA CALIFICACIÓN Y LA RESEÑA, EN UN SOLO SITIO: las estrellas
+           y lo que escribes son la misma decisión contada dos veces. -->
+      <div class="section-heading"><span class="section-heading-text">Lo que te pareció</span></div>
+      <div class="stars-row" style="margin-bottom:14px">${stars}</div>
+      <textarea class="review-txt" style="min-height:76px" placeholder="¿Qué te pareció?" onchange="setReview('${id}',this.value)">${esc(reviewOf(id))}</textarea>
       <div id="review-privacy">${privacyRow(id)}</div>
 
-      ${s === 'read' ? `<button class="btn-ghost full" onclick="shareBook('${id}')" style="margin-bottom:8px">
-        ✦ Presumir de este libro
+      ${s === 'read' ? `<button class="btn-ghost full" onclick="shareBook('${id}')" style="margin-top:14px">
+        Presumir de este libro
       </button>
       <button class="btn-ghost full" onclick="openSwap('${id}')" style="margin-bottom:14px">
-        ⇄ Ofrecerlo para intercambio
+        ${ico('cruce')} Ofrecerlo para intercambio
       </button>` : ''}
 
       <div id="also-slot"></div>
 
-      <button class="btn-delete" onclick="deleteBook('${id}')">🗑 Eliminar de la biblioteca</button>
+      <button class="btn-delete" onclick="deleteBook('${id}')">Eliminar de la biblioteca</button>
     </div>`;
   openSheet('detail-overlay');
 
@@ -649,7 +668,7 @@ function renderBrief(id) {
   if (!b) {
     return `<div class="section-heading" style="margin-bottom:12px"><span class="section-heading-text">¿Me lo leo?</span></div>
       <button class="btn-ghost full" id="brief-btn" onclick="askBrief('${id}')">
-        ✦ Pregúntale al agente si vale la pena
+        Pregúntale al agente si vale la pena
       </button>
       <p class="set-fineprint" style="margin-bottom:16px">Sin spoilers. Te dice también para quién NO es.</p>`;
   }

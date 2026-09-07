@@ -5,7 +5,7 @@
    Ninguna regla de CSS sabe que los temas existen.
    ───────────────────────────────────────────────────────────── */
 
-import { THEMES, FONT_SETS, DEFAULT_THEME, byId } from './themes.js';
+import { THEMES, FONT_SETS, DEFAULT_THEME, BASE_THEME, byId } from './themes.js';
 
 const LS_KEY = 'bib_theme';
 const loadedFonts = new Set();
@@ -29,7 +29,7 @@ function ensureFonts(theme) {
  */
 export function applyTheme(id, { persistLocal = true } = {}) {
   const theme = byId(id);
-  const base = byId(DEFAULT_THEME).tokens;
+  const base = byId(BASE_THEME).tokens;
   const root = document.documentElement;
 
   ensureFonts(theme);

@@ -303,7 +303,7 @@ export const porFecha = (lista = []) =>
   [...lista].sort((a, b) => (b.editado || b.at || 0) - (a.editado || a.at || 0));
 
 export const VACIO_POSTS = {
-  rune: '✍️',
+  rune: 'pluma',
   texto: 'Todavía no has escrito nada',
   detalle: 'Una nota suelta mientras lees ya cuenta. Nadie más la ve si no quieres.',
 };

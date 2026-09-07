@@ -27,6 +27,7 @@ import { myTaste, scoreByTaste } from './taste.js';
 import { MONTH_ORDER } from './seed.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
+import { lomoHtml } from './lomo.js';
 
 let libro = null;          // el que se acaba de terminar
 let paso = 'estrellas';
@@ -260,7 +261,7 @@ function pasoSugerencias() {
       <div class="store-shelf-label">Descubrimientos</div>
       ${nuevas.map((b, i) => tarjeta(b, `
         <button class="btn-ghost btn-sug" onclick="keepNew(${i})">＋ Pendientes</button>
-        <button class="btn-magic btn-sug" onclick="planNew(${i})">✦ Al plan</button>
+        <button class="btn-magic btn-sug" onclick="planNew(${i})">Al plan</button>
         <button class="btn-mini" onclick="dismissSuggestion('nueva',${i})">No</button>`)).join('')}
     ` : agentAvailable() ? '<p class="planner-hint" id="done-cargando">Buscando descubrimientos…</p>' : ''}
 
@@ -275,7 +276,7 @@ function tarjeta(b, acciones) {
       <div class="sug-head">
         ${b.cover
           ? `<img class="sug-cover" src="${esc(b.cover)}" alt="" loading="lazy">`
-          : '<div class="sug-cover sug-cover-ph">📕</div>'}
+          : `<div class="sug-cover">${lomoHtml(b, { mini: true })}</div>`}
         <div class="sug-info">
           <div class="sug-title">${esc(b.title)}</div>
           <div class="sug-author">${esc(b.author)}${b.pages && b.pages !== '—' ? ` · ${esc(b.pages)} págs.` : ''}</div>

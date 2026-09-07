@@ -146,7 +146,9 @@ src/
   store.js                 datos por usuaria (users/{uid}/books/*)
   migrate.js               importación del documento antiguo
   seed.js                  los 73 libros del plan original
-  themes.js                los 8 temas, como datos
+  themes.js                los 9 temas, como datos
+  icons.js                 pedir un icono del pliego (los trazos van en index.html)
+  lomo.js                  el lomo de un libro sin portada
   theme-engine.js          aplicar · previsualizar · persistir
   plan-core.js             generador del plan · puro, sin dependencias
   planner.js               enlace del generador con los datos reales
@@ -156,8 +158,19 @@ src/
   ui.js                    utilidades compartidas
 
 scripts/
-  check-contrast.mjs       valida contraste AA de los 8 temas
+  check-contrast.mjs       valida contraste AA de los 9 temas
   test-planner.mjs         30 pruebas del generador de plan
+  capturas.mjs             fotografía 14 pantallas para poder mirarlas
+```
+
+## El aspecto
+
+Con el que se entra es **Ex Libris**: tinta, tela y latón, con los libros
+dibujados como lomos. Por qué es así y qué se cambió está en
+[`docs/diseno.md`](./docs/diseno.md) — léelo antes de añadir una pantalla.
+
+```bash
+npm run capturas    # deja 14 capturas en capturas/, con datos de verdad
 ```
 
 ## Pruebas
@@ -166,9 +179,9 @@ scripts/
 npm test
 ```
 
-- **Contraste** — los ocho temas deben pasar WCAG AA. Con ocho temas y decenas de
+- **Contraste** — los nueve temas deben pasar WCAG AA. Con nueve temas y decenas de
   combinaciones esto no se revisa a ojo: o es automático, o se degrada en cuanto se
-  añada el noveno.
+  añada el décimo.
 - **Generador de plan** — 30 pruebas sobre el núcleo, que es puro a propósito: no
   necesita Firebase, ni navegador, ni sesión.
 
@@ -190,6 +203,7 @@ vive en [`styles/worlds.css`](./styles/worlds.css), en un bloque por tema.
 
 | Tema | Firma |
 |---|---|
+| 🔖 Ex Libris | El lomo entelado: cada libro es un objeto, y su tela dice de qué género es |
 | ✨ Grimorio | El margen dorado al filo izquierdo de cada libro, como un códice |
 | 🌑 Obsidiana | El filo de luz de 1px en el canto superior. Sin bordes, sin brillos |
 | ☀️ Pergamino | El renglón: los libros son entradas de un índice, no tarjetas |

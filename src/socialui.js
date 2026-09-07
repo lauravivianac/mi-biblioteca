@@ -28,6 +28,7 @@ import { inicial } from './profile-core.js';
    así que no se importa: profileui ya importa de aquí y hacerlo en los
    dos sentidos es un círculo que no hace falta. */
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
+import { ico } from './icons.js';
 
 let turnoBusqueda = 0;
 let debounce = null;
@@ -141,7 +142,7 @@ export async function openFollowList(cual, userUid) {
   $('follows-body').innerHTML = perfiles.length
     ? perfiles.map((p) => fila(p, '', misSeguidoras)).join('')
     : `<div class="empty">
-         <div class="empty-rune">✦</div>
+         <div class="empty-rune">${ico('fichas', 'ico-lg')}</div>
          <div class="empty-text">${cual === 'seguidoras'
            ? 'Todavía no la sigue nadie'
            : 'Todavía no sigue a nadie'}</div>
@@ -275,7 +276,7 @@ export async function openNotices() {
           </div>
         </div>`).join('')
     : `<div class="empty">
-         <div class="empty-rune">✦</div>
+         <div class="empty-rune">${ico('fichas', 'ico-lg')}</div>
          <div class="empty-text">Aquí aparecerá quien te siga</div>
        </div>`;
 
@@ -329,7 +330,7 @@ function pintarSolicitudes() {
   if (!solicitudes.length) {
     cuerpo.innerHTML = `
       <div class="empty">
-        <div class="empty-rune">✦</div>
+        <div class="empty-rune">${ico('fichas', 'ico-lg')}</div>
         <div class="empty-text">No hay solicitudes pendientes</div>
       </div>`;
     return;

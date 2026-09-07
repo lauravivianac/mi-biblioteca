@@ -31,6 +31,7 @@ import { ESTADOS, resumenPublicacion } from './swap-core.js';
 import { placeTexto, tieneCiudad } from './place-core.js';
 import { allBooks, statusOf, myPlace, uid as myUid } from './store.js';
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
+import { ico } from './icons.js';
 
 /* Lo que hay en pantalla ahora mismo. Se guarda porque los filtros
    repintan sin volver a la red: la consulta ya se pagó. */
@@ -116,7 +117,7 @@ function pintarVacio(v) {
 
   cuerpo.innerHTML = `
     <div class="empty">
-      <div class="empty-rune">${v.rune}</div>
+      <div class="empty-rune">${ico(v.rune, 'ico-lg')}</div>
       <div class="empty-text">${esc(v.texto)}</div>
     </div>
     <p class="set-fineprint" style="text-align:center;margin-bottom:14px">${esc(v.detalle)}</p>
@@ -190,7 +191,7 @@ function ficha(p, ctx) {
       ${p.foto ? `<img class="swap-foto" src="${esc(p.foto)}" alt="Foto del ejemplar">` : ''}
       ${p.suelto ? '' : `<div class="swap-sub">A cambio de: ${esc(p.aCambioDe || 'algo que le guste')}</div>`}
       <div class="swap-lugar">
-        📍 ${esc(distanciaTexto(p, ctx.mio, ctx.miCityKey))} · ${esc(placeTexto(p))}
+        ${ico('sitio', 'ico-sm')} ${esc(distanciaTexto(p, ctx.mio, ctx.miCityKey))} · ${esc(placeTexto(p))}
       </div>
       <div class="swap-acciones">
         <button class="btn-mini" onclick="openAsk('${esc(p.id)}')">Pedirlo</button>
@@ -342,7 +343,7 @@ function pintarSwaps() {
     </div>
     ${lista.length ? lista.map(tarjetaSolicitud).join('') : `
       <div class="empty">
-        <div class="empty-rune">${v.rune}</div>
+        <div class="empty-rune">${ico(v.rune, 'ico-lg')}</div>
         <div class="empty-text">${esc(v.texto)}</div>
       </div>
       <p class="set-fineprint" style="text-align:center">${esc(v.detalle)}</p>`}`;

@@ -218,7 +218,7 @@ export function vacio({
 } = {}) {
   if (sinCiudad) {
     return {
-      rune: '📍',
+      rune: 'sitio',
       texto: 'Todavía no has dicho en qué ciudad estás',
       detalle: 'Sin ciudad puedes mirar lo que hay en cualquier sitio, pero no'
         + ' se puede ordenar por cercanía ni ofrecer libros tuyos. Solo la'
@@ -229,7 +229,7 @@ export function vacio({
   }
   if (conFiltros) {
     return {
-      rune: '🔍',
+      rune: 'lupa',
       texto: 'Nada con esos filtros',
       detalle: 'Prueba a quitar alguno.',
       accion: 'limpiar',
@@ -238,7 +238,7 @@ export function vacio({
   }
   const siguiente = ambitoSiguiente(ambito);
   return {
-    rune: '📦',
+    rune: 'cruce',
     texto: ambito === 'ciudad' && ciudad
       ? `Nadie ofrece libros en ${ciudad} todavía`
       : 'Todavía no hay libros disponibles aquí',

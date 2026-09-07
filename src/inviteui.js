@@ -18,6 +18,7 @@ import { myUsername, uid as myUid } from './store.js';
 import { usernameFromHash } from './profile-core.js';
 import { openCamera, closeCamera, scanQr, puedeLeerQr } from './scan.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
+import { ico } from './icons.js';
 
 /** La dirección del perfil de quien sea, en ESTA instalación. */
 export const linkDe = (handle) =>
@@ -44,7 +45,7 @@ function pintar() {
   if (!nombre) {
     cuerpo.innerHTML = `
       <div class="empty">
-        <div class="empty-rune">✦</div>
+        <div class="empty-rune">${ico('sobre', 'ico-lg')}</div>
         <div class="empty-text">Primero elige tu @usuario</div>
       </div>
       <p class="set-fineprint">Es lo que hace que tengas un link y un código que enseñar.</p>
@@ -64,7 +65,7 @@ function pintar() {
 
     <div class="qr-link">${esc(link)}</div>
 
-    <button class="btn-magic full" onclick="copyInvite()">🔗 Copiar el link</button>
+    <button class="btn-magic full" onclick="copyInvite()">Copiar el link</button>
     ${navigator.share ? `
       <button class="btn-ghost full" style="margin-top:8px" onclick="shareInvite()">
         Compartir
@@ -72,7 +73,7 @@ function pintar() {
 
     <h4 class="prof-sec-title" style="margin-top:22px">Escanear el de otra persona</h4>
     ${puedeLeerQr() ? `
-      <button class="btn-ghost full" onclick="startScanInvite()">📷 Abrir la cámara</button>
+      <button class="btn-ghost full" onclick="startScanInvite()">${ico('camara')} Abrir la cámara</button>
       <div id="qr-scan"></div>`
     : `<p class="set-fineprint">
          Este navegador no sabe leer códigos QR —en el iPhone no se puede todavía—.
@@ -207,7 +208,7 @@ export async function maybeOfferInviter() {
   openSheet('invite-overlay');
   $('invite-body').innerHTML = `
     <div class="empty">
-      <div class="empty-rune">✦</div>
+      <div class="empty-rune">${ico('sobre', 'ico-lg')}</div>
       <div class="empty-text">Llegaste por @${esc(handle)}</div>
     </div>
     <p class="set-fineprint">¿Quieres seguirla para ver lo que lee?</p>

@@ -21,6 +21,7 @@ import { placeInMonth } from './gaps.js';
 import { MONTH_ORDER } from './seed.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
+import { lomoHtml } from './lomo.js';
 
 let elegidos = [];
 let busqueda = '';
@@ -151,7 +152,7 @@ function listaHtml() {
     <button class="duel-pick ${elegidos.includes(b.id) ? 'on' : ''}" onclick="pickDuel('${b.id}')">
       ${coverOf(b.id)
         ? `<img class="duel-cover" src="${esc(coverOf(b.id))}" alt="" loading="lazy">`
-        : '<span class="duel-cover duel-cover-ph">📕</span>'}
+        : lomoHtml(b, { mini: true, cls: 'duel-cover' })}
       <span class="duel-info">
         <span class="duel-title">${esc(b.title)}</span>
         <span class="duel-meta">${esc(b.author)} · ${esc(b.pages)} págs.${b.month ? ` · plan de ${b.month}` : ''}</span>
@@ -183,13 +184,13 @@ function pintarVeredicto() {
   const siguiente = MONTH_ORDER[(new Date().getMonth() + 1) % 12];
 
   return `
-    <p class="duel-verdict">✦ ${esc(veredicto.resumen)}</p>
+    <p class="duel-verdict">${esc(veredicto.resumen)}</p>
 
     <div class="sug">
       <div class="sug-head">
         ${coverOf(g.id)
           ? `<img class="sug-cover" src="${esc(coverOf(g.id))}" alt="" loading="lazy">`
-          : '<div class="sug-cover sug-cover-ph">📕</div>'}
+          : `<div class="sug-cover">${lomoHtml(g, { mini: true })}</div>`}
         <div class="sug-info">
           <div class="sug-title">${esc(g.title)}</div>
           <div class="sug-author">${esc(g.author)} · ${esc(g.pages)} págs.</div>
@@ -212,7 +213,7 @@ function pintarVeredicto() {
       Empezar ${esc(g.title)}
     </button>
     <button class="btn-ghost full" onclick="applyDuelOrder()" style="margin-top:8px">
-      ✦ Reordenar el plan: ${esc(mes)} y ${esc(siguiente)}
+      Reordenar el plan: ${esc(mes)} y ${esc(siguiente)}
     </button>
     <button class="link-btn" onclick="backToPick()">Elegir otros dos</button>`;
 }

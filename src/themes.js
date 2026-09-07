@@ -21,6 +21,11 @@ export const FONT_SETS = {
   karla:      'Karla:wght@400;500;700',
   patrick:    'Patrick+Hand',
   outfit:     'Outfit:wght@300;400;600',
+  /* Fraunces con sus ejes propios: SOFT redondea los remates y WONK
+     inclina la «g» y la «y». Sin eso es una serif más; con eso tiene
+     mano. Es la diferencia entre usar una fuente y dibujar con ella. */
+  frauncesWonk: 'Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,40,1',
+  literata:   'Literata:ital,opsz,wght@0,7..72,300..600;1,7..72,400',
   cinzelDeco: 'Cinzel+Decorative:wght@400;700',
   shippori:   'Shippori+Mincho:wght@400;600',
   mono:       'JetBrains+Mono:wght@400;500;700',
@@ -28,6 +33,82 @@ export const FONT_SETS = {
 };
 
 export const THEMES = [
+  /* ── EX LIBRIS · el aspecto de casa ──────────────────────────
+     «Ex libris» es la marca que alguien pega dentro de su libro para
+     decir que es suyo. La app se llama Mi Biblioteca: no hay nombre
+     más exacto para el tema con el que se entra.
+
+     De dónde sale cada color: NO del espacio, que es de donde salía
+     el morado con estrellas. Sale de un libro encuadernado.
+
+       tinta      el negro cálido de una estantería en penumbra
+       cartón     la tapa
+       tela       el lomo entelado
+       burdeos    la etiqueta del lomo y la cinta de leer
+       latón      el título estampado en caliente
+       vitela     el papel viejo del canto
+
+     El burdeos ocupa la ranura del acento primario y el latón la del
+     realce, así que TODA la app cambia de material sin tocar una regla
+     de CSS. Y sin brillos: aquí no hay nada que emita luz. Hay una
+     lámpara fuera del encuadre y cosas que la reflejan. */
+  {
+    id: 'exlibris',
+    name: 'Ex Libris',
+    emoji: '🔖',
+    blurb: 'Tinta, tela y latón. Una biblioteca de casa, de noche.',
+    fonts: ['frauncesWonk', 'literata'],
+    unlock: null,
+    tokens: {
+      '--void': '#12100E', '--void-rgb': '18 16 14',
+      '--deep': '#1C1917', '--deep-rgb': '28 25 23',
+      '--dusk': '#292420', '--dusk-rgb': '41 36 32',
+      '--purple': '#7B2C36', '--purple-rgb': '123 44 54',
+      '--violet': '#C0757C', '--violet-rgb': '192 117 124',
+      '--lilac': '#D9C7A8', '--lilac-rgb': '217 199 168',
+      '--gold': '#C9A24A', '--gold-rgb': '201 162 74',
+      '--amber': '#A87C39', '--amber-rgb': '168 124 57',
+      '--parchment': '#F2E9D5',
+      '--text': '#EDE6DA', '--text-rgb': '237 230 218',
+
+      '--font-display': "'Fraunces', Georgia, serif",
+      '--font-body': "'Literata', Georgia, serif",
+      '--display-spacing': '0',
+      '--display-weight': '600',
+      '--label-spacing': '1.6px',
+
+      /* Casi rectas. Una tapa tiene esquinas, no burbujas. */
+      '--card-radius': '4px', '--ctl-radius': '3px', '--chip-radius': '2px',
+      '--pill-radius': '2px', '--rune-radius': '2px',
+      '--sheet-radius': '10px 10px 0 0',
+
+      /* Se apaga el cosmos entero: estrellas, orbes y rejilla. Lo que
+         queda es grano de papel y una lámpara fuera del encuadre. */
+      '--stars-opacity': '0', '--orbs-opacity': '0', '--grid-opacity': '0',
+      '--glow-strength': '0',
+      '--month-tint': '0%', '--rune-tint': '0%',
+      '--bg-wash':
+        'radial-gradient(ellipse 90% 55% at 50% -10%, rgb(201 162 74 / .10) 0%, transparent 62%),'
+        + 'radial-gradient(ellipse 120% 80% at 50% 50%, #12100E 45%, #0B0A09 100%)',
+
+      '--card-bg': 'rgb(28 25 23 / .92)',
+      '--card-border': '1px solid rgb(217 199 168 / .14)',
+      '--card-shadow': '0 1px 0 rgb(217 199 168 / .05), 0 10px 24px rgb(0 0 0 / .45)',
+      '--card-shadow-hover': '0 1px 0 rgb(217 199 168 / .08), 0 16px 34px rgb(0 0 0 / .55)',
+      '--card-edge': '1px',
+      '--sheet-bg': '#1A1715',
+
+      /* Grano de papel, no ruido de televisión: fino y muy tenue. */
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E")`,
+      '--texture-opacity': '.055',
+      '--texture-blend': 'soft-light',
+
+      '--ornament': "''",
+      '--rule-line': 'linear-gradient(90deg, rgb(201 162 74 / .35), rgb(217 199 168 / .10) 55%, transparent)',
+      '--vignette': 'radial-gradient(ellipse 110% 80% at 50% 30%, transparent 45%, rgb(0 0 0 / .55) 100%)',
+    },
+  },
+
   {
     id: 'grimorio',
     name: 'Grimorio',
@@ -379,5 +460,12 @@ export const THEMES = [
   },
 ];
 
-export const DEFAULT_THEME = 'grimorio';
+/** Con el que se entra si nunca has elegido. */
+export const DEFAULT_THEME = 'exlibris';
+
+/* Y el que rellena los huecos de los demás. NO es el mismo: un tema
+   escribe solo lo que cambia, y todos los que existían se escribieron
+   contando con que lo que faltara lo pusiera Grimorio. Cambiar esta
+   constante al tema nuevo repintaría los ocho de golpe. */
+export const BASE_THEME = 'grimorio';
 export const byId = (id) => THEMES.find((t) => t.id === id) || THEMES[0];

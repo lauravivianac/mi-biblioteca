@@ -146,7 +146,7 @@ Para las tiendas hace falta exportarlos a:
 
 ## Pantalla de arranque (splash) — **falta**
 
-Color de fondo: `#0D0A1A` (el mismo `background_color` del manifiesto, así que
+Color de fondo: `#12100E` (el mismo `background_color` del manifiesto, así que
 no hay parpadeo al abrir).
 
 Encima, el icono centrado. Nada de texto: se traduce mal y en un arranque de

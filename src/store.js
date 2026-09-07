@@ -22,6 +22,7 @@ import { validateUsername, canChangeUsername, normalize } from './username-core.
 import { publicProfileDoc, seccionVisible, followersOnlyDoc, esPrivada } from './profile-core.js';
 import { activityDoc, activityId } from './feed-core.js';
 import { placeDoc } from './place-core.js';
+import { DEFAULT_THEME } from './themes.js';
 
 const state = {
   uid: null,
@@ -56,7 +57,7 @@ const writeLS = (name, value) => {
 };
 
 export const DEFAULT_SETTINGS = {
-  themeId: 'grimorio',
+  themeId: DEFAULT_THEME,
   achievements: [],
   minutesWeekday: null,
   minutesWeekend: null,

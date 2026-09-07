@@ -149,8 +149,8 @@ const PLANTILLA = (titulo, cuerpo) => `<!doctype html>
 <title>${esc(titulo)} · Mi Biblioteca</title>
 <meta name="color-scheme" content="dark light">
 <style>
-  :root { color-scheme: dark; --bg:#0D0A1A; --tinta:#EDE7FF; --suave:#9A8FB8;
-          --acento:#C4A8FF; --oro:#F0C060; --borde:rgb(196 168 255 / .18); }
+  :root { color-scheme: dark; --bg:#12100E; --tinta:#EDE6DA; --suave:#9C9284;
+          --acento:#D9C7A8; --oro:#C9A24A; --borde:rgb(217 199 168 / .18); }
   * { box-sizing: border-box; }
   body { margin:0; padding:32px 20px 72px; background:var(--bg); color:var(--tinta);
          font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }

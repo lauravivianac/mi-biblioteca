@@ -109,6 +109,6 @@ function pintar() {
     </div>
 
     <button class="btn-magic full" onclick="shareYear()" style="margin-top:6px">
-      ✦ Presumir de tu año
+      Presumir de tu año
     </button>`;
 }

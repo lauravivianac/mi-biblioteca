@@ -13,3 +13,7 @@ ui-debug.log
 
 # Capturas que deja la prueba de punta a punta
 e2e-*.png
+
+# Las que deja `npm run capturas`, para mirar el diseño antes y después
+capturas/
+capturas-*/

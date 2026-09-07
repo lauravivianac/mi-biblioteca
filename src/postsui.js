@@ -29,6 +29,7 @@ import { allQuotes } from './quotes.js';
 import { orderNotes } from './agent.js';
 import { agentOffered, isDenied } from './agent.js';
 import { $, esc, toast, openSheet, closeSheet, confirmAction } from './ui.js';
+import { ico } from './icons.js';
 
 let entradas = [];
 let editando = null;         // la entrada abierta, o null si es nueva
@@ -56,12 +57,12 @@ function pintarLista() {
 
   cuerpo.innerHTML = `
     <button class="btn-magic full" onclick="openEditor()" style="margin-bottom:14px">
-      ✍️ Escribir algo
+      ${ico('pluma')} Escribir algo
     </button>
 
     ${entradas.length ? entradas.map(ficha).join('') : `
       <div class="empty">
-        <div class="empty-rune">${VACIO_POSTS.rune}</div>
+        <div class="empty-rune">${ico(VACIO_POSTS.rune, 'ico-lg')}</div>
         <div class="empty-text">${esc(VACIO_POSTS.texto)}</div>
       </div>
       <p class="set-fineprint" style="text-align:center">${esc(VACIO_POSTS.detalle)}</p>`}`;
@@ -75,7 +76,7 @@ function ficha(p) {
         <span class="post-vis" title="${esc(v.label)}">${v.icono}</span>
         <span class="post-tipo">${esc(tipoLabel(p.tipo))}</span>
         ${p.pagina ? `<span class="post-tipo">p. ${p.pagina}</span>` : ''}
-        ${p.ayudaDelAgente ? '<span class="post-tipo">✦ ordenada</span>' : ''}
+        ${p.ayudaDelAgente ? '<span class="post-tipo">ordenada</span>' : ''}
       </div>
       ${p.titulo ? `<div class="post-titulo">${esc(p.titulo)}</div>` : ''}
       <div class="post-adelanto">${esc(adelanto(p.cuerpo))}</div>
@@ -193,7 +194,7 @@ function pintarEditor() {
 
     ${agentOffered() ? `
       <button class="btn-ghost full" style="margin-top:14px" onclick="pedirOrden()">
-        ✦ Ordenar mis notas en un borrador
+        Ordenar mis notas en un borrador
       </button>
       <p class="set-fineprint" style="margin-top:4px">
         Agrupa lo que has escrito y propone títulos. No escribe ni una frase.

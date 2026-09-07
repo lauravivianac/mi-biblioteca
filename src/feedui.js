@@ -20,6 +20,7 @@ import { misBloqueos } from './moderation.js';
 import { filtrarFuera } from './moderation-core.js';
 import { $, esc, toast } from './ui.js';
 import { refreshAll } from './views.js';
+import { ico } from './icons.js';
 
 let entradas = [];
 let siguiendo = 0;
@@ -68,7 +69,7 @@ function pintar() {
   if (vacio) {
     cuerpo.innerHTML = `
       <div class="empty">
-        <div class="empty-rune">✦</div>
+        <div class="empty-rune">${ico('fichas', 'ico-lg')}</div>
         <div class="empty-text">${esc(vacio.titulo)}</div>
       </div>
       <p class="set-fineprint" style="text-align:center">${esc(vacio.texto)}</p>

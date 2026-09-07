@@ -26,6 +26,7 @@ import {
 import { misBloqueos, meBloqueo } from './moderation.js';
 import { uid as myUid } from './store.js';
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
+import { ico } from './icons.js';
 
 let chatActual = null;
 let mensajes = [];
@@ -182,7 +183,7 @@ function pintarMensajes() {
   if (!mensajes.length) {
     caja.innerHTML = `
       <div class="empty">
-        <div class="empty-rune">${VACIO_CHAT.rune}</div>
+        <div class="empty-rune">${ico(VACIO_CHAT.rune, 'ico-lg')}</div>
         <div class="empty-text">${esc(VACIO_CHAT.texto)}</div>
       </div>
       <p class="set-fineprint" style="text-align:center">${esc(VACIO_CHAT.detalle)}</p>`;
@@ -312,7 +313,7 @@ export async function openChats() {
   if (!lista.length) {
     $('chats-body').innerHTML = `
       <div class="empty">
-        <div class="empty-rune">💬</div>
+        <div class="empty-rune">${ico('sobre', 'ico-lg')}</div>
         <div class="empty-text">Todavía no tienes conversaciones</div>
       </div>
       <p class="set-fineprint" style="text-align:center">
