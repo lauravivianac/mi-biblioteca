@@ -14,7 +14,7 @@ import {
   myUsername, isUsernameFree, claimUsername,
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
-import { applyTheme, previewTheme, themeAvailability } from './theme-engine.js';
+import { applyTheme, previewTheme, themeAvailability, cargarFuentes } from './theme-engine.js';
 import { THEMES } from './themes.js';
 
 const THEME_BASE = THEMES[0].tokens;
@@ -52,19 +52,44 @@ import { lomoHtml } from './lomo.js';
 
 let authMode = 'signin';
 
+/* Los once florones, y el CSS enseña el del tema activo. Se hace así
+   —y no eligiendo aquí— porque es exactamente lo que ya hace `.vineta`
+   al final de las listas: sin repintar al cambiar de tema y sin
+   posibilidad de que se quede el adorno del anterior. */
+const TEMAS_CON_ADORNO = [
+  'exlibris', 'grimorio', 'obsidiana', 'pergamino', 'herbario', 'marea',
+  'gotico', 'sakura', 'principito', 'maquina', 'manta',
+];
+
+const vinetaDelTema = () => `<svg viewBox="0 0 80 44">${
+  TEMAS_CON_ADORNO.map((t) => `<use data-tema="${t}" href="#a-${t}"/>`).join('')
+}</svg>`;
+
 export function renderAuth() {
   const isSignup = authMode === 'signup';
+  /* La letra de la tapa se pide AQUÍ y no en el index: es la única
+     pantalla que la usa, así que quien ya tiene la sesión abierta no
+     la descarga nunca. */
+  cargarFuentes(['grandHotel']);
   $('auth-screen').innerHTML = `
     <div class="auth-card">
       <!-- LA PORTADA. Es lo primero que ve alguien que llega, y hasta
            ahora era un formulario con un título encima. Ahora es la
            portada de un libro: la marca del propietario arriba, el
            nombre en grande, el filete, y debajo lo que promete. -->
-      <div class="auth-portada">
-        <div class="auth-exlibris">Ex libris</div>
-        <div class="auth-brand">Mi Biblioteca</div>
-        <div class="auth-filete"></div>
-        <p class="auth-lede">Tu plan lector, tus reseñas y tu progreso — solo tuyos.</p>
+      <div class="portada">
+        <div class="portada-marco">
+          <div class="portada-vineta" aria-hidden="true">${vinetaDelTema()}</div>
+          <div class="auth-exlibris">Ex libris</div>
+          <div class="auth-brand">Mi Biblioteca</div>
+          <div class="auth-filete"></div>
+          <p class="auth-lede">Tu plan lector, tus reseñas y tu progreso — solo tuyos.</p>
+        </div>
+        <!-- QUIEN LEE CONTIGO, ESPERÁNDOTE EN LA PUERTA. Sale de los
+             ajustes guardados en este teléfono, así que quien vuelve
+             encuentra a la suya; quien llega por primera vez encuentra
+             a la Gatita, que es la de fábrica. -->
+        <div class="portada-companera" aria-hidden="true">${petVista('contenta')}</div>
       </div>
 
       <div class="auth-tabs">
@@ -400,7 +425,20 @@ function renderThemeStore() {
         <button class="btn-magic" onclick="applyPreviewedTheme()">Aplicar ${esc(themes.find((t) => t.id === previewing).name)} y volver</button>
       </div>` : ''}
 
-    <div class="store-shelf-label">Tu mascota</div>
+    <!-- «Aquí dice "tu mascota" pero eso hace ver mal al animalito,
+         como un accesorio innecesario.»
+
+         Y es exacto: una mascota es algo que TIENES, como un tema o
+         una estantería, y por eso este rótulo la ponía al nivel de un
+         adorno de la tienda. Pero no hace lo mismo que un adorno: te
+         pregunta por dónde vas, se acuerda de lo que dejaste a medias
+         y te escribe cuando llevas días sin abrir un libro. Eso es
+         compañía, no decoración.
+
+         «Quien lee contigo» dice lo que hace, y además no tiene
+         género: hay una gata y hay un oso, y «tu compañero» o «tu
+         compañera» se equivoca con la mitad de ellos. -->
+    <div class="store-shelf-label">Quien lee contigo</div>
     ${renderPetShelf()}`;
 }
 

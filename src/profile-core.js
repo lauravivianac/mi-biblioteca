@@ -66,7 +66,7 @@ export const SECCIONES = [
   { id: 'generos', label: 'Mis géneros', hint: 'Lo que más lees' },
   { id: 'estanterias', label: 'Mis estanterías', hint: 'Solo las que marques como públicas' },
   { id: 'resenas', label: 'Mis reseñas', hint: 'Solo las que ya publicaste' },
-  { id: 'mascota', label: 'Mi mascota', hint: 'Tu bicho, tal y como lo tienes' },
+  { id: 'mascota', label: 'Quien lee conmigo', hint: 'Tu bicho, tal y como lo tienes' },
   { id: 'actividad', label: 'Lo que voy leyendo', hint: 'Cada libro que empiezas y terminas sale en el feed. Lo ve quien te sigue, y puede verlo cualquiera con cuenta' },
   {
     id: 'sugerible',
