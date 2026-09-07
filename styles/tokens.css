@@ -79,6 +79,43 @@
   --texture-opacity: 0;
   --texture-blend: normal;
 
+  /* ── LA ENCUADERNACIÓN · de qué está hecho un lomo ────────
+     Un libro sin portada se dibuja como su lomo (ver src/lomo.js), y
+     eso también es tema: en Máquina no hay tela ni pan de oro, en
+     Pergamino los lomos van sobre papel claro y no pueden ser negros.
+
+     Son OCHO telas porque a cada género le toca siempre la misma, así
+     que la estantería se lee de un vistazo aunque no distingas ningún
+     título. Un color por libro sería decoración; un color por género
+     es información — y por eso los ocho tienen que distinguirse entre
+     sí Y del fondo, en los diez temas. Lo comprueba
+     `npm run test:contrast`. */
+  --tela-1: #5C2A30;   /* burdeos */
+  --tela-2: #5A3524;   /* teja */
+  --tela-3: #5A4526;   /* ocre */
+  --tela-4: #3E4429;   /* oliva */
+  --tela-5: #26402F;   /* bosque */
+  --tela-6: #2C3C44;   /* pizarra */
+  --tela-7: #2C3550;   /* marino */
+  --tela-8: #42304A;   /* ciruela */
+
+  --lomo-filete: var(--gold);      /* los dos filetes y el título estampado */
+  --lomo-canto: var(--lilac);      /* el canto de las hojas */
+  --lomo-radio: 1px;
+  /* La luz sobre el lomo: la sombra del canto interior y el brillo del
+     borde. Un tema plano la apaga entera. */
+  --lomo-luz: linear-gradient(90deg,
+    rgb(0 0 0 / .34) 0 6%, rgb(255 255 255 / .06) 16%,
+    transparent 42%, rgb(0 0 0 / .22) 100%);
+  --lomo-sombra: 0 2px 8px rgb(0 0 0 / .5);
+
+  /* El botón de añadir. Va aparte porque en un tema claro no puede
+     salir del mismo sitio que en uno oscuro: `--dusk` es la superficie
+     elevada, y elevada sobre crema es casi crema. */
+  --fab-bg: var(--dusk);
+  --fab-color: var(--gold);
+  --fab-borde: rgb(var(--gold-rgb) / .45);
+
   /* ── ORNAMENTO · la marca que separa y remata ─────────────
      Cada mundo tiene su signo: ❧ para el grimorio, [ ] para
      la terminal, nada para la obsidiana. */

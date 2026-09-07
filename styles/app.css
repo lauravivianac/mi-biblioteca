@@ -238,26 +238,21 @@ body {
    redondeada, igual que un chip, igual que un botón, igual que todo lo
    demás. En una app que trata de libros, los libros no tenían cuerpo.
 
-   Esto es un lomo: tela, dos filetes de latón arriba y abajo, el
-   título estampado en vertical y el canto de las hojas asomando por la
-   derecha. El color de la tela sale del género, siempre el mismo para
-   el mismo género, así que la estantería se lee de un vistazo aunque
-   ningún título se distinga. */
+   Esto es un lomo: tela, dos filetes arriba y abajo, el título
+   estampado en vertical y el canto de las hojas asomando por la
+   derecha. La tela sale del género —siempre la misma para el mismo
+   género— y TODO lo demás sale de tokens, porque la encuadernación es
+   parte del tema: Máquina no tiene ni tela ni pan de oro, y en
+   Pergamino los lomos van sobre papel claro y no pueden ser negros. */
 .lomo {
   position: relative;
   display: block;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background:
-    linear-gradient(90deg,
-      rgb(0 0 0 / .34) 0 6%,
-      rgb(255 255 255 / .06) 16%,
-      transparent 42%,
-      rgb(0 0 0 / .22) 100%),
-    hsl(var(--tela, 30 12% 26%));
-  border-radius: 1px;
-  box-shadow: inset 0 0 0 1px rgb(0 0 0 / .35);
+  background: var(--lomo-luz), var(--tela, var(--tela-1));
+  border-radius: var(--lomo-radio);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / .3);
 }
 /* Los dos filetes: en un lomo entelado enmarcan el rótulo. */
 .lomo::before,
@@ -267,7 +262,8 @@ body {
   left: 12%;
   right: 22%;
   height: 1px;
-  background: rgb(var(--gold-rgb) / .55);
+  background: var(--lomo-filete);
+  opacity: .6;
 }
 .lomo::before { top: 13%; }
 .lomo::after { bottom: 13%; }
@@ -277,8 +273,9 @@ body {
   top: 2px; bottom: 2px; right: 0;
   width: 4px;
   background: repeating-linear-gradient(180deg,
-    rgb(var(--lilac-rgb) / .5) 0 1px,
-    rgb(var(--lilac-rgb) / .18) 1px 2px);
+    var(--lomo-canto) 0 1px,
+    transparent 1px 2px);
+  opacity: .55;
 }
 .lomo-txt {
   position: absolute;
@@ -289,41 +286,17 @@ body {
   font-weight: 600;
   line-height: 1;
   letter-spacing: .3px;
-  color: rgb(var(--gold-rgb) / .95);
+  color: var(--lomo-filete);
   writing-mode: vertical-rl;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* En los sitios pequeños el título no cabe: queda la tela y el latón,
+/* En los sitios pequeños el título no cabe: queda la tela y el filete,
    que ya distinguen un libro de otro. */
 .lomo-mini .lomo-txt { display: none; }
 .lomo-mini::before { top: 16%; }
 .lomo-mini::after { bottom: 16%; }
-
-/* ── YEAR SELECTOR ── */
-/* Los tres años son tres pestañas de un archivador, no tres botones
-   con degradado. El activo se marca abajo, en latón, igual que la
-   navegación y los filtros: una sola señal en toda la app. */
-.year-row {
-  display: flex;
-  gap: 22px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--border-soft);
-}
-.year-btn {
-  padding: 8px 2px 8px;
-  border-bottom: 1.5px solid transparent;
-  margin-bottom: -1px;
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: var(--display-weight);
-  color: var(--muted);
-  cursor: pointer;
-  font-variant-numeric: tabular-nums;
-  transition: color 0.2s, border-color 0.2s;
-}
-.year-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
 
 /* ── EL MES ──
    Antes cada mes llevaba un cuadradito de color con un emoji dentro:
@@ -337,20 +310,6 @@ body {
   align-items: baseline;
   gap: 10px;
   margin-bottom: 4px;
-}
-.month-rune {
-  width: 22px;
-  height: 22px;
-  align-self: center;
-  background: color-mix(in srgb, var(--month-accent, var(--purple)) var(--rune-tint), var(--purple));
-  border-radius: var(--rune-radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-size: 10px;
-  color: white;
-  flex-shrink: 0;
 }
 .month-name-text {
   font-family: var(--font-display);
@@ -855,7 +814,14 @@ body {
   transition: border-color 0.2s, background 0.2s;
 }
 .month-gap:hover { border-color: var(--violet); background: rgb(var(--lilac-rgb) / 0.05); }
-.gap-rune { opacity: 0.5; }
+/* El mes vacío: el signo de sumar en el margen, donde iría el lomo. */
+.gap-rune {
+  width: 32px;
+  display: grid;
+  place-items: center;
+  color: var(--muted-soft);
+  flex: none;
+}
 .gap-text { flex: 1; min-width: 0; }
 .gap-month {
   font-family: var(--font-display);
@@ -975,9 +941,9 @@ body {
   right: 18px;
   width: 50px; height: 50px;
   border-radius: var(--ctl-radius);
-  background: var(--dusk);
-  color: var(--gold);
-  border: 1px solid rgb(var(--gold-rgb) / .45);
+  background: var(--fab-bg);
+  color: var(--fab-color);
+  border: 1px solid var(--fab-borde);
   cursor: pointer;
   box-shadow: 0 6px 20px rgb(0 0 0 / .55);
   display: flex;

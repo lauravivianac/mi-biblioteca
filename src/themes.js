@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   LOS OCHO TEMAS  ·  historia #77
+   LOS DIEZ TEMAS  ·  historias #77 y el rediseño
 
    Un tema es datos, no CSS: solo reemplaza los tokens base de
    styles/tokens.css. Todo lo derivado —bordes, nieblas, sombras,
@@ -32,6 +32,97 @@ export const FONT_SETS = {
   inter:      'Inter:wght@300;400;500',
 };
 
+/* ─────────────────────────────────────────────────────────────
+   LAS TELAS DE UN LOMO
+
+   Un libro sin portada se dibuja como su lomo, y a cada género le toca
+   siempre la misma tela: así la estantería se lee de un vistazo aunque
+   no distingas ningún título (ver src/lomo.js).
+
+   Para que eso funcione las ocho tienen que distinguirse ENTRE SÍ y del
+   fondo, en los diez temas. Son ochenta telas: elegidas a mano una por
+   una acaban pareciéndose sin que nadie lo note, y de hecho así pasó en
+   el primer intento —cuatro pares con ΔE por debajo de 5—.
+
+   Así que no se eligen: se derivan. Cada tema da los OCHO TONOS de su
+   familia (los que le dan carácter: cueros en Grimorio, vino y negro en
+   Gótico, tierras en Herbario) y una rampa de claridad. Los tonos dan
+   la personalidad y la rampa garantiza la separación, porque cada tela
+   es más clara que la anterior aunque el tono se repita.
+
+   Se calcula en OKLCH porque es donde una diferencia igual de números
+   se ve como una diferencia igual: en HSL, dos amarillos separados 40°
+   se distinguen mucho menos que dos azules. `npm run test:contrast` lo
+   comprueba con ΔE de verdad, no con contraste de claridad. */
+
+const aSrgb = (c) => {
+  const v = c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+  return Math.max(0, Math.min(255, Math.round(v * 255)));
+};
+
+/** OKLCH → hexadecimal. L en 0..1, C croma, H en grados. */
+function oklch(L, C, H) {
+  const a = C * Math.cos((H * Math.PI) / 180);
+  const b = C * Math.sin((H * Math.PI) / 180);
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  const rgb = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+  ].map(aSrgb);
+  return '#' + rgb.map((n) => n.toString(16).padStart(2, '0').toUpperCase()).join('');
+}
+
+/**
+ * Las ocho telas de un tema, con su estampado, como tokens listos.
+ *
+ * Cada tela trae ADEMÁS el color con el que se estampa encima
+ * (`--tela-N-tinta`), y no es siempre el mismo: en una tela oscura se
+ * estampa en oro, y en una clara se estampa en oscuro. Eso no es un
+ * apaño para pasar el contraste, es lo que se hace en una
+ * encuadernación de verdad — y de paso hace que el título se lea en
+ * las ocho, que es lo que comprueba `npm run test:contrast`.
+ *
+ * @param {number[]} tonos  ocho tonos en grados; los que dan carácter
+ * @param {object} banda
+ *   `l` la rampa de claridad de la primera tela a la octava
+ *   `c` cuánto color tienen. A 0 salen ocho grises, que es lo que
+ *       quieren Obsidiana y Máquina: ahí la tela sin color es la gracia
+ *   `oro` con qué se estampa sobre las telas oscuras
+ *   `tinta` con qué se estampa sobre las claras
+ */
+/* Luminancia relativa de WCAG, para decidir con cuál de los dos se lee
+   mejor. Un umbral fijo de claridad no vale: el «oro» de Pergamino es
+   casi marrón y el de Máquina es verde ácido, así que dónde está la
+   frontera depende del metal de cada tema. */
+const luminancia = (hexColor) => {
+  const n = parseInt(hexColor.slice(1), 16);
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+    .map((v) => v / 255)
+    .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contraste = (a, b) => {
+  const [x, y] = [luminancia(a), luminancia(b)].sort((p, q) => q - p);
+  return (x + 0.05) / (y + 0.05);
+};
+
+function telas(tonos, { l: [l0, l1], c, oro = '#E8D9AE', tinta = '#1A1512' }) {
+  const salida = {};
+  tonos.forEach((h, i) => {
+    const luz = l0 + ((l1 - l0) * i) / (tonos.length - 1);
+    const tela = oklch(luz, c, h);
+    salida[`--tela-${i + 1}`] = tela;
+    /* Se estampa con el que se lee: oro en las telas oscuras, tinta en
+       las claras. Lo decide el contraste, no un número redondo. */
+    salida[`--tela-${i + 1}-tinta`] =
+      contraste(oro, tela) >= contraste(tinta, tela) ? oro : tinta;
+  });
+  return salida;
+}
+
 export const THEMES = [
   /* ── EX LIBRIS · el aspecto de casa ──────────────────────────
      «Ex libris» es la marca que alguien pega dentro de su libro para
@@ -60,6 +151,11 @@ export const THEMES = [
     fonts: ['frauncesWonk', 'literata'],
     unlock: null,
     tokens: {
+      /* Ex Libris · telas de encuadernar: burdeos, teja, ocre, oliva,
+         bosque, pizarra, marino y ciruela. Van aquí y no solo en
+         tokens.css porque los huecos de un tema los rellena Grimorio:
+         sin declararlas, este saldría con los cueros del otro. */
+      ...telas([25, 55, 85, 120, 155, 220, 265, 325], { l: [.30, .48], c: .085, oro: '#E8D2A0' }),
       '--void': '#12100E', '--void-rgb': '18 16 14',
       '--deep': '#1C1917', '--deep-rgb': '28 25 23',
       '--dusk': '#292420', '--dusk-rgb': '41 36 32',
@@ -99,7 +195,7 @@ export const THEMES = [
       '--sheet-bg': '#1A1715',
 
       /* Grano de papel, no ruido de televisión: fino y muy tenue. */
-      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E")`,
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E")`,
       '--texture-opacity': '.055',
       '--texture-blend': 'soft-light',
 
@@ -117,6 +213,9 @@ export const THEMES = [
     fonts: ['cinzel', 'inter'],
     unlock: null,
     tokens: {
+      /* Grimorio · el armario de libros de magia: cueros oscuros y
+         pan de oro. Púrpura, índigo, granate, botella, cuero. */
+      ...telas([300, 270, 15, 160, 65, 245, 330, 200], { l: [.28, .48], c: .095, oro: '#F0C060' }),
       '--void': '#0D0A1A', '--void-rgb': '13 10 26',
       '--deep': '#13102B', '--deep-rgb': '19 16 43',
       '--dusk': '#1E1840', '--dusk-rgb': '30 24 64',
@@ -133,7 +232,7 @@ export const THEMES = [
       '--card-radius': '14px', '--ctl-radius': '10px', '--chip-radius': '8px',
       '--pill-radius': '20px', '--rune-radius': '8px',
       '--card-shadow': '0 2px 18px rgb(13 10 26 / .5)',
-      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23v)'/%3E%3C/svg%3E")`,
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23v)'/%3E%3C/svg%3E")`,
       '--texture-opacity': '.05',
       '--texture-blend': 'overlay',
       '--ornament': "'\\2726'",
@@ -149,6 +248,14 @@ export const THEMES = [
     fonts: ['cormorant', 'inter'],
     unlock: null,
     tokens: {
+      /* Obsidiana · sin color, como todo lo demás en este tema: ocho
+         claridades del casi negro al grafito. Y sin brillo en el filo,
+         que es a lo que renuncia el tema entero. */
+      ...telas([0, 0, 0, 0, 0, 0, 0, 0], { l: [.26, .58], c: 0, oro: '#D9B25A' }),
+      '--lomo-luz': 'linear-gradient(90deg, rgb(0 0 0 / .4) 0 8%, transparent 40%, rgb(0 0 0 / .25) 100%)',
+      '--lomo-radio': '0px',
+      '--lomo-luz': 'linear-gradient(90deg, rgb(0 0 0 / .4) 0 8%, transparent 40%, rgb(0 0 0 / .25) 100%)',
+      '--lomo-radio': '0px',
       '--month-tint': '0%', '--rune-tint': '0%',
       '--void': '#08080C', '--void-rgb': '8 8 12',
       '--deep': '#121218', '--deep-rgb': '18 18 24',
@@ -188,6 +295,22 @@ export const THEMES = [
     fonts: ['spectral'],
     unlock: null,
     tokens: {
+      /* Pergamino · EL ÚNICO TEMA CLARO, y el único donde esto importa
+         de verdad: un lomo oscuro sobre papel crema no es un libro, es
+         un agujero. Telas de tono medio, las de una estantería vista a
+         plena luz, y el canto de las hojas del color del propio papel
+         —que es lo que pasa en un libro de verdad—. */
+      ...telas([30, 62, 96, 140, 205, 250, 340, 15], { l: [.56, .72], c: .042, tinta: '#3A2F1E' }),
+      /* El oro de este tema es casi marrón y sobre tela media no se ve:
+         aquí el estampado es crema, como el pan de oro claro. */
+      '--lomo-filete': '#3A2F1E',
+      '--lomo-canto': '#FBF7EE',
+      /* Sobre crema, un botón crema no es un botón. */
+      '--fab-bg': '#6B5433', '--fab-color': '#F6EFDF', '--fab-borde': '#4A3A22',
+      '--lomo-sombra': '0 2px 6px rgb(90 74 50 / .28)',
+      '--lomo-filete': '#F6EFDF',
+      '--lomo-canto': '#FBF7EE',
+      '--lomo-sombra': '0 2px 6px rgb(90 74 50 / .3)',
       '--month-tint': '0%', '--rune-tint': '0%',
       '--void': '#F4EEE2', '--void-rgb': '244 238 226',
       '--deep': '#FBF7EE', '--deep-rgb': '251 247 238',
@@ -210,7 +333,7 @@ export const THEMES = [
       '--card-bg': 'transparent',
       '--card-border': '0',
       '--card-shadow': 'none',
-      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='5'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E")`,
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='5'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E")`,
       '--texture-opacity': '.16',
       '--texture-blend': 'multiply',
       '--label-transform': 'none',
@@ -228,6 +351,8 @@ export const THEMES = [
     fonts: ['fraunces', 'karla'],
     unlock: null,
     tokens: {
+      /* Herbario · cuaderno de campo: hoja, musgo, tierra y otoño. */
+      ...telas([155, 128, 100, 78, 55, 32, 195, 168], { l: [.28, .48], c: .080, oro: '#E0C070' }),
       '--month-tint': '22%', '--rune-tint': '70%',
       '--void': '#0B1410', '--void-rgb': '11 20 16',
       '--deep': '#12201A', '--deep-rgb': '18 32 26',
@@ -263,6 +388,8 @@ export const THEMES = [
     fonts: ['outfit', 'inter'],
     unlock: null,
     tokens: {
+      /* Marea · lo que hay bajo el agua: índigo, petróleo, verdemar. */
+      ...telas([255, 232, 210, 190, 170, 275, 245, 220], { l: [.28, .50], c: .080, oro: '#EFD9A0' }),
       '--month-tint': '12%', '--rune-tint': '55%',
       '--void': '#08131F', '--void-rgb': '8 19 31',
       '--deep': '#0F1F31', '--deep-rgb': '15 31 49',
@@ -299,6 +426,8 @@ export const THEMES = [
     fonts: ['cinzelDeco', 'inter'],
     unlock: { achievement: 'octubre-terror', label: 'Termina un mes de Terror / Misterio' },
     tokens: {
+      /* Gótico · vino y negro, con un botella muy oscuro al fondo. */
+      ...telas([8, 350, 330, 312, 25, 40, 358, 340], { l: [.24, .50], c: .085, oro: '#E4C27E' }),
       '--month-tint': '14%', '--rune-tint': '45%',
       '--void': '#100708', '--void-rgb': '16 7 8',
       '--deep': '#1C0C0F', '--deep-rgb': '28 12 15',
@@ -318,7 +447,7 @@ export const THEMES = [
       '--card-radius': '16px 16px 4px 4px', '--ctl-radius': '10px 10px 3px 3px',
       '--chip-radius': '3px', '--pill-radius': '14px', '--rune-radius': '50% 50% 3px 3px',
       '--card-shadow': '0 6px 26px rgb(0 0 0 / .55)',
-      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23v)'/%3E%3C/svg%3E")`,
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='v'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23v)'/%3E%3C/svg%3E")`,
       '--texture-opacity': '.07',
       '--texture-blend': 'overlay',
       '--ornament': "'\\2020'",
@@ -334,6 +463,8 @@ export const THEMES = [
     fonts: ['shippori', 'inter'],
     unlock: { achievement: 'bloque-oriental', label: 'Termina 4 libros de Oriente / Espiritualidad' },
     tokens: {
+      /* Sakura · seda teñida: rosas apagados, ciruela y gris paloma. */
+      ...telas([350, 322, 296, 270, 28, 2, 245, 310], { l: [.29, .55], c: .072, oro: '#EFCFA8' }),
       '--month-tint': '0%', '--rune-tint': '30%',
       '--void': '#1A1016', '--void-rgb': '26 16 22',
       '--deep': '#261821', '--deep-rgb': '38 24 33',
@@ -371,9 +502,10 @@ export const THEMES = [
     fonts: ['patrick', 'karla'],
     unlock: null,
     tokens: {
+      /* El Principito · la acuarela del desierto al anochecer: arena,
+         terracota, salvia y el azul de la noche que ya viene. */
+      ...telas([50, 78, 112, 152, 252, 280, 12, 30], { l: [.32, .54], c: .085, oro: '#EBC96B' }),
       '--month-tint': '10%', '--rune-tint': '40%',
-      /* El cielo del desierto justo después de la puesta: índigo
-         polvoriento, nunca negro. */
       '--void': '#17203A', '--void-rgb': '23 32 58',
       '--deep': '#1F2A47', '--deep-rgb': '31 42 71',
       '--dusk': '#2A3760', '--dusk-rgb': '42 55 96',
@@ -407,7 +539,7 @@ export const THEMES = [
       '--stars-opacity': '.75',
       '--orbs-opacity': '.5',
       '--grid-opacity': '0',
-      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='5'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E")`,
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.045' numOctaves='5'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E")`,
       '--texture-opacity': '.09',
       '--texture-blend': 'soft-light',
       '--ornament': "'\\2727'",
@@ -425,6 +557,20 @@ export const THEMES = [
     fonts: ['mono'],
     unlock: null,
     tokens: {
+      /* Máquina · aquí no hay tela ni pan de oro: bloques planos de
+         gris con una etiqueta. El brutalismo del tema se aplica también
+         a los libros, o deja de ser el mismo tema. */
+      ...telas([0, 0, 0, 0, 0, 0, 0, 0], { l: [.28, .66], c: 0, oro: '#B9E36C', tinta: '#0E0E0E' }),
+      '--lomo-luz': 'none',
+      '--lomo-sombra': 'none',
+      '--lomo-radio': '0px',
+      '--lomo-filete': '#B9E36C',
+      '--lomo-canto': '#7A7A7A',
+      '--lomo-luz': 'none',
+      '--lomo-sombra': 'none',
+      '--lomo-radio': '0px',
+      '--lomo-filete': '#B9E36C',
+      '--lomo-canto': '#7A7A7A',
       '--month-tint': '0%', '--rune-tint': '0%',
       '--void': '#0E0E0E', '--void-rgb': '14 14 14',
       '--deep': '#161616', '--deep-rgb': '22 22 22',

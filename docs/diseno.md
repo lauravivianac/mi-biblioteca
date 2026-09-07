@@ -92,9 +92,8 @@ Es el único sitio donde se gasta la audacia. Cada libro sin portada se
 dibuja como lo que es: **tela, dos filetes de latón, el título estampado en
 vertical y el canto de las hojas asomando por la derecha.**
 
-Y la tela **no es aleatoria ni un degradado**: son ocho colores de
-encuadernación de verdad —burdeos, teja, ocre, oliva, bosque, pizarra,
-marino y ciruela— y **a cada género le toca siempre el mismo**.
+Y la tela **no es aleatoria ni un degradado**: son ocho telas de
+encuadernación y **a cada género le toca siempre la misma**.
 
 > Eso convierte una lista en una estantería: antes de leer un solo título ya
 > se ve que los tres de arriba son del mismo género. Un color por libro
@@ -103,6 +102,55 @@ marino y ciruela— y **a cada género le toca siempre el mismo**.
 Está en [`src/lomo.js`](../src/lomo.js) y lo usan el plan, la estantería, el
 tracker, la ficha, «qué leer después», «¿cuál primero?», los huecos del plan
 y el alta de un libro.
+
+### Y la encuadernación es del tema, no del código
+
+El primer intento tenía las ocho telas **escritas a mano en el módulo**, y eso
+daba lomos de cuero con pan de oro en Máquina —que es brutalista y
+monoespaciado— y **lomos negros sobre papel crema en Pergamino**, que no
+parecen libros: parecen agujeros.
+
+Así que las telas son tokens y **cada tema declara las suyas**:
+
+| | |
+|---|---|
+| **Ex Libris** | telas de encuadernar: burdeos, teja, ocre, oliva, bosque, pizarra, marino, ciruela |
+| **Grimorio** | el armario de libros de magia: cueros oscuros y pan de oro |
+| **Obsidiana** | sin color, como todo el tema: ocho claridades del negro al grafito |
+| **Pergamino** | tonos medios sobre papel, y el canto de las hojas del color del propio papel |
+| **Herbario** | cuaderno de campo: hoja, musgo, tierra y otoño |
+| **Marea** | lo que hay bajo el agua: índigo, petróleo, verdemar |
+| **Gótico** | vino y negro, y nada más |
+| **Sakura** | seda teñida: rosas apagados y ciruela |
+| **El Principito** | el desierto al anochecer: arena, terracota, salvia, azul de noche |
+| **Máquina** | ni tela ni pan de oro: bloques planos de gris con una etiqueta |
+
+**Y no se eligen a mano: se derivan.** Ochenta telas escogidas una a una acaban
+pareciéndose sin que nadie lo note —en el primer intento había cuatro pares
+casi idénticos—. Cada tema da los **ocho tonos de su familia** y una **rampa de
+claridad**: los tonos ponen el carácter y la rampa garantiza que se distingan,
+porque cada tela es más clara que la anterior aunque el tono se repita. Se
+calcula en OKLCH, que es donde una diferencia igual de números se ve como una
+diferencia igual.
+
+**El estampado también sale del oficio:** en una tela oscura se estampa en oro
+y en una clara se estampa en oscuro. Cada tela trae el suyo, elegido por
+contraste — no por un número redondo, porque el «oro» de Pergamino es casi
+marrón y el de Máquina es verde ácido.
+
+### Lo que comprueba `npm run test:contrast`
+
+Además del contraste AA de siempre, ahora comprueba las **ochenta telas**:
+
+- que cada una **se despegue del fondo** de su tema (ΔE ≥ 8),
+- que **las ocho se distingan entre sí** (ΔE ≥ 5),
+- y que **el título estampado se lea** sobre cualquiera de ellas (4.5 : 1).
+
+Con una medida importante: para «¿se parecen estos dos colores?» **no vale el
+contraste de WCAG**, que solo mide claridad — a un burdeos y a un verde botella
+de la misma claridad les da 1.00 y los declara idénticos. Se usa distancia de
+color de verdad (ΔE sobre CIE Lab). El contraste de WCAG se reserva para lo que
+sí es texto: el estampado.
 
 ---
 
@@ -140,9 +188,10 @@ y el alta de un libro.
 
 ## Qué NO se tocó, a propósito
 
-- **Los nueve temas siguen ahí**, Grimorio incluido: sigue descrito como «el
+- **Los diez temas siguen ahí**, Grimorio incluido: sigue descrito como «el
   aspecto original» y se elige en la tienda. Lo que cambia es con cuál se
-  entra.
+  entra — y ahora cada uno tiene su propia encuadernación en vez de la
+  prestada del vecino.
 - **El emoji del rol** (`⚓ Ancla`, `⚡ Corto`) sigue **en el dato**, porque
   media app compara contra esa cadena exacta (`gaps-core`, `duel-core`, el
   alta). Cambiarlo sería una migración de las bibliotecas de todo el mundo
@@ -160,8 +209,12 @@ npm run capturas
 ```
 
 Levanta la app entera en Chromium contra el emulador, crea una cuenta, le
-pone libros en varios estados y **fotografía catorce pantallas** en
-`capturas/`. No es una prueba: no falla ni pasa, deja imágenes.
+pone libros en varios estados y **fotografía treinta y cuatro pantallas** en
+`capturas/` — incluidas la estantería y el plan **en cada uno de los diez
+temas**. No es una prueba: no falla ni pasa, deja imágenes.
+
+Eso último no es un extra: mirar solo el tema de casa es exactamente cómo se
+degradan los otros nueve sin que nadie se entere.
 
 Existe porque un rediseño no se juzga leyendo CSS. Hasta que no hubo una
 forma de mirar la app con libros dentro, cada decisión de color y de
@@ -170,7 +223,7 @@ espaciado era una suposición.
 Y para no romper nada por el camino:
 
 ```bash
-npm run test:contrast    # los nueve temas, contraste AA
+npm run test:contrast    # los diez temas: contraste AA y las ochenta telas
 npm run test:pantallas   # el marcado real en Chromium
 npm run test:e2e         # la app entera contra el emulador
 ```

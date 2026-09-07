@@ -133,6 +133,40 @@ for (const p of PESTANAS) {
   await foto(`10-${p}`);
 }
 
+/* ── TODOS LOS TEMAS ─────────────────────────────────────────
+   Un tema no es una paleta: cambia color, forma, material,
+   tipografía y textura a la vez. Con diez, mirar solo el primero
+   es exactamente cómo se degradan los otros nueve. Aquí se
+   fotografían los diez, en la pantalla donde más se nota —la
+   estantería, que es la que tiene libros, filetes y filtros. */
+const TEMAS = await pagina.evaluate(async () =>
+  (await import('/src/themes.js')).THEMES.map((t) => t.id));
+
+for (const tema of TEMAS) {
+  await cerrar();
+  await pagina.evaluate(async (id) => {
+    const { applyTheme } = await import('/src/theme-engine.js');
+    applyTheme(id, { persistLocal: false });
+  }, tema);
+  /* Las fuentes del tema se cargan al aplicarlo: sin esperarlas, la
+     captura sale con la tipografía del tema anterior. */
+  await pagina.evaluate(() => document.fonts.ready);
+  await pagina.evaluate(() => window.nav('biblioteca'));
+  await pagina.waitForTimeout(1400);
+  await foto(`30-tema-${tema}`);
+
+  await pagina.evaluate(() => window.nav('plan'));
+  await pagina.waitForTimeout(1000);
+  await foto(`31-plan-${tema}`);
+}
+
+/* Se vuelve al de casa para las hojas que faltan. */
+await pagina.evaluate(async () => {
+  const { applyTheme } = await import('/src/theme-engine.js');
+  applyTheme('exlibris', { persistLocal: false });
+});
+await pagina.evaluate(() => document.fonts.ready);
+
 const HOJAS = {
   'agregar': () => window.openAdd(),
   'ajustes': () => window.openSettings(),

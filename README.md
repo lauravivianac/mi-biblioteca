@@ -146,7 +146,7 @@ src/
   store.js                 datos por usuaria (users/{uid}/books/*)
   migrate.js               importación del documento antiguo
   seed.js                  los 73 libros del plan original
-  themes.js                los 9 temas, como datos
+  themes.js                los 10 temas, como datos
   icons.js                 pedir un icono del pliego (los trazos van en index.html)
   lomo.js                  el lomo de un libro sin portada
   theme-engine.js          aplicar · previsualizar · persistir
@@ -158,9 +158,9 @@ src/
   ui.js                    utilidades compartidas
 
 scripts/
-  check-contrast.mjs       valida contraste AA de los 9 temas
+  check-contrast.mjs       contraste AA y las 80 telas de los 10 temas
   test-planner.mjs         30 pruebas del generador de plan
-  capturas.mjs             fotografía 14 pantallas para poder mirarlas
+  capturas.mjs             fotografía 34 pantallas, los 10 temas incluidos
 ```
 
 ## El aspecto
@@ -170,7 +170,7 @@ dibujados como lomos. Por qué es así y qué se cambió está en
 [`docs/diseno.md`](./docs/diseno.md) — léelo antes de añadir una pantalla.
 
 ```bash
-npm run capturas    # deja 14 capturas en capturas/, con datos de verdad
+npm run capturas    # deja 34 capturas en capturas/, los 10 temas incluidos
 ```
 
 ## Pruebas
@@ -179,9 +179,9 @@ npm run capturas    # deja 14 capturas en capturas/, con datos de verdad
 npm test
 ```
 
-- **Contraste** — los nueve temas deben pasar WCAG AA. Con nueve temas y decenas de
+- **Contraste** — los diez temas deben pasar WCAG AA. Con diez temas y decenas de
   combinaciones esto no se revisa a ojo: o es automático, o se degrada en cuanto se
-  añada el décimo.
+  añada el undécimo.
 - **Generador de plan** — 30 pruebas sobre el núcleo, que es puro a propósito: no
   necesita Firebase, ni navegador, ni sesión.
 

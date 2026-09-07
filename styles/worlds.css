@@ -70,9 +70,6 @@
   background: linear-gradient(180deg, transparent, var(--gold), transparent);
   opacity: .75;
 }
-[data-theme="grimorio"] .month-rune {
-  box-shadow: 0 0 0 1px rgb(var(--gold-rgb) / .35), 0 0 14px rgb(var(--purple-rgb) / .5);
-}
 [data-theme="grimorio"] .brand-title { text-shadow: 0 0 18px rgb(var(--gold-rgb) / .35); }
 
 
@@ -86,7 +83,6 @@
 [data-theme="obsidiana"] .book-card,
 [data-theme="obsidiana"] .lib-card,
 [data-theme="obsidiana"] .tracker-card,
-[data-theme="obsidiana"] .gem,
 [data-theme="obsidiana"] .year-btn {
   border-top: 1px solid rgb(255 255 255 / .07);
 }
@@ -96,11 +92,9 @@
   font-weight: 600;
 }
 [data-theme="obsidiana"] .book-card-title { font-size: 16px; letter-spacing: -.2px; }
-[data-theme="obsidiana"] .month-rune { border-radius: 0; }
 [data-theme="obsidiana"] .month-group { margin-bottom: 34px; }
-[data-theme="obsidiana"] .section-heading::before,
+/* Sin filete: el tema no adorna nada. El rótulo se sostiene solo. */
 [data-theme="obsidiana"] .section-heading::after { display: none; }
-[data-theme="obsidiana"] .section-heading { justify-content: flex-start; }
 
 
 /* ═════════════════════════════════════════════════════════════
@@ -110,31 +104,18 @@
    El mes va en el margen, como en un libro de verdad.
    ═════════════════════════════════════════════════════════════ */
 
+/* El renglón que este tema inventó —libros como entradas de un índice,
+   sin tarjeta— pasó a ser como se pintan en TODOS los temas. Lo que
+   queda aquí es solo lo suyo: el filete más marcado bajo cada mes y el
+   nombre del mes en cursiva, como el titulillo de un libro impreso. */
 [data-theme="pergamino"] .book-card,
-[data-theme="pergamino"] .lib-card {
-  border: 0;
-  border-bottom: 1px solid rgb(var(--lilac-rgb) / .22);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  margin-bottom: 0;
-}
-[data-theme="pergamino"] .book-card:hover,
-[data-theme="pergamino"] .lib-card:hover { background: rgb(var(--lilac-rgb) / .05); }
-[data-theme="pergamino"] .month-rune {
-  border-radius: 0;
-  background: none !important;
-  color: var(--parchment);
-  font-size: 20px;
-  box-shadow: none;
-}
+[data-theme="pergamino"] .lib-card { border-bottom-color: rgb(var(--lilac-rgb) / .22); }
 [data-theme="pergamino"] .month-name-text { font-size: 19px; font-style: italic; }
 [data-theme="pergamino"] .month-label {
   border-bottom: 2px solid rgb(var(--lilac-rgb) / .3);
   padding-bottom: 6px;
 }
-[data-theme="pergamino"] .tag,
-[data-theme="pergamino"] .detail-tag { background: none; border-color: rgb(var(--lilac-rgb) / .3); }
+[data-theme="pergamino"] .month-label .month-rule { display: none; }
 [data-theme="pergamino"] .book-card-title { font-size: 16px; }
 
 
@@ -144,13 +125,18 @@
    ficha atada, sobre papel cuadriculado de botánica.
    ═════════════════════════════════════════════════════════════ */
 
+/* La etiqueta de espécimen. `.tag` ya no trae forma —es un dato al
+   margen— así que aquí se le pone entera, y se quitan los puntos que
+   separan los datos: una etiqueta atada no necesita separador. */
 [data-theme="herbario"] .tag {
   position: relative;
   border-radius: 3px;
-  padding-left: 16px;
+  padding: 2px 8px 2px 16px;
   background: rgb(var(--gold-rgb) / .1);
-  border-color: rgb(var(--gold-rgb) / .35);
+  border: 1px solid rgb(var(--gold-rgb) / .35);
+  color: var(--lilac);
 }
+[data-theme="herbario"] .tag + .tag::before { content: none; }
 [data-theme="herbario"] .tag::before {
   content: '';
   position: absolute;
@@ -160,7 +146,6 @@
   border-radius: 50%;
   border: 1px solid rgb(var(--gold-rgb) / .7);
 }
-[data-theme="herbario"] .month-rune { border-radius: 3px; }
 [data-theme="herbario"] .book-card { border-left: 3px solid rgb(var(--violet-rgb) / .45); }
 
 
@@ -185,7 +170,6 @@
 [data-theme="marea"] .book-card,
 [data-theme="marea"] .lib-card,
 [data-theme="marea"] .tracker-card { backdrop-filter: blur(14px); }
-[data-theme="marea"] .month-rune { border-radius: 50%; }
 
 
 /* ═════════════════════════════════════════════════════════════
@@ -195,17 +179,14 @@
    cálida cae desde arriba.
    ═════════════════════════════════════════════════════════════ */
 
-[data-theme="gotico"] .book-card-cover,
-[data-theme="gotico"] .lib-cover,
-[data-theme="gotico"] .month-rune {
-  border-radius: 50% 50% 4px 4px / 22% 22% 4px 4px;
+/* El arco iba en TODAS las portadas de la lista, y desde que un libro
+   sin portada se dibuja como su lomo, eso era un lomo con cúpula: los
+   libros no tienen forma de ventana. El arco se queda donde sí es un
+   arco — el hueco de la ficha, con el libro de pie dentro, como una
+   hornacina— y ahí gana. */
+[data-theme="gotico"] .detail-libro {
+  border-radius: 50% 50% 3px 3px / 18% 18% 3px 3px;
   overflow: hidden;
-}
-[data-theme="gotico"] .book-card { border-radius: 16px 16px 4px 4px; }
-[data-theme="gotico"] .section-heading-text::after {
-  content: ' ✦';
-  color: var(--gold);
-  opacity: .7;
 }
 [data-theme="gotico"] .brand-title { text-shadow: 0 0 24px rgb(var(--gold-rgb) / .45); }
 
@@ -233,7 +214,6 @@
 }
 [data-theme="sakura"] .month-group { margin-bottom: 40px; }
 [data-theme="sakura"] .month-label { margin-bottom: 18px; }
-[data-theme="sakura"] .month-rune { border-radius: 50%; }
 [data-theme="sakura"] .view { padding: 22px 20px; }
 
 
@@ -258,10 +238,8 @@
 }
 [data-theme="maquina"] .book-card::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
 [data-theme="maquina"] .book-card::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
-[data-theme="maquina"] .month-rune { border-radius: 0; }
 [data-theme="maquina"] .book-card-title,
 [data-theme="maquina"] .lib-title { letter-spacing: -.3px; }
-[data-theme="maquina"] .gem-num { font-weight: 700; }
 
 
 /* ═════════════════════════════════════════════════════════════
@@ -284,9 +262,6 @@
 [data-theme="principito"] .brand-title { font-size: 22px; }
 
 /* La runa del mes es su asteroide: un planeta pequeño con halo. */
-[data-theme="principito"] .month-rune {
-  box-shadow: 0 0 0 1px rgb(235 201 107 / .3), 0 0 16px rgb(235 201 107 / .18);
-}
 
 /* Nada tiene borde duro: la acuarela no traza contornos. */
 [data-theme="principito"] .book-card,
