@@ -138,6 +138,7 @@ export const SPECIES = [
      quien no se ve representado en la lista no llega a los diez
      libros para descubrir que sí lo estaba. */
   { id: 'oso',     name: 'Oso',     nombre: 'Tomás',  emoji: '🐻', unlock: null },
+  { id: 'lobo',    name: 'Lobo',    nombre: 'Rico',   emoji: '🐺', unlock: null },
 ];
 
 /** El nombre de fábrica de una especie. */
@@ -636,7 +637,7 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
    pintada. Quien elija una especie ilustrada no ve esos dos ajustes
    (ver `speciesIlustrada`), porque un mando que no hace nada es peor
    que no tenerlo. */
-export const ILUSTRADAS = ['gato', 'conejo', 'buho', 'zorro', 'panda', 'mapache', 'oso'];
+export const ILUSTRADAS = ['gato', 'conejo', 'buho', 'zorro', 'panda', 'mapache', 'oso', 'lobo'];
 
 export const speciesIlustrada = (id) => ILUSTRADAS.includes(id);
 

@@ -6,7 +6,7 @@ La mascota **no es un dibujo**. Es esto:
 
 | | |
 |---|---|
-| Especies | 7 — Gatita, Coneja, Búho, Zorrita, Mapache, Panda y **Oso** |
+| Especies | 8 — Gatita, Coneja, Búho, Zorrita, Mapache, Panda, **Oso** y **Lobo** |
 | Pelajes | 7 — Atigrada, Nocturna, Nieve, Canela, Ceniza, Tinta, Trigo |
 | Accesorios | 6 — Nada, Bufanda, Gafas, Lazo, Gorrito, Flor |
 | Escenas | 9 — Estantería, Planta, Lámpara, Taza, Rama en flor, Velas… |
@@ -154,12 +154,12 @@ pide *«el mismo ilustrador, la misma técnica y la misma paleta que esta imagen
 pero el personaje es…»*. Una imagen dice de una vez lo que veinte líneas de
 prompt no consiguen.
 
-### Las siete especies
+### Las ocho especies
 
 **Y cada una tiene nombre**, puesto de fábrica y cambiable: Cleo, Nube, Ulises,
-Rita, Coco, Bambú y Tomás. No es un adorno — una lista que dice «Gatita, Coneja,
-Búho» es un catálogo de animales; una que dice «Cleo, Nube, Ulises» son siete
-personajes esperando.
+Rita, Coco, Bambú, Tomás y Rico. No es un adorno — una lista que dice «Gatita,
+Coneja, Búho» es un catálogo de animales; una que dice «Cleo, Nube, Ulises» son
+ocho personajes esperando.
 
 | | Nombre | Descripción para el prompt |
 |---|---|---|
@@ -170,6 +170,7 @@ personajes esperando.
 | **Mapache** | Coco | `un mapache gris con antifaz negro y cola anillada` |
 | **Panda** | Bambú | `un panda pequeño y regordete, blanco y negro` |
 | **Oso** | Tomás | `un oso pardo ADULTO, de pelaje castaño cálido y hocico color miel` |
+| **Lobo** | Rico | `un LOBO ADULTO de pelaje gris ceniza con el pecho claro, orejas erguidas y mirada serena` |
 
 ### Los cinco ánimos
 
@@ -594,7 +595,7 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ---
 
-## El Oso, y las dos que faltan
+## Los adultos: el Oso y el Lobo, y el Cuervo que falta
 
 ### El diagnóstico, después de fallar tres veces con el dinosaurio
 
@@ -626,7 +627,7 @@ faltaba.
 | | Se lee como | Por qué funciona | |
 |---|---|---|---|
 | **Un oso** · Tomás | grande y templado | Ancho, cálido, pardo. Nadie le tiene manía a un oso con bufanda | ✅ **hecho** |
-| **Un lobo** · Rico | alerta y noble | Es el que elige un niño de diez. Sin enseñar los dientes no da miedo | pendiente |
+| **Un lobo** · Rico | alerta y noble | Es el que elige un niño de diez. Sin enseñar los dientes no da miedo | ✅ **hecho** |
 | **Un cuervo** · Tinta | listo y libresco | Negro tinta, silueta afilada. Es el que elige alguien de cincuenta | pendiente |
 
 **El Oso salió a la primera** con la referencia adjunta, después de cuatro
@@ -906,9 +907,9 @@ diciendo «que ocupe el mismo alto de cuadro que las anteriores».
 
 ## Estado
 
-**SIETE PUESTAS** — treinta y cinco ilustraciones, cinco poses por especie, con
-la respiración lenta que sustituye a la animación dibujada. Las seis del reparto
-original más el **Oso**, que es el primero adulto. Faltan el Lobo y el Cuervo.
+**OCHO PUESTAS** — cuarenta ilustraciones, cinco poses por especie, con la
+respiración lenta que sustituye a la animación dibujada. Las seis del reparto
+original más el **Oso** y el **Lobo**, los dos adultos. Falta el Cuervo.
 
 Mientras una especie no tenga sus cinco poses **se sigue dibujando por
 código**: las dos formas conviven a propósito (`ILUSTRADAS` en
@@ -927,8 +928,8 @@ A se lleva por delante. Ahora **la recompensa es la compañía**:
 | 🦊 Zorrita | *Un clásico* · el primer clásico universal |
 | 🦝 Mapache | *De todo un poco* · cinco géneros distintos |
 | 🐼 Panda | *Diez* · diez libros terminados |
-| 🐻 Oso · Tomás | ✅ abierto desde el primer día, como las dos primeras |
-| 🐺 Lobo · 🐦‍⬛ Cuervo | *pendientes* — también irán abiertos |
+| 🐻 Oso · Tomás · 🐺 Lobo · Rico | ✅ abiertos desde el primer día, como las dos primeras |
+| 🐦‍⬛ Cuervo · Tinta | *pendiente* — también irá abierto |
 
 Las seis **se ven desde el primer día**, con su candado y con la frase de lo
 que falta escrita debajo, no solo en el `title`: esto es una app de teléfono y
@@ -968,16 +969,16 @@ zorro-*.png           mapache-*.png          panda-*.png
 **Y las cinco de cada una de las tres que faltan**, cuando lleguen:
 
 ```
-lobo-contenta.png     cuervo-contenta.png
-lobo-leyendo.png      cuervo-leyendo.png
-lobo-expectante.png   cuervo-expectante.png
-lobo-dormida.png      cuervo-dormida.png
-lobo-celebrando.png   cuervo-celebrando.png
+cuervo-contenta.png   cuervo-leyendo.png   cuervo-expectante.png
+cuervo-dormida.png    cuervo-celebrando.png
 ```
 
-El Oso ya está (`oso-*.webp`, 89 KB las cinco). **No hace falta que lleguen las
-dos a la vez**: cada una entra en cuanto tenga sus cinco poses, igual que
-llegaron el búho, la zorrita, el panda y el mapache.
+El Oso (89 KB) y el Lobo (106 KB) ya están. Falta solo el Cuervo.
+
+**Y el Lobo llegó YA RECORTADO** —60–65 % de lienzo transparente—, así que el
+conversor no le tocó el fondo. Es la primera tanda que no lo necesita, y menos
+mal: el lobo tiene el pecho y las patas casi blancos, que es exactamente el
+pelaje que un recorte mal hecho se come.
 
 Lo que sí hace falta es que estén **las cinco de una**. Media especie en el
 selector es un botón que enseña una gata cuando le das: un mando muerto, que es
