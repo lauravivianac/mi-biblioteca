@@ -29,6 +29,7 @@
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
 import { petConfig, petState, petVista, petNombre } from './pet.js';
 import { petChat, isDenied } from './agent.js';
+import { fraseDeFallo } from './pet-core.js';
 
 /** El hilo de esta sesión. Se vacía al cerrar. */
 let hilo = [];
@@ -158,7 +159,13 @@ export async function enviarMascota(textoDado) {
       toast('Sin el asistente no puede conversar. Puedes encenderlo en Ajustes.');
       return;
     }
-    hilo.push({ mia: false, fallo: true, texto: err?.message || 'Ahora mismo no puedo contestarte.' });
+    /* EL MOTIVO DE VERDAD VA A LA CONSOLA, donde mira quien puede
+       arreglarlo; en la burbuja va lo que diría ella. Pintar aquí
+       `err.message` era lo que ponía «Esa consulta no está permitida»
+       en boca de la gata, delante de una niña y por una pregunta que
+       le había propuesto la propia app. */
+    console.warn('La mascota no pudo contestar:', err?.codigo, err?.message);
+    hilo.push({ mia: false, fallo: true, texto: fraseDeFallo(err?.codigo) });
   }
   pintar();
 }

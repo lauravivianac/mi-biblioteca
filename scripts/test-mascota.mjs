@@ -28,7 +28,8 @@
    y esto la comprueba.
    ───────────────────────────────────────────────────────────── */
 
-import { estadoMascota, fraseMascota, DIA } from '../src/pet-core.js';
+import { readFileSync } from 'node:fs';
+import { estadoMascota, fraseMascota, fraseDeFallo, DIA } from '../src/pet-core.js';
 
 let bien = 0;
 let mal = 0;
@@ -168,6 +169,67 @@ console.log('\n─── EL LÍMITE QUE NO SE CRUZA ───');
   const reproches = todas.filter((f) => REPROCHE.test(f));
   comprobar('ninguna frase reprocha, en ningún estado',
     reproches.length === 0, reproches.join(' · '));
+}
+
+/* ── 6 · Y CUANDO NO PUEDE CONTESTAR, TAMPOCO CASTIGA ─────────
+
+   El chat pintaba `err.message` tal cual, y esos mensajes están
+   escritos para un aviso de Ajustes. Debajo del nombre de la gata,
+   «Esa consulta no está permitida» convierte a la compañera de lectura
+   en una ventanilla — y aquella vez lo dijo por una pregunta que había
+   propuesto la propia app dos líneas más arriba.
+
+   La lista de códigos NO se escribe aquí: se saca del Worker. Así, el
+   día que alguien añada un fallo nuevo, esta prueba lo mira sin que
+   nadie se acuerde de venir a apuntarlo. */
+
+console.log('\n─── LO QUE DICE CUANDO FALLA ───');
+
+{
+  const worker = readFileSync(new URL('../worker/index.js', import.meta.url), 'utf8');
+  const codigos = [...new Set([...worker.matchAll(/error:\s*'([a-z-]+)'/g)].map((m) => m[1]))];
+
+  comprobar('se leen los códigos de fallo del propio Worker',
+    codigos.length >= 8, `${codigos.length} encontrados`);
+
+  /* Nada de ventanilla y nada de sala de máquinas. Lo primero culpa a
+     quien pregunta de algo que casi siempre es de configuración; lo
+     segundo le habla de cosas que no tiene por qué saber que existen. */
+  const VENTANILLA = /permitid|autorizad|prohibid|no se puede|inválid|no válid|incorrect|denegad/i;
+  /* Con límites de palabra, y no por pulcritud: sin ellos «intent»
+     casaba dentro de «in-tent-amos» y la prueba suspendía una frase
+     perfecta. Un guardián que da falsos positivos se acaba desactivando,
+     y entonces no guarda nada. */
+  const MAQUINAS = /\b(worker|dominio|intent|encargo|token|endpoint|json|https?|api|fetch|servidor|caché|código)\b/i;
+
+  const todos = [...codigos, 'sin-red', 'desconocido', ''];
+  const dichas = todos.map((c) => [c, fraseDeFallo(c)]);
+
+  const ventanilla = dichas.filter(([, f]) => VENTANILLA.test(f));
+  comprobar('ninguna frase de fallo culpa a quien pregunta',
+    ventanilla.length === 0, ventanilla.map(([c, f]) => `${c}: ${f}`).join(' · '));
+
+  const maquinas = dichas.filter(([, f]) => MAQUINAS.test(f));
+  comprobar('ninguna frase de fallo se pone técnica',
+    maquinas.length === 0, maquinas.map(([c, f]) => `${c}: ${f}`).join(' · '));
+
+  const vacias = dichas.filter(([, f]) => !f || f.length < 20);
+  comprobar('todos los códigos tienen algo que decir, también los que no conoce',
+    vacias.length === 0, vacias.map(([c]) => c).join(' · '));
+
+  /* La de la captura, tal cual salió. */
+  comprobar('«Esa consulta no está permitida» ya no puede salir de su boca',
+    !dichas.some(([, f]) => /esa consulta/i.test(f)));
+
+  /* Un encargo que el Worker desplegado no conoce es la app rota, no
+     una pregunta mala: la frase tiene que quitarle la culpa de encima,
+     no solo evitar echársela. */
+  comprobar('un fallo de configuración le dice que no fue por su pregunta',
+    /no es por lo que preguntaste/i.test(fraseDeFallo('intent-no-permitido')));
+
+  /* Y el cerco temático no es un rechazo: es cambiar de tema. */
+  comprobar('«fuera de tema» redirige en vez de negar',
+    /de libros te cuento/i.test(fraseDeFallo('fuera-de-tema')));
 }
 
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);
