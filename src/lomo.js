@@ -9,12 +9,19 @@
    Esto dibuja su lomo: tela, dos filetes de latón arriba y abajo, el
    título estampado en vertical y el canto de las hojas asomando.
 
-   Y la tela NO es aleatoria ni un degradado: son ocho colores de tela
-   de encuadernación —burdeos, teja, ocre, oliva, bosque, pizarra,
-   marino y ciruela— y a cada género le toca siempre el mismo. Eso
+   Y la tela NO es aleatoria ni un degradado: son ocho telas de
+   encuadernación y **a cada género le toca siempre la misma**. Eso
    convierte una lista en una estantería: antes de leer un solo título
    ya se ve que los tres de arriba son del mismo género. Un color por
    libro sería decoración; un color por género es información.
+
+   CUÁLES son esas ocho lo decide el tema, no este archivo: en Ex
+   Libris son telas de encuadernar, en Obsidiana ocho grises sin color,
+   en Pergamino tonos medios sobre papel claro —porque un lomo negro
+   sobre crema es un agujero, no un libro— y en Máquina bloques planos
+   sin pan de oro. Aquí solo se decide qué ranura le toca a cada
+   género. Los colores están en `styles/tokens.css` y cada tema los
+   reemplaza.
 
    Vive aparte para que lo usen todos los sitios donde aparece un libro
    sin portada, que son muchos: el plan, la estantería, el tracker, la
@@ -24,24 +31,21 @@
 
 import { esc } from './ui.js';
 
-const TELAS = [
-  '355 34% 25%',  // burdeos
-  '18 36% 25%',   // teja
-  '38 30% 25%',   // ocre
-  '78 18% 23%',   // oliva
-  '152 20% 21%',  // bosque
-  '202 22% 23%',  // pizarra
-  '223 24% 26%',  // marino
-  '288 18% 25%',  // ciruela
-];
+/* Ocho ranuras, no ocho colores: el color de cada una lo pone el tema
+   (`--tela-1` … `--tela-8` en styles/tokens.css). Aquí solo se decide
+   CUÁL le toca a cada género, y eso no cambia nunca. */
+const RANURAS = 8;
 
-/** Siempre la misma tela para el mismo texto. */
-export function telaDe(texto) {
+/** La ranura que le toca a un texto. Siempre la misma. */
+export function ranuraDe(texto) {
   let h = 0;
   const s = String(texto || '');
   for (let i = 0; i < s.length; i += 1) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return TELAS[h % TELAS.length];
+  return (h % RANURAS) + 1;
 }
+
+/** La tela de esa ranura, tal cual se pone en el atributo `style`. */
+export const telaDe = (texto) => `var(--tela-${ranuraDe(texto)})`;
 
 /**
  * @param {{title?: string, genre?: string}} libro
@@ -51,8 +55,12 @@ export function telaDe(texto) {
  */
 export function lomoHtml(libro = {}, { mini = false, cls = '' } = {}) {
   const titulo = libro.title || '';
+  /* La tela y SU estampado van juntos: cada tela trae el color con el
+     que se le estampa encima, porque en una tela clara no se estampa
+     en oro. Ver `telas()` en src/themes.js. */
+  const n = ranuraDe(libro.genre || titulo);
   return `<span class="lomo${mini ? ' lomo-mini' : ''}${cls ? ' ' + cls : ''}"`
-    + ` style="--tela:${telaDe(libro.genre || titulo)}">`
+    + ` style="--tela:var(--tela-${n});--lomo-filete:var(--tela-${n}-tinta,var(--lomo-filete))">`
     + `<span class="lomo-txt">${esc(titulo)}</span>`
     + '<span class="lomo-canto"></span></span>';
 }
