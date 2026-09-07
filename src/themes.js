@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   LOS DIEZ TEMAS  ·  historias #77 y el rediseño
+   LOS ONCE TEMAS  ·  historias #77 y el rediseño
 
    Un tema es datos, no CSS: solo reemplaza los tokens base de
    styles/tokens.css. Todo lo derivado —bordes, nieblas, sombras,
@@ -30,6 +30,10 @@ export const FONT_SETS = {
   shippori:   'Shippori+Mincho:wght@400;600',
   mono:       'JetBrains+Mono:wght@400;500;700',
   inter:      'Inter:wght@300;400;500',
+  /* Petrona tiene los remates blandos y la barriga ancha: es una serif
+     de leer que no va de imprenta antigua, que es justo lo que separa
+     a Manta de Pergamino cuando los dos son claros. */
+  petrona:    'Petrona:opsz,wght@8..144,400;8..144,600',
 };
 
 /* ─────────────────────────────────────────────────────────────
@@ -40,7 +44,7 @@ export const FONT_SETS = {
    no distingas ningún título (ver src/lomo.js).
 
    Para que eso funcione las ocho tienen que distinguirse ENTRE SÍ y del
-   fondo, en los diez temas. Son ochenta telas: elegidas a mano una por
+   fondo, en los once temas. Son ochenta y ocho telas: elegidas a mano una por
    una acaban pareciéndose sin que nadie lo note, y de hecho así pasó en
    el primer intento —cuatro pares con ΔE por debajo de 5—.
 
@@ -602,6 +606,85 @@ export const THEMES = [
       '--ornament': "''",
       '--ornament-color': 'var(--gold)',
       '--rule-line': 'repeating-linear-gradient(90deg, rgb(196 196 196 / .3) 0 4px, transparent 4px 8px)',
+    },
+  },
+  {
+    id: 'manta',
+    name: 'Manta',
+    emoji: '🧶',
+    blurb: 'Lana, cojines y tarde de domingo. El modo sepia.',
+    fonts: ['petrona', 'karla'],
+    unlock: null,
+    tokens: {
+      /* Manta · EL SEGUNDO TEMA CLARO, y por eso lo primero que hubo que
+         decidir es en qué NO se parece a Pergamino. Pergamino es papel
+         e imprenta: crema neutro, esquinas rectas, remates de tipógrafo.
+         Manta es lana: crema dorado, todo redondo, remates blandos.
+         Puestos uno al lado del otro no se confunden.
+
+         LA PALETA SALE MEDIDA DE LA LÁMINA, no elegida a ojo. El fondo
+         es el suyo exacto —#F6D4A1, que ocupa la mitad del cuadro— para
+         que la escena no enseñe la costura donde termina.
+
+         Y OJO CON LO QUE SE VE EN LA LÁMINA: el cojín que parece azul
+         mide #8F8172, un gris tibio, y el jersey que parece verde mide
+         #726246, un oliva. Los lee así el ojo porque están rodeados de
+         naranja —contraste simultáneo—, y copiados aquí, sin ese
+         alrededor, serían barro. Los tonos fríos de las telas están
+         llevados al frío a propósito; no son un muestreo. */
+      /* PASTEL NO, Y EL ORDEN IMPORTA. La rampa reparte la claridad de
+         la primera tela a la octava, así que el tono que se ponga al
+         final SIEMPRE sale el más claro. Con los fríos al final salían
+         lavanda y celeste, que en un tema de lana se leen como
+         caramelo. Puestos al principio, los mismos tonos salen pizarra
+         e índigo, y los cálidos se quedan la parte clara: ladrillo,
+         óxido, mostaza y trigo. Es un cesto de ovillos, que es lo que
+         hay en la lámina. */
+      ...telas([205, 268, 138, 350, 30, 52, 75, 100],
+        { l: [.50, .70], c: .072, oro: '#F7E4C0', tinta: '#33240F' }),
+      /* Como en Pergamino: sobre tela media el oro de este tema es casi
+         marrón y desaparece, así que el estampado por defecto es crema. */
+      '--lomo-filete': '#FCF2DE',
+      '--lomo-canto': '#FDF6E6',
+      '--lomo-sombra': '0 2px 7px rgb(120 84 44 / .3)',
+      '--lomo-radio': '3px',
+      /* Sobre crema dorado, un botón crema no es un botón. */
+      '--fab-bg': '#A8542C', '--fab-color': '#FDF3E2', '--fab-borde': '#7E3C1D',
+      '--month-tint': '0%', '--rune-tint': '0%',
+      '--void': '#F6D4A1', '--void-rgb': '246 212 161',
+      '--deep': '#FDF1DC', '--deep-rgb': '253 241 220',
+      '--dusk': '#F0CD94', '--dusk-rgb': '240 205 148',
+      '--purple': '#8A6C43', '--purple-rgb': '138 108 67',
+      '--violet': '#6E5636', '--violet-rgb': '110 86 54',
+      '--lilac': '#5A462C', '--lilac-rgb': '90 70 44',
+      '--gold': '#8E4320', '--gold-rgb': '142 67 32',
+      '--amber': '#A85E18', '--amber-rgb': '168 94 24',
+      '--parchment': '#3A2A16',
+      '--text': '#2A1D0B', '--text-rgb': '42 29 11',
+      '--font-display': "'Petrona', Georgia, serif",
+      '--font-body': "'Karla', system-ui, sans-serif",
+      '--display-spacing': '0',
+      '--stars-opacity': '0', '--orbs-opacity': '.32', '--grid-opacity': '0',
+      '--glow-strength': '.12',
+      '--bg-wash': 'radial-gradient(ellipse 130% 100% at 50% 0%, #FDF1DC 0%, #F6D4A1 100%)',
+      /* Todo redondo. Es lo que separa «un animalito» de «un animal
+         dibujado en pequeño», y aquí lo mismo: las esquinas duras se
+         leen como oficina. */
+      '--card-radius': '18px', '--ctl-radius': '13px', '--chip-radius': '999px',
+      '--pill-radius': '999px', '--rune-radius': '999px', '--sheet-radius': '22px 22px 0 0',
+      '--card-bg': 'rgb(253 241 220 / .78)',
+      '--card-border': '1px solid rgb(160 120 70 / .28)',
+      '--hairline': '1px solid rgb(160 120 70 / .22)',
+      '--card-shadow': '0 2px 10px rgb(150 100 55 / .12)',
+      '--texture': `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23p)'/%3E%3C/svg%3E")`,
+      '--texture-opacity': '.13',
+      '--texture-blend': 'multiply',
+      '--label-transform': 'none',
+      '--label-spacing': '.4px',
+      /* El corazón de la taza. Sale de la lámina, no del catálogo. */
+      '--ornament': "'\\2765'",
+      '--rule-line': 'linear-gradient(90deg, rgb(142 67 32 / .32), rgb(142 67 32 / .04))',
+      '--vignette': 'radial-gradient(ellipse 115% 90% at 50% 40%, transparent 62%, rgb(150 100 55 / .16) 100%)',
     },
   },
 ];

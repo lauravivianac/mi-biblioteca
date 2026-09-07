@@ -326,8 +326,41 @@
 [data-theme="sakura"] .vineta use[data-tema="sakura"],
 [data-theme="principito"] .vineta use[data-tema="principito"],
 [data-theme="maquina"] .vineta use[data-tema="maquina"] { display: block; }
+[data-theme="manta"] .vineta use[data-tema="manta"] { display: block; }
 /* Antes de que el módulo aplique el tema, el de casa. */
 html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
+
+/* ═════════════════════════════════════════════════════════════
+   🧶 MANTA · lana y tarde de domingo
+   Firma: la puntada. Entre un libro y el siguiente no hay un filete
+   de tinta —eso es Pergamino— sino un pespunte: hilo, hueco, hilo.
+   Es lo mismo que hace el borde de una manta, y es lo que separa a
+   los dos temas claros cuando alguien los ve uno detrás de otro.
+
+   El resto del carácter va en los tokens: todo redondo, la crema
+   dorada de la lámina y una serif de remates blandos.
+   ═════════════════════════════════════════════════════════════ */
+
+[data-theme="manta"] .book-card,
+[data-theme="manta"] .lib-card { border-bottom-color: transparent; }
+[data-theme="manta"] .book-card::after,
+[data-theme="manta"] .lib-card::after {
+  content: '';
+  position: absolute;
+  left: 2px; right: 2px; bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg,
+    rgb(var(--lilac-rgb) / .42) 0 8px, transparent 8px 14px);
+}
+/* El mes se cose con el mismo hilo, en el color del realce. */
+[data-theme="manta"] .month-label .month-rule {
+  height: 2px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg,
+    rgb(var(--gold-rgb) / .38) 0 8px, transparent 8px 14px);
+}
+
 
 /* ── LO QUE VIVE EN EL FONDO ────────────────────────────────── */
 .mundo {
@@ -370,11 +403,23 @@ html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
 [data-theme="gotico"]     .mundo { background-image: url('../img/tema/gotico.webp'); }
 [data-theme="sakura"]     .mundo { background-image: url('../img/tema/sakura.webp'); }
 [data-theme="principito"] .mundo { background-image: url('../img/tema/principito.webp'); }
+[data-theme="manta"]      .mundo { background-image: url('../img/tema/manta.webp'); }
 
 /* Un tema con escena necesita que la lista termine ANTES de ella: si
    no, la viñeta de remate cae encima del dibujo y parece un descuido.
    Esta lista va con la de arriba: un tema que gane escena y no entre
-   aquí se queda con el remate pisando la lámina. */
+   aquí se queda con el remate pisando la lámina.
+
+   Y EL HUECO DEL FINAL NO BASTA. Solo arregla el final: a mitad de la
+   lista las filas siguen pasando por encima de la parte opaca del
+   dibujo, y ahí no es que quede feo, es que NO SE LEEN. Se veía en
+   Pergamino desde que se pusieron las láminas y no lo vi porque solo
+   miré el final de las listas, que es justo donde el hueco lo tapa.
+
+   Así que la lista se desvanece antes de llegar: la fila se vuelve
+   invisible en vez de ilegible, se lee como la página metiéndose bajo
+   el horizonte, y basta seguir bajando para traerla a la zona
+   limpia —el hueco de abajo garantiza que siempre se puede—. */
 [data-theme="exlibris"] .scroll-area,
 [data-theme="grimorio"] .scroll-area,
 [data-theme="obsidiana"] .scroll-area,
@@ -383,7 +428,17 @@ html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
 [data-theme="marea"] .scroll-area,
 [data-theme="gotico"] .scroll-area,
 [data-theme="sakura"] .scroll-area,
-[data-theme="principito"] .scroll-area { padding-bottom: 270px; }
+[data-theme="principito"] .scroll-area,
+[data-theme="manta"] .scroll-area {
+  /* Los números salen de la geometría de la lámina, no del ojo: mide
+     250 px y se vuelve opaca al 42 %, o sea a 145 px del borde de
+     abajo. Ahí es donde el contenido tiene que haber desaparecido ya,
+     y el desvanecido arranca 130 px antes para que sea un degradado y
+     no un corte. El hueco del final deja la última fila por encima. */
+  padding-bottom: 300px;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 275px), transparent calc(100% - 145px));
+  mask-image: linear-gradient(180deg, #000 calc(100% - 275px), transparent calc(100% - 145px));
+}
 
 /* ── LA ESTRELLA FUGAZ · Grimorio ───────────────────────────── */
 .fugaz {

@@ -646,7 +646,7 @@ export function openSettings() {
         : 'Visible en el inicio · toca para ocultarla',
         petConfig().hidden ? '○' : '●')}
       ${filaAjuste('openThemeStore()', 'Tienda de temas',
-        `Diez temas para cambiarle la cara a la app · ${earnedCount()} logros conseguidos`)}
+        `Once temas para cambiarle la cara a la app · ${earnedCount()} logros conseguidos`)}
     </div>
 
     ${workerUrl() ? `
