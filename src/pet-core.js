@@ -21,6 +21,13 @@
 
 export const DIA = 86400000;
 
+/* Días de silencio en un libro EMPEZADO antes de que pregunte por él.
+   Cinco, y no es un número redondo por gusto: a los dos ya lo comenta
+   —«llevas 2 días en el mismo capítulo»—, así que preguntar antes sería
+   decir dos veces lo mismo. Y a la semana ya no es una pregunta, es un
+   recordatorio de algo que se te olvidó. */
+export const DIAS_PARA_PREGUNTAR = 5;
+
 /**
  * El ánimo, y de qué libro habla.
  *
@@ -74,8 +81,56 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
   const hayLectura = (b) => Boolean(b.lastReadAt) || (b.page || 0) > 0;
   const enCurso = leyendo.find(hayLectura) || null;
 
+  /* ── LO QUE NADIE PREGUNTABA NUNCA  ·  historia #45 ──────────
+     «La app va a ayudar a la gente a que cumpla el plan: si pasó el
+      mes y no leyó el libro, ver si lo quiere sacar; o en el mes,
+      pedirle que actualice. La mascota debería hablar con la persona.»
+
+     El plan YA SABE quién se quedó atrás: `stalledBooks()` en
+     plan-core lo calcula desde el principio. Pero solo se consultaba
+     dentro del asistente de «Armar mi plan», o sea que la app sabía
+     que ibas atrasada y no decía nada salvo que fueras tú a buscarlo.
+
+     Y es el mismo agujero que dejaba a la mascota hablando de un libro
+     que nadie había abierto: la página y la última lectura se quedan a
+     cero porque NADIE LAS PIDE JAMÁS. No falta el dato; falta la
+     pregunta.
+
+     Así que la mascota pregunta. Dos preguntas, y ninguna es un
+     reproche —esa es la línea que no se cruza en este módulo—:
+
+     · PREGUNTANDO · un libro que sí estabas leyendo lleva días callado.
+       «¿Por dónde vas?» No «llevas cinco días sin leer».
+     · RESCATANDO · se le pasó el mes al libro. «Se quedó en agosto,
+       ¿lo traemos?» Y con la puerta de salida abierta: dejarlo ir
+       tiene que ser una respuesta tan válida como retomarlo, o la
+       pregunta es una trampa. */
+  const diasDe = (b) => (b.lastReadAt ? Math.floor((ahora - b.lastReadAt) / DIA) : null);
+
+  /* «Ahora no» tiene que valer para algo, o es un botón de cerrar con
+     otro nombre. Un libro aplazado hoy no vuelve a salir hoy — y se
+     comprueba aquí, en la decisión, no al pintar: si se filtrara en la
+     pantalla, ella seguiría poniendo cara de pregunta sin preguntar. */
+  const preguntar = leyendo.find((b) => !b.aplazado
+    && hayLectura(b)
+    && diasDe(b) !== null
+    && diasDe(b) >= DIAS_PARA_PREGUNTAR
+    && (b.pct ?? 0) < 85) || null;
+
+  /* El más atrasado primero, como los ordena el propio plan. */
+  const rescatar = libros
+    .filter((b) => !b.aplazado && (b.atrasadoMeses || 0) >= 1)
+    .sort((a, b) => b.atrasadoMeses - a.atrasadoMeses)[0] || null;
+
+  /* Y NO SE INTERRUMPE UNA BUENA RACHA CON UNA TAREA VIEJA. Si leíste
+     ayer, sacarte el libro de agosto es exactamente la clase de cosa
+     que convierte a una compañera en una app de productividad. */
+  const activa = Boolean(enCurso) && diasCallada !== null && diasCallada < 2;
+
   if (celebra) return { mood: 'celebrando', libro: terminado, diasCallada };
   if (casiTermina) return { mood: 'expectante', libro: casiTermina, diasCallada };
+  if (preguntar) return { mood: 'preguntando', libro: preguntar, diasCallada };
+  if (rescatar && !activa) return { mood: 'rescatando', libro: rescatar, diasCallada };
   if (diasCallada === null || diasCallada >= 4) return { mood: 'dormida', libro: enCurso, diasCallada };
   if (enCurso) return { mood: 'leyendo', libro: enCurso, diasCallada };
   return { mood: 'contenta', libro: enCurso, diasCallada };
@@ -122,6 +177,25 @@ export const FRASES = {
     'Faltan {faltan} páginas. ¿Las hacemos hoy?',
     'Estoy en la última parte de {libro} contigo.',
   ],
+
+  /* PREGUNTA, NO PASA FACTURA. Ninguna dice cuántos días llevas: eso
+     lo sabe la app y no le hace falta a nadie. «¿Por dónde vas?» abre
+     una conversación; «llevas cinco días sin leer» la cierra. */
+  preguntando: [
+    '¿Por dónde vas con {libro}?',
+    'Se me perdió la cuenta de {libro}. ¿En qué página andamos?',
+    'Cuéntame cómo va {libro}.',
+  ],
+
+  /* Y AQUÍ LA PUERTA DE SALIDA, escrita en la propia frase. Si la
+     única respuesta digna es «lo retomo», la pregunta es una trampa
+     con dos salidas y una cerrada. Dejar un libro es una decisión de
+     lectora, no un fracaso, y ella lo dice así. */
+  rescatando: [
+    '{libro} se quedó en {mes}. ¿Lo traemos?',
+    'Tengo {libro} apartado desde {mes}. ¿Lo retomamos o lo dejamos ir?',
+    '{libro} sigue esperando desde {mes}. ¿Qué hacemos con él?',
+  ],
 };
 
 /* Una huella entera y estable de un texto. La misma que reparte las
@@ -166,6 +240,9 @@ export function fraseMascota(estado, { ahora = Date.now(), nombre = '' } = {}) {
     '{faltan}': total ? Math.max(1, total - pagina) : 'algunas',
     '{dias}': diasCallada ?? 0,
     '{nombre}': nombre || '',
+    /* El mes del plan al que estaba asignado. En minúscula porque va
+       dentro de la frase, no encabezándola. */
+    '{mes}': (libro?.mes || '').toLowerCase() || 'su mes',
   };
 
   /* Sin libro no se usa una frase que lo nombre. Antes, si TODAS lo

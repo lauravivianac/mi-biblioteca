@@ -24,6 +24,7 @@ import * as commentsui from './commentsui.js';
 import * as swapui from './swapui.js';
 import * as exploreui from './exploreui.js';
 import * as petchat from './petchat.js';
+import * as petask from './petask.js';
 import * as chatui from './chatui.js';
 import * as postsui from './postsui.js';
 import { loadMyBlocks } from './moderation.js';
@@ -72,7 +73,7 @@ Object.assign(window, {
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
   ...profileui, ...socialui, ...inviteui, ...feedui, ...commentsui, ...swapui,
   ...exploreui, ...chatui, ...postsui,
-  ...petchat,
+  ...petchat, ...petask,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),

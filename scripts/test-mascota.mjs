@@ -29,7 +29,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { readFileSync } from 'node:fs';
-import { estadoMascota, fraseMascota, fraseDeFallo, DIA } from '../src/pet-core.js';
+import { estadoMascota, fraseMascota, fraseDeFallo, FRASES, DIA } from '../src/pet-core.js';
 
 let bien = 0;
 let mal = 0;
@@ -158,7 +158,11 @@ comprobar('nunca has leído nada → dormida, no «leyendo»',
 console.log('\n─── EL LÍMITE QUE NO SE CRUZA ───');
 
 {
+  /* Al añadir las dos preguntas, este es el sitio donde un reproche se
+     cuela sin querer: «llevas dos meses con esto», «todavía no lo has
+     terminado», «vas tarde». Así que la lista crece con ellas. */
   const REPROCHE = /abandon|olvid|culpa|deberías|nunca lees|mal|perezos|vago/i;
+  const RECLAMO = /vas tarde|con retraso|atrasad|todavía no|aún no|sigues sin|llevas \d+ mes/i;
   const todas = [];
   for (const dias of [0, 1, 2, 3, 4, 10, 60]) {
     for (const page of [0, 50, 150, 290]) {
@@ -166,9 +170,27 @@ console.log('\n─── EL LÍMITE QUE NO SE CRUZA ───');
     }
   }
   todas.push(fraseMascota(estadoMascota([], AHORA), { ahora: AHORA }));
-  const reproches = todas.filter((f) => REPROCHE.test(f));
-  comprobar('ninguna frase reprocha, en ningún estado',
+
+  /* Las dos cestas nuevas, enteras: no una frase al azar de cada una,
+     sino todas — el reproche se cuela en la tercera, no en la primera. */
+  const conMes = { title: 'Mi Historia', mes: 'Agosto', total: 426, page: 0 };
+  for (const mood of ['preguntando', 'rescatando']) {
+    for (let i = 0; i < FRASES[mood].length; i += 1) {
+      todas.push(FRASES[mood][i]
+        .replace('{libro}', conMes.title)
+        .replace('{mes}', conMes.mes.toLowerCase()));
+    }
+  }
+
+  const reproches = todas.filter((f) => REPROCHE.test(f) || RECLAMO.test(f));
+  comprobar('ninguna frase reprocha ni pasa factura, en ningún estado',
     reproches.length === 0, reproches.join(' · '));
+
+  /* Y la puerta de salida tiene que estar escrita, no sobreentendida:
+     si ninguna frase de rescate admite soltar el libro, la pregunta
+     solo tiene una respuesta digna y deja de ser una pregunta. */
+  comprobar('alguna frase de rescate ofrece dejarlo ir, no solo retomarlo',
+    FRASES.rescatando.some((f) => /dejarlo ir|qué hacemos/i.test(f)));
 }
 
 /* ── 5 bis · «EMPEZADO» NO ES «LEYENDO» ──────────────────────
@@ -208,6 +230,70 @@ console.log('\n─── LO QUE DICE QUE ESTÁS LEYENDO ───');
   /* El que abrió el caso: dormida y afirmando que lees, a la vez. */
   comprobar('nunca dice el ánimo «dormida» con un libro en curso a cuestas',
     !(e.mood === 'dormida' && e.libro));
+}
+
+/* ── 5 ter · LAS DOS PREGUNTAS  ·  historia #45 ──────────────
+
+   «Si pasó el mes y no leyó el libro, ver si lo quiere sacar; o en el
+   mes, pedirle que actualice. La mascota debería hablar con la
+   persona.»
+
+   Lo importante que se prueba aquí no es que pregunte: es CUÁNDO se
+   calla. Una compañera que pregunta siempre es un jefe. */
+
+console.log('\n─── CUÁNDO PREGUNTA, Y CUÁNDO SE CALLA ───');
+
+{
+  const leyendoDesde = (dias, extra = {}) => ({
+    id: 'a', title: 'Bartleby', total: 300, page: 80, status: 'reading', pct: 27,
+    lastReadAt: AHORA - dias * DIA, finishedAt: 0, ...extra,
+  });
+
+  comprobar('un libro empezado y callado cinco días → pregunta por él',
+    estadoMascota([leyendoDesde(5)], AHORA).mood === 'preguntando');
+  comprobar('a los cuatro días todavía no pregunta',
+    estadoMascota([leyendoDesde(4)], AHORA).mood !== 'preguntando',
+    estadoMascota([leyendoDesde(4)], AHORA).mood);
+  comprobar('y nunca pregunta por uno que jamás se abrió',
+    estadoMascota([leyendoDesde(9, { page: 0, lastReadAt: 0 })], AHORA).mood !== 'preguntando');
+  comprobar('ni interrumpe cuando ya casi lo terminas',
+    estadoMascota([leyendoDesde(9, { page: 280, pct: 93 })], AHORA).mood === 'expectante');
+
+  /* El rescate: se le pasó el mes. */
+  const atrasado = {
+    id: 'z', title: 'Mi Historia', total: 426, page: 0, status: 'reading', pct: 0,
+    lastReadAt: 0, finishedAt: 0, mes: 'Agosto', atrasadoMeses: 1,
+  };
+  const r = estadoMascota([atrasado], AHORA);
+  comprobar('un libro al que se le pasó el mes → lo saca a colación',
+    r.mood === 'rescatando', r.mood);
+  comprobar('y la frase nombra el mes en el que se quedó',
+    /agosto/i.test(fraseMascota(r, { ahora: AHORA })), fraseMascota(r, { ahora: AHORA }));
+
+  /* LA REGLA QUE MÁS IMPORTA: no cortar una racha buena. */
+  const conRacha = [atrasado, {
+    id: 'b', title: 'La Conjura', total: 405, page: 120, status: 'reading', pct: 30,
+    lastReadAt: AHORA - DIA, finishedAt: 0,
+  }];
+  comprobar('si leíste ayer, NO te saca el libro viejo',
+    estadoMascota(conRacha, AHORA).mood === 'leyendo',
+    estadoMascota(conRacha, AHORA).mood);
+
+  /* Y terminar un libro gana a cualquier pregunta. */
+  const conFinal = [atrasado, {
+    id: 'c', title: 'Noches Blancas', total: 100, page: 100, status: 'read', pct: 100,
+    lastReadAt: AHORA - DIA, finishedAt: AHORA - DIA,
+  }];
+  comprobar('acabar un libro gana a cualquier pregunta pendiente',
+    estadoMascota(conFinal, AHORA).mood === 'celebrando');
+
+  /* El más atrasado va primero, como los ordena el plan. */
+  const dos = [
+    { ...atrasado, id: 'z1', title: 'Uno', mes: 'Agosto', atrasadoMeses: 1 },
+    { ...atrasado, id: 'z3', title: 'Tres', mes: 'Junio', atrasadoMeses: 3 },
+  ];
+  comprobar('entre varios represados, el que más lleva esperando',
+    estadoMascota(dos, AHORA).libro?.id === 'z3');
 }
 
 /* ── 6 · Y CUANDO NO PUEDE CONTESTAR, TAMPOCO CASTIGA ─────────
