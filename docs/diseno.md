@@ -215,17 +215,30 @@ Los diez dibujos viven en el pliego `<svg>` del `index.html` y **se eligen solo
 con CSS**: nada que repintar al cambiar de tema, y ninguna posibilidad de que
 la viñeta se quede en la del tema anterior.
 
-### Y El Principito tiene una escena
+### Y El Principito tiene una escena, a color
 
-Los colores solos no hacen un tema de *El Principito*. En el fondo, muy tenue y
-pegada al borde inferior, está la escena: **el asteroide B-612**, él con la
-bufanda al viento, **el zorro** sentado a su lado, **la rosa bajo su fanal** —de
-lo único de lo que se siente responsable— y **un baobab** pequeño al otro lado,
-que hay que arrancar todos los días.
+Los colores solos no hacen un tema de *El Principito*. Abajo del todo hay una
+ilustración: **él**, con su capa y su corona, **la rosa que sostiene**, **el
+zorro** sentado a su lado —«no se ve bien sino con el corazón»—, las **rosas del
+jardín** que le enseñaron que la suya era única, y **la duna** del desierto donde
+cayó el aviador.
+
+**A color y con cara, no en línea suelta.** El primer intento era trazo fino
+como los iconos y no funcionaba: a ese tamaño un dibujo sin relleno no es un
+dibujo, es un plano. La escena se desvanece por arriba con una máscara para que
+no tenga un borde recto contra el fondo — la duna aparece, no se pega.
+
+> **Está dibujada aquí, no calcada.** Las ilustraciones originales de
+> Saint-Exupéry siguen protegidas en varios países y esta app va a las tiendas.
+> Del libro se toman **las cosas** —él, la rosa, el zorro, las rosas del
+> jardín—, no los trazos.
 
 Por eso su viñeta de remate no es la rosa: ya está en la escena, y repetirla
 sería decir lo mismo dos veces. Es el primer dibujo del libro, el que las
 personas mayores ven como un sombrero.
+
+Y por eso también, en este tema la lista termina **antes** de donde empieza la
+escena: sin ese hueco, la viñeta caía encima de su cabeza.
 
 ### La estrella fugaz de Grimorio
 
