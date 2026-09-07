@@ -417,40 +417,46 @@ Proporción 2:1, 1536 × 768 px.
 
 ## Estado
 
-**Puestas seis: Pergamino, Herbario, Marea, Gótico, Sakura y El Principito.**
-Faltan Ex Libris, Grimorio, Obsidiana y Máquina.
+**Puestas nueve. Falta Máquina, y está bien así:** es el único tema brutalista
+y sin adornos a propósito — una escena bonita ahí lo rompe. La lista de temas
+con lámina vive en `styles/worlds.css` y es el inventario; un tema sin lámina
+se queda sin escena y no pasa nada.
 
-Mientras un tema no tenga la suya se queda sin escena y no pasa nada: la lista
-de temas con lámina está en `styles/worlds.css` y es el inventario. Pueden
-llegar de una en una.
-
-El conversor es `npm run escenas <carpeta>`: deja los WebP en `img/tema/`,
-a 1200 px de ancho. Las cinco últimas, **8,8 MB → 324 KB**.
+El conversor es `npm run escenas <carpeta>`: deja los WebP en `img/tema/`, a
+1200 px de ancho. En total, **15,9 MB → 591 KB**.
 
 > **Y te dice el color del cielo de cada una.** Es lo que hay que comparar con
 > el `--void` del tema: si no casan, se ve la costura donde termina la imagen.
 
-| | cielo de la lámina | `--void` del tema |
-|---|---|---|
-| Pergamino | `#F5D4A1` | `#F4EEE2` |
-| Herbario | `#0D140F` | `#0B1410` |
-| Marea | `#173A4E` | `#08131F` |
-| Gótico | `#170A09` | `#100708` |
-| Sakura | `#211217` | `#1A1016` |
-| El Principito | `#18233B` | `#17203A` |
+| | cielo de la lámina | `--void` del tema | KB |
+|---|---|---|---|
+| Ex Libris | `#150F0B` | `#12100E` | 73 |
+| Grimorio | `#0F0A16` | `#0D0A1A` | 82 |
+| Obsidiana | `#09080A` | `#08080C` | 34 |
+| Pergamino | `#F0E2CD` | `#F4EEE2` | 77 |
+| Herbario | `#0D140F` | `#0B1410` | 97 |
+| Marea | `#173A4E` | `#08131F` | 86 |
+| Gótico | `#170A09` | `#100708` | 61 |
+| Sakura | `#211217` | `#1A1016` | 49 |
+| El Principito | `#18233B` | `#17203A` | 39 |
 
 Ninguna enseña costura. Marea es la que más se separa y aun así funciona,
 porque la lámina es más clara ARRIBA y eso se lee como la luz que entra desde
-la superficie; la de Pergamino pasa por luz de tarde. Con la diferencia al
-revés —lámina oscura sobre fondo claro— no colaría.
+la superficie. Con la diferencia al revés —lámina oscura sobre fondo claro— no
+colaría.
+
+> **Pergamino se cambió dos veces.** La primera lámina no se dibujó para este
+> tema: llegó antes que los prompts y entró aquí porque era el único tema
+> claro. La segunda sí sale del prompt, y se nota en el cielo: `#F0E2CD` contra
+> el `#F5D4A1` de la anterior, con el `--void` en `#F4EEE2`.
 
 ### El peso, resuelto
 
-Una acuarela con grano no comprime como un dibujo plano: son entre 39 y 97 KB
-cada una, y esta app no tiene empaquetador. Con seis puestas eran ~430 KB.
+Una acuarela con grano no comprime como un dibujo plano: son entre 34 y 97 KB
+cada una, y esta app no tiene empaquetador. Con las nueve puestas son 591 KB.
 
 Y **una imagen escondida con `display:none` se descarga igual**, así que un
-`<img>` por tema significaba bajarse las seis en cada apertura para enseñar
+`<img>` por tema significaba bajarse las nueve en cada apertura para enseñar
 una. Ahora la escena es el `background-image` de `.mundo`, elegido por tema en
 el CSS: **el fondo de una regla que no casa no se pide nunca**. La carga
 perezosa la hace el navegador y no hay que programarla.
@@ -462,14 +468,12 @@ invisible — y lo invisible vuelve sin avisar.
 
 ## 3 · Lo que hace falta de vuelta
 
-- **Un PNG por tema**, 1536 × 768, sin comprimir.
-- Nombrados por el id del tema. **Quedan cuatro:** `exlibris.png`,
-  `grimorio.png`, `obsidiana.png`, `maquina.png`.
+**Nada, ya están las nueve.** Máquina se queda sin escena a propósito.
 
-De la integración me encargo yo: recortar, pasar a WebP con presupuesto de peso
-—esta app no tiene empaquetador y cada kilobyte se descarga tal cual— y añadir
-la línea del tema al inventario del CSS. La máscara que difumina el borde de
-arriba ya está puesta y sirve igual para cualquier lámina.
+Si alguna vez quieres cambiar una: un PNG de 1536 × 768 sin comprimir, nombrado
+por el id del tema, y de la integración me encargo yo — recortar, pasar a WebP
+con presupuesto de peso y añadir la línea al inventario del CSS. La máscara que
+difumina el borde de arriba sirve igual para cualquier lámina.
 
 **Si alguna sale regular, dilo y se repite solo esa.** Diez ilustraciones de las
 que ocho son buenas y dos flojas se notan más que si no hubiera ninguna.

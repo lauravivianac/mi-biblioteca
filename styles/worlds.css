@@ -361,6 +361,9 @@ html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
    Se coloca por el borde de abajo y recorta por los lados: la lámina
    llega a 2:1 y una pantalla estrecha es más alta que eso, así que o
    se recorta o se deforma. */
+[data-theme="exlibris"]   .mundo { background-image: url('../img/tema/exlibris.webp'); }
+[data-theme="grimorio"]   .mundo { background-image: url('../img/tema/grimorio.webp'); }
+[data-theme="obsidiana"]  .mundo { background-image: url('../img/tema/obsidiana.webp'); }
 [data-theme="pergamino"]  .mundo { background-image: url('../img/tema/pergamino.webp'); }
 [data-theme="herbario"]   .mundo { background-image: url('../img/tema/herbario.webp'); }
 [data-theme="marea"]      .mundo { background-image: url('../img/tema/marea.webp'); }
@@ -372,6 +375,9 @@ html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
    no, la viñeta de remate cae encima del dibujo y parece un descuido.
    Esta lista va con la de arriba: un tema que gane escena y no entre
    aquí se queda con el remate pisando la lámina. */
+[data-theme="exlibris"] .scroll-area,
+[data-theme="grimorio"] .scroll-area,
+[data-theme="obsidiana"] .scroll-area,
 [data-theme="pergamino"] .scroll-area,
 [data-theme="herbario"] .scroll-area,
 [data-theme="marea"] .scroll-area,
