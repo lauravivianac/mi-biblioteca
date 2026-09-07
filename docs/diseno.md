@@ -411,6 +411,36 @@ no reciclar el que menos desentona.
 
 ---
 
+## El mando muerto, dos veces
+
+Ha pasado dos veces en este módulo, y las dos con la misma forma: **un
+ajuste que se elige, se desbloquea leyendo, y no hace nada.**
+
+**Primera vez, el pelaje.** Ocho logros colgaban del pelaje y de los
+accesorios, y la salida A de la mascota —imágenes en vez de dibujo por
+código— se los lleva por delante: una especie ilustrada llega pintada, con
+su color y sin postizos. Se mudaron a las especies.
+
+**Segunda vez, el rincón.** Las nueve escenas de la mascota —estantería,
+lámpara, taza, rama en flor…— estaban dibujadas **dentro** del SVG. Una
+especie ilustrada es una imagen, no un SVG, así que no las pintaba. Y la
+Gatita, la de por defecto, lleva ilustrada desde el principio: el selector
+«Su rincón», con sus **seis desbloqueos**, no hacía nada para casi nadie.
+
+Ahora el rincón va **fuera del dibujo y a su izquierda**, en el mismo sitio
+que ocupaba dentro. Su escala sale de la propia imagen en porcentaje, así
+que vale igual a 92 px en el inicio y a 148 en la vista previa sin repetir
+la medida; y en el retrato de 64 px del chat no se pinta, porque a ese
+tamaño un adorno de 19 px solo ensucia.
+
+> **La regla que sale de las dos.** Cuando una pieza deja de dibujarse por
+> código y pasa a ser una imagen, hay que preguntarse **qué más vivía
+> dentro de ese dibujo**. La primera vez fue el guardarropa; la segunda, el
+> escenario. Las dos se descubrieron mirando la pantalla, no leyendo el
+> código.
+
+---
+
 ## La regla para lo que venga
 
 Antes de añadir una pantalla, tres preguntas:

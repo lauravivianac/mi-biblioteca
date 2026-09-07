@@ -1108,6 +1108,8 @@ body:not(.signed-in) .fab { display: none; }
 }
 .petchat-retrato .pet-svg { width: 64px; height: 56px; }
 .petchat-retrato .pet-img { width: 64px; height: 64px; margin-bottom: 0; }
+/* A 64 px un rincón de 19 no cuenta nada: solo ensucia el retrato. */
+.petchat-retrato .pet-rincon { display: none; }
 .petchat-nombre { font-family: var(--font-display); font-size: 16px; color: var(--text); }
 .petchat-sub { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
 .petchat-sub strong { color: var(--text); }

@@ -603,9 +603,29 @@ const moodLabel = (m) => ({
   celebrando: 'celebrando', expectante: 'expectante',
 }[m] || 'contenta');
 
+/* ── EL RINCÓN, TAMBIÉN PARA LAS ILUSTRADAS ──────────────────
+   Estaba dibujado DENTRO del SVG de la mascota, así que una especie
+   ilustrada —que es una imagen, no un SVG— no lo pintaba. Y la
+   Gatita, la de por defecto, lleva ilustrada desde el principio: o
+   sea que el selector «Su rincón» de Ajustes, con sus nueve escenas y
+   sus SEIS DESBLOQUEOS, no hacía nada para casi nadie. Es el mismo
+   mando muerto que ya costó el pelaje, y con las seis especies
+   ilustradas habría dejado de hacer nada para todo el mundo.
+
+   Ahora va fuera del dibujo y a su izquierda, en el mismo sitio que
+   ocupaba dentro (x 0..30 del lienzo de 128): la mascota sigue siendo
+   lo grande de la fila y el rincón lo que la acompaña. */
+function rinconSvg(cfg) {
+  const dibujo = CORNER_SVG[currentScene(cfg)];
+  return dibujo
+    ? `<svg class="pet-rincon" viewBox="0 52 32 50" aria-hidden="true">${dibujo}</svg>`
+    : '';
+}
+
 /** La mascota, dibujada o ilustrada según la especie. */
-export const petVista = (mood, cfg = petConfig()) =>
-  (speciesIlustrada(cfg.species) ? petImg(mood, cfg) : petSvg(mood, cfg));
+export const petVista = (mood, cfg = petConfig()) => (speciesIlustrada(cfg.species)
+  ? `<span class="pet-escena">${rinconSvg(cfg)}${petImg(mood, cfg)}</span>`
+  : petSvg(mood, cfg));
 
 /** El bloque completo que se pinta en el inicio. */
 export function renderPet() {
