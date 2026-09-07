@@ -133,6 +133,42 @@ const contraste = (a, b) => {
   return (x + 0.05) / (y + 0.05);
 };
 
+/* Mezclar dos colores en hexadecimal. Hace falta aquí y no en el CSS
+   porque el relieve del título depende de con CUÁL de los dos metales
+   se estampa esa tela, y eso solo se sabe en este punto. */
+const mezclar = (hexA, hexB, t) => {
+  const nA = parseInt(hexA.slice(1), 16);
+  const nB = parseInt(hexB.slice(1), 16);
+  const canal = (d) => {
+    const a = (nA >> d) & 255;
+    const b = (nB >> d) & 255;
+    return Math.round(a * (1 - t) + b * t).toString(16).padStart(2, '0').toUpperCase();
+  };
+  return `#${canal(16)}${canal(8)}${canal(0)}`;
+};
+
+/* El margen sobre el mínimo. El título mide 56 px —texto grande para
+   la norma, 3:1— y se deja un poco por encima: un relieve que aterriza
+   justo en el límite se cae con el primer retoque de un tono. */
+const RELIEVE_MIN = 3.2;
+
+/**
+ * El relieve más fuerte que una tela aguanta sin perder la letra.
+ *
+ * Se pide `maxT` de mezcla hacia `hacia` (blanco para iluminar, negro
+ * para hundir) y se baja de dos en dos centésimas hasta que el color
+ * resultante siga leyéndose sobre esa tela. Devuelve la tinta pura si
+ * ni el escalón más pequeño cabe — sin relieve se lee, que es lo que
+ * importa.
+ */
+function relieve(tintaUsada, tela, hacia, maxT) {
+  for (let t = maxT; t > 0.001; t -= 0.02) {
+    const c = mezclar(tintaUsada, hacia, t);
+    if (contraste(c, tela) >= RELIEVE_MIN) return c;
+  }
+  return tintaUsada;
+}
+
 function telas(tonos, { l: [l0, l1], c, oro = '#E8D9AE', tinta = '#1A1512' }) {
   const salida = {};
   tonos.forEach((h, i) => {
@@ -141,8 +177,42 @@ function telas(tonos, { l: [l0, l1], c, oro = '#E8D9AE', tinta = '#1A1512' }) {
     salida[`--tela-${i + 1}`] = tela;
     /* Se estampa con el que se lee: oro en las telas oscuras, tinta en
        las claras. Lo decide el contraste, no un número redondo. */
-    salida[`--tela-${i + 1}-tinta`] =
-      contraste(oro, tela) >= contraste(tinta, tela) ? oro : tinta;
+    const esOro = contraste(oro, tela) >= contraste(tinta, tela);
+    const usada = esOro ? oro : tinta;
+    salida[`--tela-${i + 1}-tinta`] = usada;
+
+    /* ── EL RELIEVE DEL TÍTULO SIGUE A LA TINTA ──────────────
+       El título de la portada va estampado, con un borde claro y otro
+       oscuro para que coja la luz. Pero la dirección NO puede ser la
+       misma en las ocho telas, y eso se descubrió midiendo:
+
+         aclarar el borde superior un 45 %
+         → en Ex Libris (tela oscura, oro)   7,0:1   se lee mejor
+         → en Pergamino (tela clara, tinta)  1,0:1   DESAPARECE
+
+       Y no es un ajuste de números: son dos relieves distintos. Sobre
+       tela oscura el oro está EN RELIEVE y la luz le da arriba. Sobre
+       tela clara la letra está HUNDIDA en el papel, y lo que se ve
+       arriba es su sombra — más oscura, nunca más clara.
+
+       Así que el alto y el bajo se calculan aquí, donde ya se sabe con
+       qué metal se estampa. Y en la tela clara el borde de abajo se
+       queda en la tinta pura: cualquier aclarado ahí se come el
+       contraste que la propia tinta acaba de ganar. */
+    /* Y CUÁNTO relieve lo decide CADA TELA, no un número global. Con
+       una constante para las ochenta y ocho, la que menos margen tiene
+       —el oro de Obsidiana llega justo a 3,8:1 contra su tela— marca el
+       techo de todas, y aun así se colaba una: la tela 4 de un tema se
+       quedaba en 2,93:1 mientras la 5 iba sobrada. Salió de la prueba,
+       no de mirarlo.
+
+       Así que se pide el relieve que se querría y se rebaja hasta que
+       esa tela lo aguante. Las telas con margen lucen entero; las
+       justas lucen lo que pueden; y ninguna baja del mínimo. Es la
+       misma idea que ya ordena este fichero: derivar en vez de
+       elegir a mano ochenta y ocho veces. */
+    salida[`--tela-${i + 1}-alto`] = relieve(usada, tela, esOro ? '#FFFFFF' : '#000000', 0.42);
+    salida[`--tela-${i + 1}-bajo`] = esOro ? relieve(usada, tela, '#000000', 0.26) : usada;
   });
   return salida;
 }
