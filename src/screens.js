@@ -536,8 +536,16 @@ export function togglePet() {
   toast(hidden ? 'Mascota oculta. Sigues ganando logros igual.' : 'Aquí está de vuelta.');
 }
 
-/** Tocarla responde: si no reacciona, es un dibujo, no una compañera. */
+/**
+ * Tocarla abre la conversación (#44).
+ *
+ * Si el asistente no está configurado en este despliegue, no se abre
+ * una hoja que no puede contestar: se refresca, que es lo que hacía
+ * antes, y ella dice lo suyo. Un botón que promete algo que no hay es
+ * peor que un botón que hace poco.
+ */
 export function pokePet() {
+  if (agentOffered()) { openPetChat(); return; }
   refreshAll();
 }
 

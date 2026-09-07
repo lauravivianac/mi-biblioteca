@@ -19,6 +19,7 @@ import { allBooks, statusOf, entry, settings, progressPct } from './store.js';
 import { pageCount } from './seed.js';
 import { ACHIEVEMENTS } from './achievements.js';
 import { esc } from './ui.js';
+import { estadoMascota, fraseMascota } from './pet-core.js';
 
 /* ── PERSONALIZACIÓN ─────────────────────────────────────────
    Todo se desbloquea leyendo. Un accesorio que costó terminar un
@@ -183,111 +184,38 @@ export function currentScene(cfg = petConfig()) {
   return scene && unlocked(scene) ? wanted : 'estante';
 }
 
-/* ── ESTADO ──────────────────────────────────────────────────
-   Se calcula solo, del progreso y de las fechas. La usuaria no
-   tiene que hacer nada para mantenerla. */
+/* ── ESTADO Y VOZ ────────────────────────────────────────────
+   Las cuentas viven en `pet-core.js`, sin Firebase ni DOM, para que
+   se puedan comprobar: ahí es donde estaban los tres fallos que
+   hacían que dijera cosas que no venían a cuento. Aquí queda solo el
+   puente — sacar del almacén lo que esas cuentas necesitan. */
 
-const DAY = 86400000;
-
-export function petState() {
-  const books = allBooks();
-  /* Ordenado por lectura más reciente, igual que currentScene(): si no,
-     la frase hablaba de un libro y el escenario mostraba otro. */
-  const reading = books
-    .filter((b) => statusOf(b.id) === 'reading')
-    .sort((a, b) => (entry(b.id).lastReadAt || 0) - (entry(a.id).lastReadAt || 0));
-  const now = Date.now();
-
-  const lastRead = Math.max(0, ...books.map((b) => entry(b.id).lastReadAt || 0));
-  const daysQuiet = lastRead ? Math.floor((now - lastRead) / DAY) : null;
-
-  const justFinished = books.some((b) => {
-    const f = entry(b.id).finishedAt;
-    return f && now - f < 2 * DAY;
-  });
-
-  const nearlyDone = reading.find((b) => progressPct(b.id) >= 85);
-  const current = reading[0] || null;
-
-  if (justFinished) return { mood: 'celebrando', current, daysQuiet };
-  if (nearlyDone) return { mood: 'expectante', current: nearlyDone, daysQuiet };
-  if (daysQuiet === null || daysQuiet >= 4) return { mood: 'dormida', current, daysQuiet };
-  if (current) return { mood: 'leyendo', current, daysQuiet };
-  return { mood: 'contenta', current, daysQuiet };
-}
-
-/* ── SU VOZ  ·  historia #42 ─────────────────────────────────
-   Frases escritas a mano con huecos que se rellenan con tus datos.
-   NO las genera el agente: cuestan cero, responden al instante y
-   —lo que de verdad importa— una mascota con voz propia y constante
-   se siente un personaje; una que improvisa se siente un chatbot
-   con sombrero. */
-
-const PHRASES = {
-  contenta: [
-    'Hoy hay tiempo para un capítulo.',
-    'Tu biblioteca está tranquila.',
-    '¿Empezamos algo nuevo?',
-    'Me gusta este silencio de estantería.',
-  ],
-  leyendo: [
-    'Vas por la mitad de {libro}.',
-    'Te espero en la página {pagina} de {libro}.',
-    '{libro} avanza bien.',
-    'Quedan {faltan} páginas de {libro}.',
-  ],
-  estancada: [
-    'Llevas {dias} días en el mismo capítulo, ¿está pesado?',
-    '{libro} lleva un rato esperando.',
-    'Nadie corre. Ahí sigue {libro}.',
-  ],
-  dormida: [
-    'Aquí sigo cuando quieras.',
-    'Me eché una siesta entre los libros.',
-    'Los libros no se van a ninguna parte.',
-    'Cuando vuelvas, seguimos.',
-  ],
-  celebrando: [
-    '¡Terminaste {libro}! 🎉',
-    'Un libro menos en la pila.',
-    'Eso fue {paginas} páginas. Nada mal.',
-  ],
-  expectante: [
-    'Ya casi terminas {libro}.',
-    'Faltan {faltan} páginas. ¿Las hacemos hoy?',
-    'Estoy en la última parte de {libro} contigo.',
-  ],
-};
-
-let lastPhrase = '';
-
-/** Nunca repite la misma frase dos veces seguidas. */
-export function petPhrase(state = petState()) {
-  const { mood, current, daysQuiet } = state;
-  const cfg = petConfig();
-
-  let pool = PHRASES[mood] || PHRASES.contenta;
-  if (mood === 'leyendo' && daysQuiet >= 2) pool = PHRASES.estancada;
-
-  const book = current;
-  const total = book ? pageCount(book.pages) : null;
-  const page = book ? (entry(book.id).page || 0) : 0;
-
-  const slots = {
-    '{libro}': book ? book.title : 'tu libro',
-    '{pagina}': page || 1,
-    '{paginas}': total || '—',
-    '{faltan}': total ? Math.max(1, total - page) : 'algunas',
-    '{dias}': daysQuiet ?? 0,
-    '{nombre}': cfg.name || '',
+/** Los libros con lo justo que la mascota necesita saber. */
+const librosParaLaMascota = () => allBooks().map((b) => {
+  const e = entry(b.id);
+  return {
+    id: b.id,
+    title: b.title,
+    total: pageCount(b.pages),
+    page: e.page || 0,
+    status: statusOf(b.id),
+    pct: progressPct(b.id),
+    lastReadAt: e.lastReadAt || 0,
+    finishedAt: e.finishedAt || 0,
   };
+});
 
-  const usable = pool.filter((p) => (book || !p.includes('{libro}')) && p !== lastPhrase);
-  const pick = (usable.length ? usable : pool)[Math.floor(Math.random() * (usable.length || pool.length))];
-  lastPhrase = pick;
-
-  return pick.replace(/\{[a-z]+\}/g, (m) => slots[m] ?? '');
+/** El ánimo y de qué libro habla. `current` se conserva por compatibilidad. */
+export function petState() {
+  const e = estadoMascota(librosParaLaMascota());
+  return { mood: e.mood, current: e.libro, daysQuiet: e.diasCallada, libro: e.libro };
 }
+
+/** Lo que dice ahora mismo. */
+export const petPhrase = (state = petState()) => fraseMascota(
+  { mood: state.mood, libro: state.libro ?? state.current, diasCallada: state.daysQuiet },
+  { nombre: petConfig().name },
+);
 
 /* ── EL DIBUJO  ·  historia #38 ──────────────────────────────
    SVG y no imagen: pesa poco, escala a cualquier pantalla y —lo

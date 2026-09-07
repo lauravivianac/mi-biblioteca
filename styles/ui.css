@@ -1085,10 +1085,73 @@ body:not(.signed-in) .fab { display: none; }
 }
 
 .chat-escribir { display: flex; gap: 7px; align-items: flex-end; margin-top: 8px; }
-.chat-escribir .finput { flex: 1; }
-.chat-escribir .btn-magic { flex: 0 0 auto; padding: 10px 16px; }
+.chat-escribir .finput { flex: 1; min-width: 0; }
+/* `flex-basis: auto` significa «usa el width», y `.btn-magic` trae
+   `width: 100%`: el botón pedía la fila entera y el campo se quedaba
+   en un cuadradito. Le pasaba también al chat del trueque. */
+.chat-escribir .btn-magic { flex: 0 0 auto; width: auto; padding: 10px 16px; }
 .chat-acciones { display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap; }
 .chat-acciones .btn-mini { flex: 1; min-width: 120px; }
+
+/* ── HABLAR CON LA MASCOTA · #44 ──────────────────────────────
+   Reusa las burbujas del trueque a propósito: en esta app una
+   conversación se ve de UNA manera, la tengas con una amiga o con
+   ella. Lo propio de aquí es solo quién habla. */
+.petchat-cabeza {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 12px;
+}
+.petchat-retrato {
+  flex: 0 0 auto;
+  width: 64px; height: 64px;
+  display: grid; place-items: center;
+}
+.petchat-retrato .pet-svg { width: 64px; height: 56px; }
+.petchat-retrato .pet-img { width: 64px; height: 64px; margin-bottom: 0; }
+.petchat-nombre { font-family: var(--font-display); font-size: 16px; color: var(--text); }
+.petchat-sub { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 2px; }
+.petchat-sub strong { color: var(--text); }
+
+/* Un cuadro vacío no dice de qué se puede hablar. Estas sí.
+   NO reusan `.chip`: ese es la pestaña de un filtro —transparente y
+   con filete abajo—, y aquí hace falta algo que se vea tocable. */
+.petchat-sugerencias { display: flex; flex-direction: column; gap: 7px; margin: 4px 0 2px; }
+.petchat-sug {
+  width: 100%;
+  text-align: left;
+  padding: 10px 13px;
+  border: var(--hairline);
+  border-radius: var(--ctl-radius);
+  background: var(--fog-soft);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: border-color .18s, color .18s;
+}
+.petchat-sug:hover, .petchat-sug:active { border-color: var(--gold); color: var(--gold); }
+
+/* Los tres puntos. Es la única forma de decir «te estoy oyendo»
+   mientras se espera al servidor. */
+.petchat-pensando { display: flex; gap: 4px; align-items: center; padding: 11px 13px; }
+.petchat-pensando span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--muted);
+  animation: petchat-late 1.25s ease-in-out infinite;
+}
+.petchat-pensando span:nth-child(2) { animation-delay: .18s; }
+.petchat-pensando span:nth-child(3) { animation-delay: .36s; }
+@keyframes petchat-late {
+  0%, 60%, 100% { opacity: .3; transform: translateY(0); }
+  30%           { opacity: 1;  transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .petchat-pensando span { animation: none; opacity: .55; }
+}
+
+/* Un «no pude» no se pinta como si ella lo hubiera dicho. */
+.burbuja-fallo { background: rgb(var(--amber-rgb) / .14); color: var(--amber); }
 
 .sheet-alta { max-height: 92vh; }
 
