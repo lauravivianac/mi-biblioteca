@@ -415,6 +415,29 @@ Proporción 2:1, 1536 × 768 px.
 
 ---
 
+## Estado
+
+**Puesta: Pergamino.** Faltan las otras nueve.
+
+Mientras un tema no tenga la suya se queda con lo que ya había —el dibujo en
+SVG de El Principito, o nada—, así que pueden llegar de una en una.
+
+El conversor es `npm run escenas <carpeta>`: deja los WebP en `img/tema/`,
+a 1200 px de ancho. Con Pergamino, **2,4 MB → 94 KB**.
+
+> **Y te dice el color del cielo de cada una.** Es lo que hay que comparar con
+> el `--void` del tema: si no casan, se ve la costura donde termina la imagen.
+> La de Pergamino salió en `#F5D4A1` contra el `#F4EEE2` del tema —más cálida—
+> y funciona, porque el desvanecido de arriba convierte la diferencia en luz de
+> tarde en vez de en un corte. Con una diferencia mayor no colaría.
+
+**El peso importa aquí.** Una acuarela con grano no comprime como un dibujo
+plano: son ~95 KB cada una y esta app no tiene empaquetador, así que las diez
+serían casi un megabyte. Si al final las hay todas, habrá que cargarlas solo
+cuando su tema se aplique, igual que ya se hace con las tipografías.
+
+---
+
 ## 3 · Lo que hace falta de vuelta
 
 - **Un PNG por tema**, 1536 × 768, sin comprimir.

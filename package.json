@@ -41,7 +41,8 @@
     "test:e2e": "firebase emulators:exec --only firestore,auth --project demo-biblioteca \"node scripts/test-e2e.mjs\"",
     "capturas": "firebase emulators:exec --only firestore,auth --project demo-biblioteca \"node scripts/capturas.mjs\"",
     "test:clases": "node scripts/test-clases.mjs",
-    "mascotas": "node scripts/mascotas.mjs"
+    "mascotas": "node scripts/mascotas.mjs",
+    "escenas": "node scripts/escenas.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
