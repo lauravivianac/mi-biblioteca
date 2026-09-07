@@ -417,38 +417,59 @@ Proporción 2:1, 1536 × 768 px.
 
 ## Estado
 
-**Puesta: Pergamino.** Faltan las otras nueve.
+**Puestas seis: Pergamino, Herbario, Marea, Gótico, Sakura y El Principito.**
+Faltan Ex Libris, Grimorio, Obsidiana y Máquina.
 
-Mientras un tema no tenga la suya se queda con lo que ya había —el dibujo en
-SVG de El Principito, o nada—, así que pueden llegar de una en una.
+Mientras un tema no tenga la suya se queda sin escena y no pasa nada: la lista
+de temas con lámina está en `styles/worlds.css` y es el inventario. Pueden
+llegar de una en una.
 
 El conversor es `npm run escenas <carpeta>`: deja los WebP en `img/tema/`,
-a 1200 px de ancho. Con Pergamino, **2,4 MB → 94 KB**.
+a 1200 px de ancho. Las cinco últimas, **8,8 MB → 324 KB**.
 
 > **Y te dice el color del cielo de cada una.** Es lo que hay que comparar con
 > el `--void` del tema: si no casan, se ve la costura donde termina la imagen.
-> La de Pergamino salió en `#F5D4A1` contra el `#F4EEE2` del tema —más cálida—
-> y funciona, porque el desvanecido de arriba convierte la diferencia en luz de
-> tarde en vez de en un corte. Con una diferencia mayor no colaría.
 
-**El peso importa aquí.** Una acuarela con grano no comprime como un dibujo
-plano: son ~95 KB cada una y esta app no tiene empaquetador, así que las diez
-serían casi un megabyte. Si al final las hay todas, habrá que cargarlas solo
-cuando su tema se aplique, igual que ya se hace con las tipografías.
+| | cielo de la lámina | `--void` del tema |
+|---|---|---|
+| Pergamino | `#F5D4A1` | `#F4EEE2` |
+| Herbario | `#0D140F` | `#0B1410` |
+| Marea | `#173A4E` | `#08131F` |
+| Gótico | `#170A09` | `#100708` |
+| Sakura | `#211217` | `#1A1016` |
+| El Principito | `#18233B` | `#17203A` |
+
+Ninguna enseña costura. Marea es la que más se separa y aun así funciona,
+porque la lámina es más clara ARRIBA y eso se lee como la luz que entra desde
+la superficie; la de Pergamino pasa por luz de tarde. Con la diferencia al
+revés —lámina oscura sobre fondo claro— no colaría.
+
+### El peso, resuelto
+
+Una acuarela con grano no comprime como un dibujo plano: son entre 39 y 97 KB
+cada una, y esta app no tiene empaquetador. Con seis puestas eran ~430 KB.
+
+Y **una imagen escondida con `display:none` se descarga igual**, así que un
+`<img>` por tema significaba bajarse las seis en cada apertura para enseñar
+una. Ahora la escena es el `background-image` de `.mundo`, elegido por tema en
+el CSS: **el fondo de una regla que no casa no se pide nunca**. La carga
+perezosa la hace el navegador y no hay que programarla.
+
+`npm run test:escenas` lo comprueba tema por tema, porque es correcto e
+invisible — y lo invisible vuelve sin avisar.
 
 ---
 
 ## 3 · Lo que hace falta de vuelta
 
 - **Un PNG por tema**, 1536 × 768, sin comprimir.
-- Nombrados por el id del tema: `exlibris.png`, `grimorio.png`, `obsidiana.png`,
-  `pergamino.png`, `herbario.png`, `marea.png`, `gotico.png`, `sakura.png`,
-  `principito.png`, `maquina.png`.
+- Nombrados por el id del tema. **Quedan cuatro:** `exlibris.png`,
+  `grimorio.png`, `obsidiana.png`, `maquina.png`.
 
 De la integración me encargo yo: recortar, pasar a WebP con presupuesto de peso
-—esta app no tiene empaquetador y cada kilobyte se descarga tal cual—, y
-sustituir el SVG que hay ahora. La máscara que difumina el borde de arriba ya
-está puesta y sirve igual para una imagen.
+—esta app no tiene empaquetador y cada kilobyte se descarga tal cual— y añadir
+la línea del tema al inventario del CSS. La máscara que difumina el borde de
+arriba ya está puesta y sirve igual para cualquier lámina.
 
 **Si alguna sale regular, dilo y se repite solo esa.** Diez ilustraciones de las
 que ocho son buenas y dos flojas se notan más que si no hubiera ninguna.

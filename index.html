@@ -188,106 +188,19 @@
   <div class="deco-lines"></div>
 </div>
 <!-- ── LO QUE VIVE EN EL FONDO ──────────────────────────────────
-     Un tema puede traer algo dibujado, no solo colores. Va detrás de
-     todo, muy tenue, y solo aparece el del tema puesto. -->
-<div class="mundo" aria-hidden="true">
+     Un tema puede traer una escena, no solo colores. Va detrás de
+     todo, baja como un horizonte, y solo aparece la del tema puesto.
 
-  <!-- Las escenas ILUSTRADAS. Una imagen y un dibujo en SVG conviven a
-       propósito: van llegando por tandas, y hasta que un tema tenga la
-       suya se queda con lo que ya hay. Se eligen solo con CSS, igual
-       que las viñetas de remate. -->
-  <img class="mundo-img" data-tema="pergamino" src="./img/tema/pergamino.webp"
-       width="1200" height="600" decoding="async" alt="">
+     ES UN FONDO DE CSS Y NO UN <img>, y esa es la parte importante:
+     una imagen escondida con `display:none` SE DESCARGA IGUAL, así
+     que las seis escenas —casi medio mega— viajaban enteras en cada
+     apertura para enseñar una. Un `background-image` de una regla que
+     no casa no se pide nunca, así que cada lectora se baja la suya y
+     ninguna más. Esta app no tiene empaquetador: cada kilobyte del
+     repositorio es un kilobyte que alguien descarga.
 
-
-  <!-- EL PRINCIPITO · la escena
-       Dibujada aquí, no calcada: las ilustraciones de Saint-Exupéry
-       siguen con derechos en varios países y esta app va a las
-       tiendas. Lo que se toma del libro son las cosas, no los trazos
-       — él con su capa y su corona, la rosa que sostiene, el zorro
-       («no se ve bien sino con el corazón»), las rosas del jardín que
-       le enseñaron que la suya era única, y la duna del desierto.
-
-       Va a color y con cara, porque un tema no se sostiene solo con
-       la paleta: en línea suelta esto no era un dibujo, era un plano. -->
-  <svg class="mundo-svg" data-tema="principito" viewBox="0 0 240 130" preserveAspectRatio="xMidYMax meet">
-  <g stroke="#2A1F12" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">
-      <path d="M-10 130c30-24 70-38 130-38s90 14 130 38z" fill="#B98A55" stroke="none"/>
-      <path d="M-10 130c30-24 70-38 130-38s90 14 130 38z" fill="#E0B071" stroke="none" opacity=".45" transform="translate(0 6)"/>
-      <path d="M-10 130c30-24 70-38 130-38s90 14 130 38" fill="none" stroke="#2A1F12" opacity=".3"/>
-  
-      <!-- EL PRINCIPITO -->
-      <g transform="translate(88 100)">
-        <path d="M-13 -8h10v8h-12z" fill="#33507A"/>
-        <path d="M3 -8h10v8h-12z" fill="#33507A"/>
-        <!-- la capa, que sale del hombro y vuela -->
-        <path d="M11 -37c9 6 15 15 18 26-9-3-16-9-20-17z" fill="#2F6242"/>
-        <path d="M-12 -38h22c1.6 10 2.2 20 2.2 30h-26c0-10 .6-20 1.8-30z" fill="#3E7A52"/>
-        <!-- el brazo que sostiene la rosa -->
-        <path d="M-12 -30c-6.5 1-11 4-14 8.6l5.6 3.8c2.6-3.6 5.4-5.4 8.8-5.4z" fill="#EBC85C"/>
-        <circle cx="-22.6" cy="-16" r="3.4" fill="#F7E6D2"/>
-        <path d="M-21 -17l-8-13" fill="none" stroke="#4C7A3E" stroke-width="1.8"/>
-        <path d="M-27 -22c-4 0-7-2-7-5 4-1 7 1 8 4z" fill="#4C7A3E"/>
-        <g transform="translate(-30 -32)">
-          <circle r="6.4" fill="#C2465C"/>
-          <path d="M-3.4 0a3.4 3.4 0 1 1 5.6 2.6" fill="none" stroke-width="1.3"/>
-          <path d="M-1 -3a1.6 1.6 0 1 1 2 1.4" fill="none" stroke-width="1.1"/>
-        </g>
-        <!-- el pelo, una mata blanda -->
-        <path d="M3 -75c11 0 19 8.5 19 19 0 7-3 12.5-8 16 2-6 1-11-2-14-3 6-9 8-16 6-5-1.4-8-5-8-9 0-2 .6-4 2-5.6-3 1-5.4 3-6.6 6C-18.5 -66 -9 -75 3 -75z" fill="#EBC85C"/>
-        <circle cx="-4" cy="-52" r="14.5" fill="#F7E6D2"/>
-        <!-- la corona, apoyada de lado -->
-        <g transform="translate(16 -70) rotate(14)">
-          <path d="M-8 3 -9-6l4.5 3.5L0-6l4.5 3.5L9-6 8 3z" fill="#E7B23F"/>
-          <path d="M-8 3h16" fill="none" stroke-width="1.3"/>
-        </g>
-        <g fill="none" stroke-width="1.7">
-          <path d="M-13 -54.5a3.2 3.2 0 0 1 5.4 0"/>
-          <path d="M-3.6 -54.5a3.2 3.2 0 0 1 5.4 0"/>
-          <path d="M-7 -45.5a3 3 0 0 0 3.4 0"/>
-        </g>
-        <ellipse cx="-14" cy="-47.5" rx="3.2" ry="2.2" fill="#E89A96" stroke="none" opacity=".85"/>
-      </g>
-  
-      <!-- EL ZORRO, con su cola -->
-      <g transform="translate(172 104)">
-        <path d="M-8 -2c-10 3-17 0-18-7-1-6 4-11 10-10 4 .6 6 4 4.6 7-1 2-3 2.6-4.6 1.6" fill="#D9884A"/>
-        <path d="M-8 0c-1-9 0-16 3-21h9c3 5 4 12 3 21z" fill="#D9884A"/>
-        <path d="M-2 -34c-4 0-7.4 3-7.4 7.2 0 4.4 3.4 7.4 7.4 7.4h4c4 0 7.4-3 7.4-7.4 0-4.2-3.4-7.2-7.4-7.2z" fill="#D9884A"/>
-        <path d="M-8.6 -36.6l-1.4-8.4 6.4 4.4zM8.6 -36.6l1.4-8.4-6.4 4.4z" fill="#D9884A"/>
-        <path d="M-3 -22.4h6l-3 3.4z" fill="#2A1F12" stroke="none"/>
-        <circle cx="-4.2" cy="-29" r="1.4" fill="#2A1F12" stroke="none"/>
-        <circle cx="4.2" cy="-29" r="1.4" fill="#2A1F12" stroke="none"/>
-        <path d="M-25.4 -9.6c-2.6-1.4-3.6-4-2.6-6.2 2.4-.4 4.4 1 5 3.2z" fill="#F7EADA"/>
-        <path d="M-2 -21c0 4 1.4 7 4 9" fill="none" stroke-width="1.1" opacity=".45"/>
-      </g>
-  
-      <!-- ROSAS -->
-      <g transform="translate(32 118)">
-        <path d="M0 0v-13" fill="none" stroke="#4C7A3E" stroke-width="1.8"/>
-        <path d="M0 -5c-4 1-7-1-8-4 4-1 7 0 8 4z" fill="#4C7A3E"/>
-        <circle cx="0" cy="-17.5" r="6.6" fill="#D66A78"/>
-        <path d="M-3.6 -17.5a3.6 3.6 0 1 1 6 2.8" fill="none" stroke-width="1.3"/>
-        <path d="M-1.1 -20.7a1.7 1.7 0 1 1 2.1 1.5" fill="none" stroke-width="1.1"/>
-      </g>
-      <g transform="translate(214 122)">
-        <path d="M0 0v-11" fill="none" stroke="#4C7A3E" stroke-width="1.8"/>
-        <path d="M0 -4c4 1 7-1 8-4-4-1-7 0-8 4z" fill="#4C7A3E"/>
-        <circle cx="0" cy="-15" r="5.6" fill="#D66A78"/>
-        <path d="M-3 -15a3 3 0 1 1 5 2.4" fill="none" stroke-width="1.2"/>
-      </g>
-    </g>
-  
-    <g fill="#D66A78" opacity=".28">
-      <circle cx="30" cy="26" r="7"/><circle cx="205" cy="18" r="5"/><circle cx="140" cy="40" r="4"/>
-    </g>
-    <g fill="#F2ECE0" opacity=".5">
-      <circle cx="66" cy="14" r="1.6"/><circle cx="120" cy="24" r="1.2"/><circle cx="182" cy="46" r="1.4"/>
-      <circle cx="96" cy="40" r="1"/><circle cx="228" cy="60" r="1.2"/>
-    </g>
-  </svg>
-
-</div>
+     Qué escena tiene cada tema está en `styles/worlds.css`. -->
+<div class="mundo" aria-hidden="true"></div>
 
 <!-- Grimorio · la estrella fugaz. Cruza el cielo cada tanto y se va.
      Si pides menos movimiento, no cruza nunca. -->

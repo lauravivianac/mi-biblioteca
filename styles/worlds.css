@@ -340,58 +340,44 @@ html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-}
-/* Cada escena trae sus propios colores: aquí no se imponen ni el
-   relleno ni el trazo. Una ilustración a color con `fill: none` es un
-   plano, que es justo lo que no queremos. */
-.mundo-svg {
-  display: none;
-  width: 100%; height: 100%;
-  opacity: .9;
-  /* Se desvanece por arriba para que no tenga un borde recto contra
-     el fondo: la duna aparece, no se pega. */
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 50% 100%;
+  /* Se desvanece por arriba para que la escena no tenga un borde recto
+     contra el fondo: el horizonte aparece, no se pega. */
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 42%);
   mask-image: linear-gradient(180deg, transparent, #000 42%);
 }
-[data-theme="exlibris"] .mundo-svg[data-tema="exlibris"],
-[data-theme="grimorio"] .mundo-svg[data-tema="grimorio"],
-[data-theme="obsidiana"] .mundo-svg[data-tema="obsidiana"],
-[data-theme="pergamino"] .mundo-svg[data-tema="pergamino"],
-[data-theme="herbario"] .mundo-svg[data-tema="herbario"],
-[data-theme="marea"] .mundo-svg[data-tema="marea"],
-[data-theme="gotico"] .mundo-svg[data-tema="gotico"],
-[data-theme="sakura"] .mundo-svg[data-tema="sakura"],
-[data-theme="principito"] .mundo-svg[data-tema="principito"],
-[data-theme="maquina"] .mundo-svg[data-tema="maquina"] { display: block; }
+/* CADA TEMA CON ESCENA, SU IMAGEN. Esta lista es el inventario: si un
+   tema no está aquí es que aún no tiene lámina, y su fondo queda vacío
+   sin que haya nada que apagar.
 
-/* Una escena puede ser una IMAGEN en vez de un dibujo. Se coloca por el
-   borde de abajo y recorta por los lados: la ilustración llega a 2:1 y
-   una pantalla estrecha es más alta que eso, así que o se recorta o se
-   deforma. */
-.mundo-img {
-  display: none;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 100%;
-  -webkit-mask-image: linear-gradient(180deg, transparent, #000 42%);
-  mask-image: linear-gradient(180deg, transparent, #000 42%);
-}
-[data-theme="exlibris"] .mundo-img[data-tema="exlibris"],
-[data-theme="grimorio"] .mundo-img[data-tema="grimorio"],
-[data-theme="obsidiana"] .mundo-img[data-tema="obsidiana"],
-[data-theme="pergamino"] .mundo-img[data-tema="pergamino"],
-[data-theme="herbario"] .mundo-img[data-tema="herbario"],
-[data-theme="marea"] .mundo-img[data-tema="marea"],
-[data-theme="gotico"] .mundo-img[data-tema="gotico"],
-[data-theme="sakura"] .mundo-img[data-tema="sakura"],
-[data-theme="principito"] .mundo-img[data-tema="principito"],
-[data-theme="maquina"] .mundo-img[data-tema="maquina"] { display: block; }
+   Va por `background-image` a propósito. Con un <img> por tema había
+   que esconder nueve, y una imagen con `display:none` se descarga
+   igual: eran ~430 KB en cada apertura para enseñar unos 60. El fondo
+   de una regla que no casa no se pide NUNCA, así que aquí la carga
+   perezosa la hace el navegador y no hay que programarla.
+
+   Se coloca por el borde de abajo y recorta por los lados: la lámina
+   llega a 2:1 y una pantalla estrecha es más alta que eso, así que o
+   se recorta o se deforma. */
+[data-theme="pergamino"]  .mundo { background-image: url('../img/tema/pergamino.webp'); }
+[data-theme="herbario"]   .mundo { background-image: url('../img/tema/herbario.webp'); }
+[data-theme="marea"]      .mundo { background-image: url('../img/tema/marea.webp'); }
+[data-theme="gotico"]     .mundo { background-image: url('../img/tema/gotico.webp'); }
+[data-theme="sakura"]     .mundo { background-image: url('../img/tema/sakura.webp'); }
+[data-theme="principito"] .mundo { background-image: url('../img/tema/principito.webp'); }
 
 /* Un tema con escena necesita que la lista termine ANTES de ella: si
-   no, la viñeta de remate cae encima del dibujo y parece un descuido. */
-[data-theme="principito"] .scroll-area,
-[data-theme="pergamino"] .scroll-area { padding-bottom: 270px; }
+   no, la viñeta de remate cae encima del dibujo y parece un descuido.
+   Esta lista va con la de arriba: un tema que gane escena y no entre
+   aquí se queda con el remate pisando la lámina. */
+[data-theme="pergamino"] .scroll-area,
+[data-theme="herbario"] .scroll-area,
+[data-theme="marea"] .scroll-area,
+[data-theme="gotico"] .scroll-area,
+[data-theme="sakura"] .scroll-area,
+[data-theme="principito"] .scroll-area { padding-bottom: 270px; }
 
 /* ── LA ESTRELLA FUGAZ · Grimorio ───────────────────────────── */
 .fugaz {
