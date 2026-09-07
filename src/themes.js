@@ -150,8 +150,9 @@ function telas(tonos, { l: [l0, l1], c, oro = '#E8D9AE', tinta = '#1A1512' }) {
 export const THEMES = [
   /* ── EX LIBRIS · el aspecto de casa ──────────────────────────
      «Ex libris» es la marca que alguien pega dentro de su libro para
-     decir que es suyo. La app se llama Mi Biblioteca: no hay nombre
-     más exacto para el tema con el que se entra.
+     decir que es suyo — «de los libros de…». La app se llama Library:
+     no hay nombre más exacto para el tema con el que se entra, porque
+     dice justo lo que la app hace con la tuya.
 
      De dónde sale cada color: NO del espacio, que es de donde salía
      el morado con estrellas. Sale de un libro encuadernado.

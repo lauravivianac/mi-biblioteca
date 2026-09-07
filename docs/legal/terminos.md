@@ -1,13 +1,13 @@
 # Términos de servicio
 
-**Mi Biblioteca**
+**Library**
 Última actualización: 6 de septiembre de 2026
 
 ---
 
 ## 1. Qué es esto
 
-Mi Biblioteca es una aplicación para llevar tu plan de lectura, anotar lo que lees, compartirlo con quien quieras e intercambiar libros en papel con otras personas.
+Library es una aplicación para llevar tu plan de lectura, anotar lo que lees, compartirlo con quien quieras e intercambiar libros en papel con otras personas.
 
 Es un proyecto personal, no una empresa. Se ofrece de forma gratuita.
 

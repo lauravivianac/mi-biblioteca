@@ -186,7 +186,7 @@ export function cardFilename(tipo, datos = {}, hoy = new Date()) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40) || tipo;
-  return `mibiblioteca-${trozo}-${fecha}.png`;
+  return `library-${trozo}-${fecha}.png`;
 }
 
 /* ── LA MEDIDA DE MENTIRA, PARA PROBAR ───────────────────────── */

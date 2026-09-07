@@ -81,7 +81,7 @@ export function renderAuth() {
         <div class="portada-marco">
           <div class="portada-vineta" aria-hidden="true">${vinetaDelTema()}</div>
           <div class="auth-exlibris">Ex libris</div>
-          <div class="auth-brand">Mi Biblioteca</div>
+          <div class="auth-brand">Library</div>
           <div class="auth-filete"></div>
           <p class="auth-lede">Tu plan lector, tus reseñas y tu progreso — solo tuyos.</p>
         </div>

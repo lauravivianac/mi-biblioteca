@@ -1,6 +1,6 @@
 {
-  "name": "Mi Biblioteca",
-  "short_name": "Biblioteca",
+  "name": "Library",
+  "short_name": "Library",
   "description": "Plan lector y tracker de libros",
   "start_url": ".",
   "scope": ".",

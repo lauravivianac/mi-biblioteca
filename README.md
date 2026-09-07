@@ -1,4 +1,4 @@
-# Mi Biblioteca ✨
+# Library ✨
 
 Plan lector y tracker de libros. Aplicación web instalable (PWA), sin paso de
 compilación: se sirve tal cual desde GitHub Pages.

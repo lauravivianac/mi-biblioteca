@@ -198,7 +198,7 @@ function pintar() {
     ${!myUid() ? `
       <div class="prof-mine">
         <p class="set-fineprint">
-          Esto es Mi Biblioteca: un plan lector, tus reseñas y tu progreso.
+          Esto es Library: un plan lector, tus reseñas y tu progreso.
           Puedes tener el tuyo.
         </p>
         <button class="btn-magic full" onclick="openAuthScreen()">

@@ -1,4 +1,4 @@
-# Mi Biblioteca — Plan de módulos y funcionalidad
+# Library — Plan de módulos y funcionalidad
 
 > Documento de definición previo a construir. No hay código nuevo todavía: aquí
 > decidimos **qué** se construye, **en qué orden** y **qué decisiones** quedan abiertas.

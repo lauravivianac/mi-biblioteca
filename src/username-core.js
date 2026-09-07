@@ -37,7 +37,7 @@ export const DIAS_ENTRE_CAMBIOS = 30;
 export const RESERVADOS = new Set([
   'admin', 'administrador', 'soporte', 'support', 'ayuda', 'help',
   'root', 'sistema', 'system', 'oficial', 'staff', 'moderador',
-  'mibiblioteca', 'biblioteca', 'app', 'api', 'www', 'about', 'acerca',
+  'mibiblioteca', 'biblioteca', 'library', 'app', 'api', 'www', 'about', 'acerca',
   'ajustes', 'settings', 'perfil', 'profile', 'buscar', 'search',
   'nuevo', 'new', 'null', 'undefined', 'anonimo', 'anonymous',
 ]);

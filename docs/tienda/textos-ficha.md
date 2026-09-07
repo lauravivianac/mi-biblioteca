@@ -9,13 +9,13 @@ que falta por generar.
 
 **App Store** (30 caracteres máx.)
 ```
-Mi Biblioteca: plan lector
+Library: plan lector
 ```
 *(25 caracteres)*
 
 **Google Play** (30 caracteres máx.)
 ```
-Mi Biblioteca: plan lector
+Library: plan lector
 ```
 
 ## Subtítulo · App Store (30 caracteres máx.)
@@ -37,7 +37,7 @@ Tu plan de lectura, tus notas y un sitio para intercambiar libros en papel.
 > Sirve para las dos tiendas. Play admite 4.000 caracteres; esto ocupa ~1.900.
 
 ```
-Mi Biblioteca es una app para leer más y disfrutarlo, no para sentirte mal por
+Library es una app para leer más y disfrutarlo, no para sentirte mal por
 no llegar a la meta.
 
 TU PLAN, SEGÚN TU TIEMPO

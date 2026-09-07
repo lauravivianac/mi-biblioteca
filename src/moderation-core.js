@@ -195,7 +195,7 @@ export function filtrarFuera(items = [], { bloqueados = [], silenciados = [] } =
 
 export const SOPORTE = {
   correo: 'soporte@mibiblioteca.app',
-  asunto: 'Ayuda con Mi Biblioteca',
+  asunto: 'Ayuda con Library',
 };
 
 export const mailtoSoporte = (cuerpo = '') =>

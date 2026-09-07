@@ -114,10 +114,13 @@
    es la del tema; `--font-portada` deja que un tema pida otra. */
 .auth-brand {
   font-family: var(--font-portada, var(--font-display));
-  /* 46 y no 34: una caligráfica tiene la altura de x mucho menor que
-     una serif, así que al mismo cuerpo se lee la mitad. Al tamaño de
-     la tapa, «Mi Biblioteca» entra en una línea en un móvil de 390. */
-  font-size: 46px;
+  /* 56 y no 34: una caligráfica tiene la altura de x mucho menor que
+     una serif, así que al mismo cuerpo se lee la mitad. Y el nombre
+     pasó de trece letras a siete: a 46 px la tapa se quedaba vacía
+     alrededor del título. Comprobado a 46, 56 y 64 sobre la tapa —
+     a 56 el título sostiene la portada y sigue entrando en una línea
+     en un móvil de 390. */
+  font-size: 56px;
   font-weight: var(--portada-weight, var(--display-weight));
   line-height: 1.08;
   letter-spacing: var(--portada-spacing, var(--display-spacing));

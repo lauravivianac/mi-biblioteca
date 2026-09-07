@@ -47,8 +47,9 @@ leer, y es la fuente «de fantasía» que se coge por defecto.
 ## La dirección: **Ex Libris**
 
 «Ex libris» es la etiqueta que alguien pega dentro de su libro para decir
-que es suyo: *de los libros de…*. La app se llama Mi Biblioteca. No hay
-nombre más exacto para el aspecto con el que se entra.
+que es suyo: *de los libros de…*. La app se llama **Library**, y no hay
+nombre más exacto para el aspecto con el que se entra: dice justo lo que
+la app hace con la biblioteca de quien la usa.
 
 **La regla que ordena todo lo demás:** el material de esta app no es el
 cosmos, es **un libro encuadernado**. Tela, cartón, hilo, papel crema y

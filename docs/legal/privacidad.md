@@ -1,6 +1,6 @@
 # Política de privacidad
 
-**Mi Biblioteca**
+**Library**
 Última actualización: 6 de septiembre de 2026
 
 ---
@@ -16,7 +16,7 @@
 
 ## Quién es responsable
 
-Mi Biblioteca es un proyecto personal. La responsable del tratamiento de los datos es la titular de la aplicación, y el contacto para cualquier cosa relacionada con esta política es:
+Library es un proyecto personal. La responsable del tratamiento de los datos es la titular de la aplicación, y el contacto para cualquier cosa relacionada con esta política es:
 
 **soporte@mibiblioteca.app**
 

@@ -238,7 +238,7 @@ export async function drawCard(tipo, datos = {}, { pet = null } = {}) {
   }
   ctx.fillStyle = p.tenue;
   ctx.font = `32px ${p.display}`;
-  ctx.fillText('✦ Mi Biblioteca', ANCHO / 2, ALTO - PIE + 110);
+  ctx.fillText('✦ Library', ANCHO / 2, ALTO - PIE + 110);
 
   return cv;
 }
