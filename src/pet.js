@@ -584,7 +584,7 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
    pintada. Quien elija una especie ilustrada no ve esos dos ajustes
    (ver `speciesIlustrada`), porque un mando que no hace nada es peor
    que no tenerlo. */
-export const ILUSTRADAS = ['gato', 'conejo'];
+export const ILUSTRADAS = ['gato', 'conejo', 'buho'];
 
 export const speciesIlustrada = (id) => ILUSTRADAS.includes(id);
 
