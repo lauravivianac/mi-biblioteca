@@ -80,6 +80,7 @@ const MESSAGES = {
   'intent-no-permitido': 'Esa consulta no está permitida.',
   'fuera-de-tema': 'El agente solo habla de libros.',
   'proveedor': 'El servicio no respondió. Inténtalo más tarde.',
+  'fallo-interno': 'El asistente falló por dentro. No es cosa tuya.',
   'origin': 'Este dominio no está autorizado en el Worker.',
 };
 
@@ -113,7 +114,20 @@ async function call(intent, text) {
       body: JSON.stringify({ intent, text }),
     });
   } catch {
-    throw fallo('sin-red', 'No hay conexión con el asistente. Inténtalo en un rato.');
+    /* AQUÍ NO SE SABE POR QUÉ FALLÓ, y eso importa. `fetch` revienta
+       igual sin cobertura que cuando la respuesta llega SIN cabeceras
+       CORS —lo que pasa cuando el Worker se cae, porque la página de
+       error de Cloudflare no las lleva—. Decir «te quedaste sin
+       internet» en el segundo caso es echarle a su conexión un fallo
+       nuestro, y encima manda a quien lee a reiniciar el router.
+
+       `navigator.onLine` no es de fiar para decir que SÍ hay red, pero
+       cuando dice que NO, no hay. Así que solo se afirma lo que se
+       sabe: sin red, se dice; con red, es cosa nuestra. */
+    const hayRed = typeof navigator === 'undefined' || navigator.onLine !== false;
+    throw hayRed
+      ? fallo('sin-respuesta', 'El asistente no contestó. Inténtalo en un rato.')
+      : fallo('sin-red', 'No hay conexión. Inténtalo cuando vuelvas a tener.');
   }
 
   const data = await r.json().catch(() => ({}));
