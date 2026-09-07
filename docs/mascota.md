@@ -65,20 +65,69 @@ Se pega **siempre** delante. Es el mismo espíritu que las escenas de los temas
 (ver [`ilustraciones.md`](./ilustraciones.md)), para que la app sea una sola
 cosa y no dos.
 
+#### La prueba de los diez y los cincuenta
+
+> «El dinosaurio no es lo que espero. Quiero que aplique para un niño de 10 o un
+> adulto de 50.»
+
+**Es el criterio de aceptación de todas, y hasta ahora estaba solo en la cabeza.**
+Una mascota que solo vale para un niño pequeño deja fuera a media app: la lectora
+de diez la ve infantil y la de cincuenta no se la pone en el teléfono.
+
+La primera versión de este bloque decía *«ilustración infantil»* y *«cabeza
+grande y cuerpo pequeño»*, que es literalmente la receta de un peluche kawaii, y
+**no describía las seis que hay**. Se coló porque las seis salieron bien de
+todos modos; se notó al pedir la séptima, que salió pegatina de cuarto de bebé
+—verde menta pastel, chapetas rosas, borde de troquelado, cabeza de media
+figura, relleno plano y lunares decorativos— y al lado de las otras parecía de
+otra app.
+
+Mirando las seis que sí funcionan, lo que tienen en común es que **son animales,
+no juguetes**: anatomía y pelaje de animal de verdad, colores de animal de
+verdad, ternura por la expresión y no por la deformación. Eso es lo que aguanta
+los diez y los cincuenta a la vez, y es lo que ahora dice el bloque.
+
 ```
-Ilustración infantil en acuarela con línea de tinta suave, estilo libro
-álbum. Pintada a mano, con grano de papel y bordes de pigmento
-visibles. Colores apagados y cálidos, nada saturado ni digital.
-Personaje tierno, redondeado, de cabeza grande y cuerpo pequeño.
+Ilustración de animales en acuarela y lápiz de color, con técnica
+realista, del estilo de un libro ilustrado clásico de cuentos de
+animales. Pintada a mano, con grano de papel. NO es una lámina de
+historia natural: eso retrata un ejemplar de museo, y aquí el
+personaje tiene que tener vida. El pelaje o las plumas dibujados a
+trazos finos y
+visibles, con volumen. Anatomía y proporciones de animal de verdad,
+apenas estilizadas. Colores naturales, terrosos y apagados: nada de
+pastel de guardería ni de saturación digital.
+
+Ternura por la EXPRESIÓN —la mirada, el gesto—, nunca por deformar:
+tiene que gustarle igual a alguien de diez años y a alguien de
+cincuenta.
+
+LA EDAD LA DICE CADA PERSONAJE, no este bloque: hay crías y hay
+adultos, y confundirlos es lo que ha hecho fallar más intentos.
+
+NADA de esto:
+· chapetas ni círculos rosas en los mofletes
+· contorno blanco o crema alrededor de la figura, como una pegatina
+  troquelada
+· cabeza enorme sobre un cuerpo diminuto, ni patas de muñón
+· relleno plano de color, sin textura
+· lunares, estrellitas, corazones ni brillos decorativos
+· arrugas, pliegues colgando, papada, párpados caídos ni postura
+  desplomada: ninguno de estos personajes es un animal VIEJO — un
+  adulto sereno no es un anciano cansado
 
 MUY IMPORTANTE:
 · Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo, sin sombra
-  debajo — el personaje va recortado y solo.
+  debajo — el animal va recortado y solo.
 · Cuerpo entero, sentado, de tres cuartos, mirando ligeramente a la
   izquierda. Centrado, con un poco de aire alrededor.
 · Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
 · Cuadrado, 512 × 512 px.
 ```
+
+Los prompts de las seis primeras, más abajo, **se dejan tal cual salieron**: son
+el registro de cómo se generó lo que hoy está en la app. Si alguna hay que
+rehacerla, se rehace con este bloque.
 
 ### Cómo generarlas para que casen
 
@@ -88,6 +137,23 @@ que salir de la misma conversación, una detrás de otra**, pidiendo cada vez
 cabeza, misma altura de los ojos, solo cambia la pose». Si las generas sueltas,
 la mascota cambia de tamaño y de cara al cambiar de ánimo, y eso se nota más
 que si estuviera mal dibujada.
+
+#### Y ENTRE especies, con una de las que ya hay delante
+
+Esta regla llevaba escrita desde el principio **solo dentro de una especie** —
+y ese hueco no se notó en seis intentos seguidos. Las seis primeras salieron
+cada una de su propia conversación, guiadas nada más que por el bloque de
+estilo, y casaron igual: son seis mamíferos peludos, o casi, y el parecido
+venía puesto por el propio animal.
+
+**El dinosaurio es el primero que no lo trae de fábrica**, y ahí se vio que un
+párrafo de texto no transmite un estilo. La tercera versión estaba bien
+dibujada, era una cría de verdad y aun así se salía de la fila.
+
+Así que a partir de aquí: **se adjunta una de las seis a la conversación** y se
+pide *«el mismo ilustrador, la misma técnica y la misma paleta que esta imagen,
+pero el personaje es…»*. Una imagen dice de una vez lo que veinte líneas de
+prompt no consiguen.
 
 ### Las seis especies
 
@@ -528,17 +594,138 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ---
 
-## La séptima · Dinosaurio `dino` — *pendiente*
+## Las que faltan — *pendientes*
 
-### Por qué, y por qué es distinto
+### El diagnóstico, después de fallar tres veces con el dinosaurio
+
+> «¿Me entendiste bien lo que quería? Personajes más masculinos, **el que sea**
+> entonces, pero uno que siga la línea anterior y aplique para hombres también.»
+
+Me agarré a la palabra «dinosaurio» y gasté tres intentos en ella. La petición
+era otra, y con la pregunta correcta delante el problema se ve en dos segundos:
+
+**LAS SIETE SON CRÍAS.** Gatita, Coneja, Zorrita —hasta el nombre va en
+diminutivo—, y los tres que serían masculinos (Ulises, Coco, Bambú) están
+dibujados como bebés redonditos igual que las otras. El sesgo no está en qué
+animal es cada una: **está en la edad.** «Bebé» es el registro que hace que
+todo el armario se lea como de niñas, y por eso cada vez que empujaba al
+dinosaurio hacia «cría» salía más de lo mismo — el último parecía un pollito
+en un cascarón.
+
+Y aquí está lo que hace que esto sea una historia y no un capricho: **la mitad
+de las lectoras posibles no encuentra a nadie a quien elegir.** Un armario de
+siete bebés no es neutral; es una elección, hecha sin darse cuenta.
+
+### Lo que cambia: ADULTOS, no crías
+
+No músculos, ni armas, ni azul de juguetería. Un animal adulto de un libro
+ilustrado clásico: **con oficio, con carácter y con silueta propia.** Es
+exactamente el registro que aguanta los diez y los cincuenta, y de paso el que
+faltaba.
+
+| | Se lee como | Por qué funciona |
+|---|---|---|
+| **Un oso** · Tomás | grande y templado | Ancho, cálido, pardo. Nadie le tiene manía a un oso con bufanda |
+| **Un lobo** · Rico | alerta y noble | Es el que elige un niño de diez. Sin enseñar los dientes no da miedo |
+| **Un cuervo** · Tinta | listo y libresco | Negro tinta, silueta afilada. Es el que elige alguien de cincuenta |
+
+Tres, no uno: el problema era que **no había ninguno**, y añadir un solo
+personaje deja el reparto igual de escorado, solo que con una excepción.
+
+Y los nombres acompañan — **Tomás, Rico y Tinta** frente a Cleo, Nube y Rita.
+Un nombre en diminutivo deshace en una palabra lo que arregla el dibujo.
+
+### Lo que cambia en el bloque de estilo, para estos tres
+
+Todo lo demás sigue igual —acuarela y lápiz, trazo suave, paleta cálida,
+fondo transparente—. Solo cambia la edad:
+
+```
+Es un animal ADULTO, no una cría: complexión sólida, hombros anchos,
+postura erguida y tranquila, rasgos algo más marcados y hocico más
+largo. Sereno y con carácter, nunca fiero ni amenazante.
+
+NADA de: ojos enormes de bebé, cabeza desproporcionada, cuerpo de
+bolita, ni cachetes de cachorro.
+```
+
+Y una advertencia que vale para los tres: **sereno no es serio.** Un animal
+adulto con la mirada vacía se lee como un logotipo. La ternura sigue estando
+en la expresión, solo que es la de alguien que ya ha leído mucho.
+
+### El prompt, listo para copiar · el Oso
+
+Empieza por este: es el más ancho de gustos y el que menos puede salir mal.
+Para el lobo y el cuervo, el mismo mensaje cambiando la descripción.
+
+```
+[ADJUNTA UNA DE LAS SEIS QUE YA EXISTEN — la gatita o la zorrita]
+
+Fíjate en la imagen que te adjunto: quiero el MISMO ilustrador, la
+misma técnica, el mismo trazo suave, la misma paleta cálida y apagada
+y el mismo nivel de detalle (bajo). Ese es el estilo, y no se negocia.
+
+Ahora dibuja, en ese mismo estilo, un OSO PARDO ADULTO, de pelaje
+castaño cálido y hocico color miel, sentado tranquilo con los ojos
+cerrados en una sonrisa y las manos apoyadas en el regazo.
+
+Es un animal ADULTO, no un cachorro: complexión sólida, hombros
+anchos, postura erguida y tranquila, hocico largo y rasgos marcados.
+Sereno y con carácter, nunca fiero ni amenazante — pero tampoco vacío:
+la ternura está en la mirada, la de alguien que ya ha leído mucho.
+
+NADA de esto:
+· ojos enormes de bebé, cabeza desproporcionada ni cuerpo de bolita
+· chapetas ni círculos rosas en los mofletes
+· contorno blanco o crema alrededor de la figura, como una pegatina
+· relleno plano de color, sin textura
+· dientes, garras o gesto de ataque
+
+MUY IMPORTANTE:
+· Fondo TRANSPARENTE, sin escenario, sin suelo y SIN SOMBRA debajo. Si
+  no puedes, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+· Sin texto, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, idénticas en color, forma y tamaño.
+```
+
+Las otras dos descripciones, para el mismo hueco:
+
+- **Lobo** · `un LOBO ADULTO de pelaje gris ceniza con el pecho claro, orejas
+  erguidas y mirada serena`
+- **Cuervo** · `un CUERVO ADULTO de plumaje negro azulado con brillo suave,
+  posado y con la cabeza ligeramente ladeada`
+
+---
+
+## El dinosaurio — *aparcado, con su historia*
+
+Se intentó tres veces y las tres fallaron por causas distintas. Queda escrito
+porque las tres lecciones valen para cualquier especie que venga después.
+
+| | Qué salió | La causa |
+|---|---|---|
+| 1.ª | Pegatina de cuarto de bebé | El bloque pedía «ilustración infantil» y «cabeza grande, cuerpo pequeño» |
+| 2.ª | **Un abuelo** | Al corregir el acabado se fue con él la juventud. Y el anclaje decía «lámina de historia natural», que retrata un ejemplar ADULTO |
+| 3.ª | Bien dibujado y aun así fuera de la fila | **Lo que une a las seis no es el estilo: es el pelo.** Un reptil de escamas no se sienta con seis peluditos |
+| 4.ª | Un pollito en un cascarón | El plumón arregló la textura, pero «cría» seguía empujando hacia bebé |
+
+**La lección que más lejos llega** es la tercera: seis conversaciones sueltas
+casaron porque eran seis mamíferos peludos —el parecido lo ponía el animal, no
+el prompt—, y el primero que no lo traía de fábrica destapó el hueco. De ahí
+sale la regla de adjuntar una de las seis, que ahora vale para todas.
+
+Si algún día se retoma: con plumón, adulto y con la referencia adjunta.
+
+### Por qué se intentó, y sigue valiendo
 
 Míralas juntas: gatita, coneja, búho, zorrita, panda, mapache. **Seis
 animalitos tiernos de bosque, todos del mismo registro.** Es un reparto
 coherente y sesgado: la app se lee como «para una niña a la que le gustan los
 animalitos», y eso deja fuera a muchos niños — y a muchas niñas también.
-
-Un dinosaurio no es tierno: es grande. Rompe el molde, que es justo lo que le
-falta al armario.
 
 **Se abre desde el primer día**, como la Gatita y la Coneja. Esconder detrás de
 diez libros la única mascota que no es un peluche anularía el motivo de
@@ -553,35 +740,108 @@ la pena que sea un dinosaurio y no otro bicho redondo.**
 
 | | Nombre | Descripción para el prompt |
 |---|---|---|
-| **Dinosaurio** | Rex | `un dinosaurio pequeño y regordete, verde salvia con la panza crema y púas redondeadas y blandas en el lomo` |
+| **Dinosaurio** | Rex | `una cría de dinosaurio cubierta de plumón suave y esponjoso, color verde musgo apagado con el pecho color crema, ojos grandes y oscuros, hocico corto y una hilera de placas bajas y blandas por el lomo` |
 
-### El añadido al bloque de estilo
+**Un dinosaurio verde menta con lunares no es un animal: es un juguete.** Los
+otros seis tienen color de animal —jengibre, gris de conejo, pardo de búho—, y
+el dinosaurio necesita el suyo: oliva apagado con moteado, que es lo que pinta
+cualquier lámina de paleontología. El color es la mitad de por qué la primera
+versión se caía de la fila.
 
-Un dinosaurio tiene una forma de salir mal que los otros seis no tienen, así
-que el bloque de estilo lleva una línea más:
+### Los tres añadidos al bloque de estilo
+
+**El dinosaurio se cae de la fila por tres lados, y hubo que pisar los tres.**
+Las dos primeras versiones fallaron en direcciones opuestas, que es la parte
+que merece quedar escrita:
+
+| | Qué salió | Por qué |
+|---|---|---|
+| 1.ª | Pegatina de cuarto de bebé | El bloque pedía «ilustración infantil» y «cabeza grande, cuerpo pequeño» |
+| 2.ª | **Un abuelo** | Al corregirlo se fue con las chapetas también la juventud |
+
+Y ahí está la lección: **«naturalista» y «cría» son dos ejes distintos, y yo
+los junté en uno.** Lo que hacía de peluche a la primera era el *acabado*
+—relleno plano, contorno de pegatina, chapetas—; lo que hace joven a un animal
+es la *anatomía* —ojo grande, hocico corto, piel tersa—. Al quitar el acabado
+de juguete me llevé por delante las señales de edad, y salió un reptil curtido
+con papada, pliegues en el cuello y párpados caídos.
+
+Un dinosaurio es el único de los siete donde esto se nota tanto, porque un
+reptil adulto de verdad *tiene* la piel arrugada: el modelo lo dibuja bien y
+sale un señor mayor. Con un gato no pasa.
 
 ```
-· NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
-  ataque. Es un bebé dinosaurio de peluche, no un depredador.
+· NADA de aspecto feroz: sin dientes afilados, sin garras a la vista,
+  sin gesto de ataque. Es una cría tranquila, no un depredador.
+· NADA de viejo: sin arrugas, sin pliegues colgando en el cuello o la
+  panza, sin papada, sin párpados caídos, sin piel curtida. Es un
+  animal recién salido del huevo.
+· NADA de escamas ni de piel de reptil: va cubierto de PLUMÓN suave,
+  dibujado a trazos finos como el pelo de un gatito.
+· Ni brillos especulares en el ojo, ni acabado fotográfico: la misma
+  mano suelta y suave que las otras seis.
 ```
+
+**Y la tercera advertencia es la que de verdad lo arregla.** Las seis que ya
+existen se parecen entre sí por una razón muy tonta: **todas tienen pelo.**
+Trazo blando, silueta difusa, poco detalle, ninguna garra a la vista, paleta
+cálida de jengibre y pardo. Un reptil de escamas —bordes duros, detalle alto,
+uñas marcadas, verde frío— no se sienta con ellas por bien escrito que esté el
+prompt, porque lo que las une no es el estilo: es la textura.
+
+El plumón lo resuelve sin renunciar a nada. Un dinosaurio con plumón se dibuja
+con el mismo trazo que un conejo, sigue siendo inconfundiblemente un
+dinosaurio, y de paso es lo que dice la paleontología de los últimos treinta
+años. Lo que rompía el molde de los seis animalitos de bosque era la ESPECIE,
+no la piel.
 
 ### Dinosaurio · `dino`
 
 **Mensaje 1**
 
 ```
-Dibuja un dinosaurio pequeño y regordete, verde salvia con la panza crema y púas redondeadas y blandas en el lomo, sentado con las patitas despatarradas hacia delante, la cola enroscada a un lado, la cabeza inclinada y una sonrisa boba con los ojos cerrados, saludando con un bracito.
+[ADJUNTA AQUÍ UNA DE LAS SEIS QUE YA EXISTEN — por ejemplo la gatita o
+la zorrita — Y EMPIEZA ASÍ:]
 
-Ilustración infantil en acuarela con línea de tinta suave, estilo libro
-álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
-Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
-redondeado, de cabeza grande y cuerpo pequeño.
+Fíjate en la imagen que te adjunto: quiero el MISMO ilustrador, la misma
+técnica, el mismo trazo suave, la misma paleta cálida y apagada y el mismo
+nivel de detalle (bajo). Ese es el estilo, y no se negocia.
+
+Ahora dibuja, en ese mismo estilo, una CRÍA de dinosaurio recién salida del huevo: rechoncha, cubierta de PLUMÓN suave y esponjoso —dibujado a trazos finos, igual que el pelo del animal de la referencia—, de color verde musgo apagado con el pecho color crema, ojos GRANDES, redondos y oscuros, hocico corto, frente alta y una hilera de placas bajas y blandas por el lomo. Sentada con las patas estiradas hacia delante, la cola enroscada a un lado, la cabeza ladeada, sonriendo y con un bracito levantado saludando.
+
+Es un animal JOVEN y de PLUMÓN: nada de escamas, nada de piel de reptil, nada de garras marcadas, nada de arrugas ni párpados caídos, y ningún brillo de foto en el ojo.
+
+Ilustración de animales en acuarela y lápiz de color, con técnica
+realista, del estilo de un libro ilustrado clásico de cuentos de
+animales. Pintada a mano, con grano de papel. NO es una lámina de
+historia natural: eso retrata un ejemplar adulto, y aquí el personaje
+es una cría. La piel dibujada a trazos finos y visibles, con volumen.
+Anatomía y proporciones de animal de verdad, apenas estilizadas. Colores
+naturales, terrosos y apagados: nada de pastel de guardería ni de
+saturación digital.
+
+Ternura por la EXPRESIÓN —la mirada, el gesto—, nunca por deformar:
+tiene que gustarle igual a alguien de diez años y a alguien de cincuenta.
+
+LA EDAD LA DICE CADA PERSONAJE, no este bloque: hay crías y hay
+adultos, y confundirlos es lo que ha hecho fallar más intentos.
+
+NADA de esto:
+· chapetas ni círculos rosas en los mofletes
+· contorno blanco o crema alrededor de la figura, como una pegatina
+  troquelada
+· cabeza enorme sobre un cuerpo diminuto, ni patas de muñón
+· relleno plano de color, sin textura
+· lunares, estrellitas, corazones ni brillos decorativos
+· arrugas, pliegues colgando, papada, párpados caídos ni postura
+  desplomada: ninguno de estos personajes es un animal VIEJO — un
+  adulto sereno no es un anciano cansado
+· dientes afilados, garras o gesto de ataque: es un animal joven y
+  tranquilo, no un depredador
 
 MUY IMPORTANTE:
-· NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
-  ataque. Es un bebé dinosaurio de peluche, no un depredador.
 · Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
-  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  debajo: el animal va recortado y solo. Si no puedes hacer el fondo
   transparente, hazlo de un magenta puro y plano (#FF00FF).
 · Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
   Centrado en el cuadro, con un poco de aire alrededor.
@@ -664,7 +924,7 @@ A se lleva por delante. Ahora **la recompensa es la compañía**:
 | 🦊 Zorrita | *Un clásico* · el primer clásico universal |
 | 🦝 Mapache | *De todo un poco* · cinco géneros distintos |
 | 🐼 Panda | *Diez* · diez libros terminados |
-| 🦖 Dinosaurio | *pendiente* — abierto desde el primer día, como las dos primeras |
+| 🐻 Oso · 🐺 Lobo · 🐦‍⬛ Cuervo | *pendientes* — abiertos desde el primer día, como las dos primeras |
 
 Las seis **se ven desde el primer día**, con su candado y con la frase de lo
 que falta escrita debajo, no solo en el `title`: esto es una app de teléfono y
@@ -701,17 +961,23 @@ gato-celebrando.png   conejo-celebrando.png  buho-celebrando.png
 zorro-*.png           mapache-*.png          panda-*.png
 ```
 
-**Y las cinco de la séptima**, cuando lleguen — con las poses juguetonas de su
-propia sección, no con las de los otros seis:
+**Y las cinco de cada una de las tres que faltan**, cuando lleguen:
 
 ```
-dino-contenta.png   dino-leyendo.png   dino-expectante.png
-dino-dormida.png    dino-celebrando.png
+oso-contenta.png     lobo-contenta.png     cuervo-contenta.png
+oso-leyendo.png      lobo-leyendo.png      cuervo-leyendo.png
+oso-expectante.png   lobo-expectante.png   cuervo-expectante.png
+oso-dormida.png      lobo-dormida.png      cuervo-dormida.png
+oso-celebrando.png   lobo-celebrando.png   cuervo-celebrando.png
 ```
 
-Hasta que estén las cinco, el dinosaurio **no se añade a `SPECIES`**. Media
-especie en el selector es un botón que enseña una gata cuando le das: un mando
-muerto, que es el fallo que ya costó el pelaje y el rincón.
+**No hace falta que lleguen las tres a la vez**: cada una entra en cuanto tenga
+sus cinco poses, igual que llegaron el búho, la zorrita, el panda y el mapache.
+Empieza por el oso.
+
+Lo que sí hace falta es que estén **las cinco de una**. Media especie en el
+selector es un botón que enseña una gata cuando le das: un mando muerto, que es
+el fallo que ya costó el pelaje y el rincón.
 
 **Si 30 son demasiadas, el mínimo son 18**: las tres primeras poses (contenta,
 leyendo, dormida) por especie. *Expectante* y *celebrando* reutilizan

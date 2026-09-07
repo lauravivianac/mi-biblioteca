@@ -20,6 +20,7 @@ import { pageCount } from './seed.js';
 import { ACHIEVEMENTS } from './achievements.js';
 import { esc } from './ui.js';
 import { estadoMascota, fraseMascota } from './pet-core.js';
+import { stalledBooks } from './planner.js';
 
 /* ── PERSONALIZACIÓN ─────────────────────────────────────────
    Todo se desbloquea leyendo. Un accesorio que costó terminar un
@@ -214,19 +215,36 @@ export function currentScene(cfg = petConfig()) {
    puente — sacar del almacén lo que esas cuentas necesitan. */
 
 /** Los libros con lo justo que la mascota necesita saber. */
-const librosParaLaMascota = () => allBooks().map((b) => {
-  const e = entry(b.id);
-  return {
-    id: b.id,
-    title: b.title,
-    total: pageCount(b.pages),
-    page: e.page || 0,
-    status: statusOf(b.id),
-    pct: progressPct(b.id),
-    lastReadAt: e.lastReadAt || 0,
-    finishedAt: e.finishedAt || 0,
-  };
-});
+/* QUIÉN SE QUEDÓ ATRÁS LO DECIDE EL PLAN, NO LA MASCOTA. `stalledBooks`
+   lleva ahí desde la historia #36 y ya sabe qué es «se le pasó el mes»
+   —incluidos los años, los meses sin nombre y los libros abandonados—.
+   Repetir ese cálculo aquí sería tener dos definiciones de «atrasado»
+   que se separarían a la primera. La mascota solo recibe el número y
+   decide si vale la pena decir algo: el plan sabe QUÉ pasa, ella sabe
+   CÓMO se cuenta. */
+const librosParaLaMascota = () => {
+  const atraso = new Map(stalledBooks().map((b) => [b.id, b.monthsLate]));
+  /* Lo que se aplazó con «ahora no». Se lee aquí y no en la hoja que
+     lo escribe: así pet.js no depende de la pantalla que responde. */
+  const aplazados = settings().petSnoozed || {};
+  const hoy = new Date().toLocaleDateString('sv');
+  return allBooks().map((b) => {
+    const e = entry(b.id);
+    return {
+      id: b.id,
+      title: b.title,
+      total: pageCount(b.pages),
+      page: e.page || 0,
+      status: statusOf(b.id),
+      pct: progressPct(b.id),
+      lastReadAt: e.lastReadAt || 0,
+      finishedAt: e.finishedAt || 0,
+      mes: b.month || '',
+      atrasadoMeses: atraso.get(b.id) || 0,
+      aplazado: aplazados[b.id] === hoy,
+    };
+  });
+};
 
 /** El ánimo y de qué libro habla. `current` se conserva por compatibilidad. */
 export function petState() {

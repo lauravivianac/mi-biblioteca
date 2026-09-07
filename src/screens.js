@@ -567,6 +567,12 @@ export function togglePet() {
  * peor que un botón que hace poco.
  */
 export function pokePet() {
+  /* CUANDO ELLA PREGUNTA, TOCARLA RESPONDE. Abrir el chat sería
+     cambiarle el tema a quien acaba de leer «¿por dónde vas?»: la
+     intención más concreta gana, y la conversación sigue a un toque
+     desde la propia hoja. */
+  const { mood, libro } = petState();
+  if (mood === 'preguntando' || mood === 'rescatando') { openPetAsk(libro); return; }
   if (agentOffered()) { openPetChat(); return; }
   refreshAll();
 }
