@@ -70,7 +70,7 @@ export function renderAuth() {
   /* La letra de la tapa se pide AQUÍ y no en el index: es la única
      pantalla que la usa, así que quien ya tiene la sesión abierta no
      la descarga nunca. */
-  cargarFuentes(['grandHotel']);
+  cargarFuentes(['playball']);
   $('auth-screen').innerHTML = `
     <div class="auth-card">
       <!-- LA PORTADA. Es lo primero que ve alguien que llega, y hasta
@@ -81,7 +81,7 @@ export function renderAuth() {
         <div class="portada-marco">
           <div class="portada-vineta" aria-hidden="true">${vinetaDelTema()}</div>
           <div class="auth-exlibris">Ex libris</div>
-          <div class="auth-brand">Mi Biblioteca</div>
+          <div class="auth-brand">Library</div>
           <div class="auth-filete"></div>
           <p class="auth-lede">Tu plan lector, tus reseñas y tu progreso — solo tuyos.</p>
         </div>

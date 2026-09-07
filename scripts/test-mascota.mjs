@@ -572,5 +572,102 @@ console.log('\n─── CADA ÁNIMO TIENE SU DIBUJO ───');
     POSES.includes(posePara('inventado-mañana')));
 }
 
+/* ── NADIE DIBUJA LA MASCOTA POR SU CUENTA ───────────────────
+   «Agregué un amigo pero ese no es su avatar: él tiene el oso y sale
+    este que está descontinuado.»
+
+   El perfil pintaba la mascota con `petSvg` —el dibujo por código— en
+   vez de con `petVista`, que sabe que nueve especies son ILUSTRACIÓN
+   desde hace tiempo. Así que el oso de su amigo salía como el bicho
+   genérico de antes. Lo mismo pasaba en la tarjeta que se comparte a
+   Instagram, y por lo mismo.
+
+   La causa de fondo no es el descuido: es que había DOS FORMAS de
+   pedir la misma cosa y una se quedó vieja. Cada pantalla nueva era
+   una tirada de moneda.
+
+   Ahora hay una puerta por cada necesidad —`petVista` para HTML,
+   `petFuente` para quien necesita una imagen— y `petSvg` es asunto
+   interno de pet.js. Esto lo comprueba leyendo los imports de verdad,
+   así que la próxima pantalla que se lo salte rompe una prueba en vez
+   de enseñar la mascota equivocada en el teléfono de alguien. */
+
+console.log('\n─── UNA SOLA PUERTA PARA DIBUJAR LA MASCOTA ───');
+{
+  const dir = new URL('../src/', import.meta.url);
+  const modulos = readdirSync(dir).filter((f) => f.endsWith('.js') && f !== 'pet.js');
+
+  const culpables = [];
+  for (const f of modulos) {
+    const fuente = readFileSync(new URL(f, dir), 'utf8');
+    /* Solo la LÍNEA DEL IMPORT: `petSvg` mencionado dentro de un
+       comentario que explica justo esto no es un uso. */
+    for (const linea of fuente.split('\n')) {
+      if (/^\s*(import|export)\b.*\bpetSvg\b/.test(linea)) culpables.push(f);
+    }
+  }
+  comprobar(`ninguno de los ${modulos.length} módulos importa petSvg`,
+    culpables.length === 0,
+    culpables.length ? `lo importan: ${[...new Set(culpables)].join(', ')} — usa petVista o petFuente` : '');
+
+  /* Y las dos puertas buenas existen y se exportan. Sin esto, la
+     prueba de arriba pasaría también si alguien borrara petVista. */
+  const pet = readFileSync(new URL('pet.js', dir), 'utf8');
+  comprobar('pet.js exporta petVista', /export (const|function) petVista\b/.test(pet));
+  comprobar('pet.js exporta petFuente', /export (const|function) petFuente\b/.test(pet));
+
+  /* La fuente de una especie ilustrada tiene que ser un fichero que
+     esté, y con la POSE del ánimo — no con el ánimo pegado. */
+  const ficheros = new Set(readdirSync(new URL('../img/mascota', import.meta.url)));
+  const especies = [...new Set([...ficheros].map((f) => f.split('-')[0]))];
+  const core = readFileSync(new URL('pet-core.js', dir), 'utf8');
+  const animos = [...new Set([...core.matchAll(/\bmood:\s*'([a-záéíóúñ]+)'/g)].map((m) => m[1]))];
+
+  const rotas = [];
+  for (const especie of especies) {
+    for (const mood of animos) {
+      if (!ficheros.has(`${especie}-${posePara(mood)}.webp`)) rotas.push(`${especie}/${mood}`);
+    }
+  }
+  comprobar('la fuente de cada especie ilustrada apunta a un fichero que existe',
+    rotas.length === 0, rotas.slice(0, 5).join(', '));
+
+  /* ── Y NINGUNA ESPECIE SE VUELVE GATA ──────────────────────
+     `petSvg` hace `SPECIES_PARTS[especie] || SPECIES_PARTS.gato`, y
+     el oso, el lobo y el cuervo llegaron ya ilustrados: nunca se
+     dibujaron por código. Para esos tres el respaldo no da «el mismo
+     bicho peor dibujado», DA UN GATO — que es lo que salió en el
+     perfil de su amigo, y por eso no parecía un oso viejo sino otro
+     animal.
+
+     El respaldo se queda (un dibujo raro es mejor que un hueco). Lo
+     que se comprueba es que nunca haga falta: toda especie que se
+     pueda ELEGIR tiene que estar ilustrada o tener partes. */
+  const trozo = (marca, abre, cierra) => {
+    const i = pet.indexOf(marca);
+    if (i < 0) return '';
+    const j = pet.indexOf(abre, i);
+    let d = 0;
+    for (let k = j; k < pet.length; k++) {
+      if (pet[k] === abre) d++;
+      else if (pet[k] === cierra && --d === 0) return pet.slice(j, k);
+    }
+    return '';
+  };
+  const elegibles = [...trozo('export const SPECIES =', '[', ']').matchAll(/id:\s*'(\w+)'/g)].map((m) => m[1]);
+  const conPartes = [...trozo('const SPECIES_PARTS =', '{', '}').matchAll(/^ {2}(\w+):\s*\{/gm)].map((m) => m[1]);
+  const ilustradas = (pet.match(/export const ILUSTRADAS = \[([^\]]*)\]/) || [, ''])[1]
+    .match(/'(\w+)'/g)?.map((x) => x.replace(/'/g, '')) || [];
+
+  comprobar('se leyeron las tres listas de especies',
+    elegibles.length > 0 && conPartes.length > 0 && ilustradas.length > 0,
+    `elegibles ${elegibles.length}, con partes ${conPartes.length}, ilustradas ${ilustradas.length}`);
+
+  const gatunas = elegibles.filter((e) => !ilustradas.includes(e) && !conPartes.includes(e));
+  comprobar('ninguna especie elegible acaba dibujada como un gato',
+    gatunas.length === 0,
+    gatunas.length ? `${gatunas.join(', ')} — sin ilustración y sin partes` : '');
+}
+
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);
 process.exit(mal ? 1 : 0);

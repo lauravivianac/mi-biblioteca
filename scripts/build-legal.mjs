@@ -146,7 +146,7 @@ const PLANTILLA = (titulo, cuerpo) => `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(titulo)} · Mi Biblioteca</title>
+<title>${esc(titulo)} · Library</title>
 <meta name="color-scheme" content="dark light">
 <style>
   :root { color-scheme: dark; --bg:#12100E; --tinta:#EDE6DA; --suave:#9C9284;
@@ -185,7 +185,7 @@ const PLANTILLA = (titulo, cuerpo) => `<!doctype html>
 </head>
 <body>
 <main>
-  <a class="volver" href="/">← Mi Biblioteca</a>
+  <a class="volver" href="/">← Library</a>
   ${cuerpo}
   <div class="pie">
     <a href="/legal/privacidad">Privacidad</a>

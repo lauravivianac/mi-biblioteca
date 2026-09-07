@@ -37,8 +37,8 @@
      hoja de estilos y no en los tokens de un tema, porque
      `applyTheme` limpia los tokens en línea al cambiar de tema: puesta
      aquí sobrevive a los once y un tema que quiera otra solo tiene que
-     declararla. Por qué Grand Hotel, en src/themes.js. */
-  --font-portada: 'Grand Hotel', 'Fraunces', Georgia, cursive;
+     declararla. Por qué Playball, en src/themes.js. */
+  --font-portada: 'Playball', 'Fraunces', Georgia, cursive;
   --portada-weight: 400;
   --display-spacing: 1px;
   --display-transform: none;

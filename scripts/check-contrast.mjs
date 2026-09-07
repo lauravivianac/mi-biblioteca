@@ -124,6 +124,27 @@ function revisarEncuadernacion(t) {
     const tinta = resolver(t[`--tela-${i + 1}-tinta`] ?? t['--lomo-filete'] ?? 'var(--gold)', t);
     const f = ratio(tinta, tela);
     if (f < AA_UI) fallos.push(`el estampado no se lee sobre la tela ${i + 1} · ${f.toFixed(2)} : 1`);
+
+    /* ── EL RELIEVE DEL TÍTULO, LOS TRES PUNTOS ──────────────
+       El título de la portada no es de un color plano: va estampado,
+       con un degradado de tres paradas para que coja la luz. Y un
+       degradado se lee por su PEOR punto, no por el del medio.
+
+       Esto no es celo: al ponerlo, la parada de arriba dejaba el
+       título en 1,0:1 sobre Pergamino —aclarar una tinta oscura sobre
+       una tela clara la borra— y la de abajo en 2,2:1 sobre
+       Obsidiana. Las dos se veían midiendo y ninguna leyendo el CSS.
+
+       Umbral 3:1 y no 4,5: el título mide 56 px, que es texto grande
+       para la norma. */
+    for (const [borde, suf] of [['alto', '-alto'], ['bajo', '-bajo']]) {
+      const valor = t[`--tela-${i + 1}${suf}`];
+      if (!valor) continue;
+      const g = ratio(resolver(valor, t), tela);
+      if (g < AA_LARGE) {
+        fallos.push(`el borde ${borde} del estampado se pierde en la tela ${i + 1} · ${g.toFixed(2)} : 1`);
+      }
+    }
   });
 
   /* Dos telas iguales son una tela: dos géneros que se confunden. */

@@ -243,10 +243,27 @@ export function publicProfileDoc({
       }));
   }
 
-  if (ve('mascota') && settings.pet && !settings.pet.hidden) {
+  /* ── LA MASCOTA VIAJA TAL CUAL, O NO VIAJA ────────────────
+     «¿Cómo quedamos con la mascota cuando agregue amigos? Te la estás
+      inventando, es un dato que ya deberías estar guardando.»
+
+     Se guarda, y esto es lo que se guarda. Pero aquí había un
+     `String(p.species || 'gato')`: sin especie, el perfil publicaba
+     UN GATO. Es el tercer sitio de la app donde aparece el mismo
+     respaldo silencioso —ya estaba en `petSvg` y en `petConfig`— y
+     aquí es el más dañino de los tres, porque no falla al dibujar:
+     ESCRIBE el dato falso en el documento público. Después ya no hay
+     forma de distinguir «tiene un gato» de «no sabíamos cuál tenía».
+
+     Sin especie no se publica mascota. Ausente es verdad; un gato
+     inventado no lo es. `fur` y `accessory` sí pueden faltar sin
+     mentir: son adornos de las especies dibujadas, y las ilustradas
+     ni los usan. */
+  const especie = String(settings.pet?.species || '').trim();
+  if (ve('mascota') && settings.pet && !settings.pet.hidden && especie) {
     const p = settings.pet;
     doc.mascota = {
-      species: String(p.species || 'gato'),
+      species: especie,
       fur: String(p.fur || 'clasico'),
       accessory: p.accessory ? String(p.accessory) : null,
       name: texto(p.name, 24),

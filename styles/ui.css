@@ -45,15 +45,52 @@
    Y LA MASCOTA VA FUERA, sentada sobre el canto inferior y pisando la
    tapa. Dentro del marco sería un dibujo más de la portada; delante y
    asomada, es alguien que te está esperando con el libro detrás. */
+/* ── QUE NO PAREZCA UNA APP DE NIÑOS ─────────────────────────
+   «Queda un poco infantil. ¿Podrías dibujarla más mágica, más estándar
+    para todos, sin perder lo acogedor y lo lindo de la app y el mundo
+    de la lectura?»
+
+   Lo que la hacía infantil eran dos cosas concretas, no el conjunto:
+   un ANIMAL DE DIBUJOS GRANDE presidiendo el centro, y una TELA PLANA
+   —un rectángulo de color liso se lee como cartulina.
+
+   Y la magia que pide no es purpurina: es la de un libro bueno de
+   verdad. Un libro caro no brilla, PESA. Lo que hace que una tapa
+   parezca valiosa es materia y luz:
+
+     la trama    el hilo cruzado de la tela, no un color liso
+     el oro      el título ESTAMPADO, que coge la luz de arriba abajo
+     los nervios los resaltes del lomo de un libro cosido
+     el canto    el filo dorado de las hojas, a la derecha
+     la lámpara  luz cálida cayendo desde arriba y sombra abajo
+
+   Ninguna de las cinco es un dibujo nuevo: son gradientes sobre lo que
+   el tema ya define. Cambian el material, no el estilo, así que lo
+   acogedor se queda y lo de guardería se va. */
 .portada {
   position: relative;
   border-radius: var(--card-radius);
-  background: var(--tela-5, var(--deep));
+  /* La tinta va TAMBIÉN en su propia variable, y no solo en `color`:
+     el degradado del título se pinta sobre una letra transparente, y
+     ahí `currentColor` ya vale `transparent`. Se veía al mirarlo — el
+     título salió fantasma en los once temas. */
+  --tinta: var(--tela-5-tinta, var(--text));
+  --tinta-alto: var(--tela-5-alto, var(--tinta));
+  --tinta-bajo: var(--tela-5-bajo, var(--tinta));
+  color: var(--tinta);
+  background:
+    /* la lámpara: luz arriba, penumbra abajo */
+    radial-gradient(ellipse 120% 70% at 50% -12%, rgb(255 255 255 / .13), transparent 62%),
+    radial-gradient(ellipse 130% 60% at 50% 112%, rgb(0 0 0 / .22), transparent 60%),
+    /* la trama de la tela: dos hilos cruzados, muy tenues */
+    repeating-linear-gradient(90deg, rgb(255 255 255 / .022) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(0deg, rgb(0 0 0 / .028) 0 1px, transparent 1px 5px),
+    var(--tela-5, var(--deep));
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / .07),
+    inset 0 1px 0 rgb(255 255 255 / .10),
+    inset 0 -1px 0 rgb(0 0 0 / .18),
     0 18px 40px rgb(0 0 0 / .45);
-  /* Sitio abajo para que la mascota se apoye sin tapar la frase. */
-  margin-bottom: 64px;
+  margin-bottom: 52px;
   isolation: isolate;
 }
 /* El grano del papel, encima de la tela. */
@@ -65,16 +102,31 @@
   mix-blend-mode: var(--texture-blend, soft-light);
   pointer-events: none;
 }
-/* El lomo: la banda de la encuadernación y sus dos filetes. */
+/* EL LOMO CON SUS NERVIOS, y el canto dorado de las hojas a la
+   derecha. Los nervios son los resaltes que deja el cosido de un libro
+   encuadernado a mano: cuatro rayas horizontales bastan para que la
+   banda deje de ser una franja de color y se lea como un lomo. */
 .portada::after {
-  content: ''; position: absolute; inset: 0 auto 0 0; width: 26px;
-  border-radius: var(--card-radius) 0 0 var(--card-radius);
-  background:
-    linear-gradient(90deg, rgb(0 0 0 / .30), rgb(0 0 0 / .10) 55%, transparent),
-    linear-gradient(90deg, transparent 21px, currentColor 21px 21.7px, transparent 21.7px),
-    linear-gradient(90deg, transparent 23.4px, currentColor 23.4px 24.1px, transparent 24.1px);
+  content: ''; position: absolute; inset: 0;
+  border-radius: inherit;
   color: var(--tela-5-tinta, var(--gold));
-  opacity: .55;
+  background:
+    /* el canto de las hojas, a la derecha */
+    linear-gradient(270deg, rgb(255 255 255 / .12) 0 2px, transparent 2px 5px),
+    linear-gradient(270deg, currentColor 0 1px, transparent 1px 100%),
+    /* la sombra del lomo y sus dos filetes */
+    linear-gradient(90deg, rgb(0 0 0 / .32) 0 14px, rgb(0 0 0 / .10) 14px 26px, transparent 26px),
+    linear-gradient(90deg, transparent 21px, currentColor 21px 21.7px, transparent 21.7px),
+    linear-gradient(90deg, transparent 23.4px, currentColor 23.4px 24.1px, transparent 24.1px),
+    /* los nervios: solo dentro de los 26 px del lomo */
+    repeating-linear-gradient(0deg,
+      transparent 0 44px,
+      rgb(255 255 255 / .10) 44px 46px,
+      rgb(0 0 0 / .16) 46px 49px,
+      transparent 49px 52px);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 26px 100%;
+  opacity: .62;
   pointer-events: none;
 }
 
@@ -88,7 +140,7 @@
   /* El hueco de abajo no es aire: es el sitio donde se sienta la
      mascota. Con 28 px se comía la última línea de la frase — se veía
      al mirarlo, no al leerlo. */
-  padding: 26px 20px 62px;
+  padding: 26px 20px 34px;
   text-align: center;
   color: var(--tela-5-tinta, var(--text));
   border: 1px solid color-mix(in srgb, currentColor 38%, transparent);
@@ -112,15 +164,50 @@
    de toda la interfaz que puede permitirse ser bonito antes que
    práctico, porque se lee una vez y no se usa para nada. Por defecto
    es la del tema; `--font-portada` deja que un tema pida otra. */
+/* EL TÍTULO NO ESTÁ ESCRITO, ESTÁ ESTAMPADO. Es lo que más separa una
+   tapa de verdad de un rótulo: las letras de un libro bueno son metal
+   prensado en la tela, y el metal COGE LA LUZ — más claro arriba, más
+   oscuro abajo, con el filo hundido donde muerde el papel.
+
+   Se hace con el propio color del tema, no con un oro fijo: el degradado
+   sale de `currentColor` mezclado con blanco y con negro, así que
+   funciona igual sobre la tela clara de Manta que sobre la oscura de
+   Grimorio. Sin `background-clip: text` —navegadores viejos— se queda
+   el color plano de antes, que ya se leía bien. */
 .auth-brand {
   font-family: var(--font-portada, var(--font-display));
-  /* 46 y no 34: una caligráfica tiene la altura de x mucho menor que
-     una serif, así que al mismo cuerpo se lee la mitad. Al tamaño de
-     la tapa, «Mi Biblioteca» entra en una línea en un móvil de 390. */
-  font-size: 46px;
+  /* 56 y no 34: una caligráfica tiene la altura de x mucho menor que
+     una serif, así que al mismo cuerpo se lee la mitad. Y el nombre
+     pasó de trece letras a siete: a 46 px la tapa se quedaba vacía
+     alrededor del título. Comprobado a 46, 56 y 64 sobre la tapa —
+     a 56 el título sostiene la portada y sigue entrando en una línea
+     en un móvil de 390. */
+  font-size: 56px;
   font-weight: var(--portada-weight, var(--display-weight));
   line-height: 1.08;
   letter-spacing: var(--portada-spacing, var(--display-spacing));
+  /* El hundido del troquel, debajo del metal. */
+  text-shadow: 0 1px 0 rgb(0 0 0 / .28), 0 -1px 0 rgb(255 255 255 / .10);
+}
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  .auth-brand {
+    /* Los dos bordes los calcula el TEMA, no esta hoja: sobre tela
+       oscura el oro está en relieve y la luz le da arriba; sobre tela
+       clara la letra está hundida y arriba lleva su sombra. Aclarar
+       siempre arriba dejaba el título en 1,0:1 en Pergamino. */
+    background-image: linear-gradient(
+      180deg,
+      var(--tinta-alto) 0%,
+      var(--tinta) 48%,
+      var(--tinta-bajo) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    /* Con las letras transparentes, la sombra de arriba se vería A
+       TRAVÉS de ellas y ensuciaría el metal. */
+    text-shadow: none;
+    filter: drop-shadow(0 1px 0 rgb(0 0 0 / .30));
+  }
 }
 .auth-filete {
   width: 64px; height: 1px; margin: 14px auto;
@@ -133,16 +220,22 @@
 }
 
 /* La mascota, sentada en el canto de abajo y pisando la tapa. */
+/* ── LA MASCOTA SE ASOMA, NO PRESIDE ─────────────────────────
+   Un animal de dibujos de 104 px en el CENTRO de la portada es lo que
+   más hacía que la app pareciera de niños: en el eje del título, del
+   mismo tamaño que él, compitiendo por ser lo primero que miras.
+
+   Sigue estando —es el alma de la app y se pidió que estuviera— pero
+   en la esquina y más pequeña: 76 px, apoyada en el canto de abajo a
+   la derecha. Ahí hace lo que tiene que hacer, que es que la sonrisa
+   te pille DESPUÉS de haber visto un libro; no antes.
+
+   Y en la esquina no puede pisar el texto, que va centrado: por eso el
+   hueco de abajo del marco baja de 62 px a 34. */
 .portada-companera {
   position: absolute; z-index: 2;
-  /* MEDIO FUERA DE LA TAPA, y el número sale de una cuenta, no del
-     ojo: con 104 px de alto y 56 de caída, asoma 48 px por encima del
-     canto — menos que los 62 de hueco que deja el marco, así que no
-     puede pisar la última línea de la frase por mucho que crezca el
-     texto. Al ras de la tapa sí la pisaba, y se veía en cuatro temas
-     de once. */
-  left: 50%; bottom: -56px; transform: translateX(-50%);
-  width: 104px; height: 104px;
+  right: 14px; bottom: -30px;
+  width: 76px; height: 76px;
   display: flex; align-items: flex-end; justify-content: center;
   pointer-events: none;
   filter: drop-shadow(0 8px 14px rgb(0 0 0 / .45));
@@ -871,6 +964,23 @@ body:not(.signed-in) .fab { display: none; }
 .prof-city { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
 .prof-pet { width: 62px; height: 62px; flex-shrink: 0; }
 .prof-pet svg { width: 100%; height: 100%; }
+/* Las especies ilustradas llegan como IMAGEN, no como SVG, y traen
+   puestas dos cosas del inicio que aquí estorban:
+
+   · el margen negativo que las apoya en la balda —aquí no hay balda—;
+   · y la respiración, que en 62 px al lado de un nombre es un tic.
+     Además la escala llegaba a 1.022, así que el oso medía 63 en un
+     hueco de 62: medido, no supuesto.
+
+   Aquí es un retrato de la mascota de otra persona, quieto. */
+.prof-pet .pet-escena { display: block; width: 100%; height: 100%; }
+.prof-pet .pet-img {
+  width: 100%; height: 100%;
+  margin-bottom: 0;
+  animation: none;
+}
+/* Y sin su rincón: en 62 px, una escena detrás del bicho es ruido. */
+.prof-pet .pet-rincon { display: none; }
 .prof-bio {
   font-size: 13px; line-height: 1.65; color: var(--text);
   margin: 0 0 8px; font-style: italic;

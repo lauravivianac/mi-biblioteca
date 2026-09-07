@@ -541,6 +541,21 @@ function luminance(hex) {
 }
 
 /** El SVG completo. `mood` decide ojos, libro y destellos. */
+/* ── OJO CON EL RESPALDO DE ESTA FUNCIÓN ─────────────────────
+   `SPECIES_PARTS` solo tiene SEIS especies: el oso, el lobo y el
+   cuervo llegaron ya ilustrados y nunca se dibujaron por código. Así
+   que para esos tres el `|| SPECIES_PARTS.gato` de abajo no devuelve
+   «el mismo bicho peor dibujado»: DEVUELVE UN GATO.
+
+   Eso fue exactamente lo que pasó. El perfil de una amiga llamaba
+   aquí, ella tenía el oso, y en pantalla salía un gato con bufanda —
+   por eso no parecía «el dibujo viejo del oso» sino otro animal.
+
+   El respaldo se queda, porque un dibujo equivocado es mejor que un
+   hueco. Lo que no se queda es que nadie lo note: `test:mascota`
+   comprueba que toda especie elegible esté ilustrada o tenga partes,
+   así que una décima especie que se olvide de las dos listas rompe una
+   prueba en vez de volverse gata en el teléfono de alguien. */
 export function petSvg(mood = 'contenta', cfg = petConfig()) {
   const fur = FURS.find((f) => f.id === cfg.fur) || FURS[0];
   const parts = SPECIES_PARTS[cfg.species] || SPECIES_PARTS.gato;
@@ -694,6 +709,29 @@ function rinconSvg(cfg) {
 export const petVista = (mood, cfg = petConfig()) => (speciesIlustrada(cfg.species)
   ? `<span class="pet-escena">${rinconSvg(cfg)}${petImg(mood, cfg)}</span>`
   : petSvg(mood, cfg));
+
+/* ── UNA IMAGEN DE LA MASCOTA, PARA QUIEN NO PINTA HTML ───────
+   «Agregué un amigo pero ese no es su avatar: él tiene el oso y sale
+    este que está descontinuado.»
+
+   Y no era el perfil quien se equivocaba de mascota: era que pintaba
+   la mascota con `petSvg`, el dibujo por código, en vez de con
+   `petVista`, que es la que sabe que nueve especies tienen ILUSTRACIÓN
+   desde hace tiempo. El oso salía como el bicho genérico de antes —el
+   «descontinuado»— y lo mismo le pasaba a cualquiera menos a quien
+   tuviera una especie sin ilustrar.
+
+   El fallo se pudo colar porque había DOS FORMAS de pedir la misma
+   cosa y una estaba desactualizada. Así que esto existe para que haya
+   una sola: quien necesita una imagen y no HTML —la tarjeta que se
+   comparte, que dibuja en un canvas— pide la FUENTE aquí, y le llega
+   la ilustración o el dibujo según la especie sin tener que saber cuál
+   es cuál. */
+export function petFuente(mood, cfg = petConfig()) {
+  return speciesIlustrada(cfg.species)
+    ? `${RUTA_MASCOTA}/${cfg.species}-${posePara(mood)}.webp`
+    : `data:image/svg+xml;charset=utf-8,${encodeURIComponent(petSvg(mood, cfg))}`;
+}
 
 /** El bloque completo que se pinta en el inicio. */
 export function renderPet() {

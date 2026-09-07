@@ -99,8 +99,8 @@ export async function shareInvite() {
   if (!link || !navigator.share) return;
   try {
     await navigator.share({
-      title: 'Mi Biblioteca',
-      text: `Soy @${myUsername()} en Mi Biblioteca. Mira lo que leo:`,
+      title: 'Library',
+      text: `Soy @${myUsername()} en Library. Mira lo que leo:`,
       url: link,
     });
   } catch (e) {
@@ -169,7 +169,7 @@ export function abrirDesdeCodigo(texto) {
   const hash = t.includes('#') ? t.slice(t.indexOf('#')) : t;
   const nombre = usernameFromHash(hash);
   if (!nombre) {
-    toast('Ese código no es de un perfil de Mi Biblioteca.', 'error');
+    toast('Ese código no es de un perfil de Library.', 'error');
     return null;
   }
   closeSheet('invite-overlay');

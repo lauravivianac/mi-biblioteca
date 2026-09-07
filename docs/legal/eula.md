@@ -1,6 +1,6 @@
 # Normas de uso y licencia
 
-**Mi Biblioteca**
+**Library**
 Última actualización: 6 de septiembre de 2026
 
 Esto es el acuerdo de licencia de usuario final (EULA). Se acepta al crear una cuenta.
@@ -15,7 +15,7 @@ Puedes usar la app para lo que es —leer, anotar, compartir libros e intercambi
 
 ## 1. Qué se te concede
 
-Una licencia personal, no exclusiva y revocable para usar Mi Biblioteca en tus dispositivos. La app es nuestra; tu contenido es tuyo.
+Una licencia personal, no exclusiva y revocable para usar Library en tus dispositivos. La app es nuestra; tu contenido es tuyo.
 
 ## 2. Tu contenido es tuyo
 

@@ -1,4 +1,4 @@
-# Backlog — Mi Biblioteca
+# Backlog — Library
 
 Backlog completo de la evolución a red social de lectura. Cada épica corresponde a un
 módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta del board.

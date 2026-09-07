@@ -20,7 +20,7 @@
 import { drawCard, canvasToBlob } from './cardgen.js';
 import { shareCaption, cardFilename, ANCHO, ALTO } from './cards-core.js';
 import { myUsername } from './store.js';
-import { petConfig, petSvg, petState } from './pet.js';
+import { petConfig, petFuente, petState } from './pet.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 
 let actual = null;      // { tipo, datos, blob }
@@ -46,7 +46,7 @@ export async function openShare(tipo, datos = {}) {
   try {
     const cfg = petConfig();
     const cv = await drawCard(tipo, actual.datos, {
-      pet: cfg.hidden ? null : petSvg(petState().mood, cfg),
+      pet: cfg.hidden ? null : petFuente(petState().mood, cfg),
     });
     if (!cv) { $('share-body').innerHTML = '<p class="planner-hint">No hay nada que compartir aquí.</p>'; return; }
 

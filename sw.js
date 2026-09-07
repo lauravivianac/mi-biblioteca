@@ -84,7 +84,7 @@ self.addEventListener('fetch', (e) => {
    Y SE PINTA COMO UN MENSAJE DE ALGUIEN, no como un aviso de una app:
    el título es su nombre —«Cleo»— y el cuerpo su pregunta. En una
    pantalla bloqueada, «Cleo · ¿Por dónde vas con Bartleby?» se abre y
-   «Mi Biblioteca · tienes una notificación» se descarta. La diferencia
+   «Library · tienes una notificación» se descarta. La diferencia
    está entera ahí. */
 
 self.addEventListener('push', (e) => {

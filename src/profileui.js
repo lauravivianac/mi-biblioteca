@@ -32,7 +32,7 @@ import { AVISO_PRIVADA } from './follows-core.js';
 import { relationSlot, loadRelation } from './socialui.js';
 import { fetchFullProfile, isFollowing } from './social.js';
 import { meBloqueo } from './moderation.js';
-import { petSvg } from './pet.js';
+import { petVista } from './pet.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { ico } from './icons.js';
 
@@ -164,7 +164,11 @@ function pintar() {
         <div class="prof-handle">@${esc(p.username)}</div>
         ${p.city ? `<div class="prof-city">${ico('sitio', 'ico-sm')} ${esc(p.city)}</div>` : ''}
       </div>
-      ${p.mascota ? `<div class="prof-pet">${petSvg('contenta', p.mascota)}</div>` : ''}
+      <!-- `petVista` y no `petSvg`: nueve de las especies son
+           ILUSTRACIÓN desde hace tiempo, y el dibujo por código era el
+           bicho genérico de antes. Quien tuviera el oso veía aquí otra
+           cosa. -->
+      ${p.mascota ? `<div class="prof-pet">${petVista('contenta', p.mascota)}</div>` : ''}
     </div>
 
     ${p.bio ? `<p class="prof-bio">${esc(p.bio)}</p>` : ''}
@@ -194,7 +198,7 @@ function pintar() {
     ${!myUid() ? `
       <div class="prof-mine">
         <p class="set-fineprint">
-          Esto es Mi Biblioteca: un plan lector, tus reseñas y tu progreso.
+          Esto es Library: un plan lector, tus reseñas y tu progreso.
           Puedes tener el tuyo.
         </p>
         <button class="btn-magic full" onclick="openAuthScreen()">

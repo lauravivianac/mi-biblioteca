@@ -34,7 +34,7 @@ cuenta personal nueva pasa verificación de identidad —documento, prueba de
 domicilio y teléfono— y, según las fuentes disponibles, **el nombre y la
 dirección quedan visibles públicamente**.
 
-> **Esto importa especialmente en esta app.** Mi Biblioteca sirve para que
+> **Esto importa especialmente en esta app.** Library sirve para que
 > mujeres queden con desconocidas a intercambiar libros. Toda la función de
 > intercambio está construida sobre no guardar la dirección de nadie — el
 > geohash recortado, las distancias en escalones, la regla del servidor que

@@ -733,7 +733,7 @@ export function exportData() {
   });
   return {
     exportadoEl: new Date().toISOString(),
-    app: 'Mi Biblioteca',
+    app: 'Library',
     ajustes: settings(),
     totalLibros: books.length,
     libros: books,

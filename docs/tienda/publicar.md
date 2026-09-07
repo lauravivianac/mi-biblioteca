@@ -47,7 +47,7 @@ bundler todo este tiempo.
 
 ```bash
 npm i -D @capacitor/cli @capacitor/core
-npx cap init "Mi Biblioteca" app.mibiblioteca --web-dir .
+npx cap init "Library" app.mibiblioteca --web-dir .
 npm i @capacitor/ios @capacitor/android
 npx cap add ios
 npx cap add android
@@ -59,7 +59,7 @@ En `capacitor.config.json`, dos cosas que importan:
 ```json
 {
   "appId": "app.mibiblioteca",
-  "appName": "Mi Biblioteca",
+  "appName": "Library",
   "webDir": ".",
   "server": { "androidScheme": "https" },
   "plugins": {
