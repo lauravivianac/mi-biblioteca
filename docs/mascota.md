@@ -65,20 +65,60 @@ Se pega **siempre** delante. Es el mismo espíritu que las escenas de los temas
 (ver [`ilustraciones.md`](./ilustraciones.md)), para que la app sea una sola
 cosa y no dos.
 
+#### La prueba de los diez y los cincuenta
+
+> «El dinosaurio no es lo que espero. Quiero que aplique para un niño de 10 o un
+> adulto de 50.»
+
+**Es el criterio de aceptación de todas, y hasta ahora estaba solo en la cabeza.**
+Una mascota que solo vale para un niño pequeño deja fuera a media app: la lectora
+de diez la ve infantil y la de cincuenta no se la pone en el teléfono.
+
+La primera versión de este bloque decía *«ilustración infantil»* y *«cabeza
+grande y cuerpo pequeño»*, que es literalmente la receta de un peluche kawaii, y
+**no describía las seis que hay**. Se coló porque las seis salieron bien de
+todos modos; se notó al pedir la séptima, que salió pegatina de cuarto de bebé
+—verde menta pastel, chapetas rosas, borde de troquelado, cabeza de media
+figura, relleno plano y lunares decorativos— y al lado de las otras parecía de
+otra app.
+
+Mirando las seis que sí funcionan, lo que tienen en común es que **son animales,
+no juguetes**: anatomía y pelaje de animal de verdad, colores de animal de
+verdad, ternura por la expresión y no por la deformación. Eso es lo que aguanta
+los diez y los cincuenta a la vez, y es lo que ahora dice el bloque.
+
 ```
-Ilustración infantil en acuarela con línea de tinta suave, estilo libro
-álbum. Pintada a mano, con grano de papel y bordes de pigmento
-visibles. Colores apagados y cálidos, nada saturado ni digital.
-Personaje tierno, redondeado, de cabeza grande y cuerpo pequeño.
+Ilustración naturalista de animales, en acuarela y lápiz de color, del
+estilo de un libro ilustrado de historia natural. Pintada a mano, con
+grano de papel. El pelaje o las plumas dibujados a trazos finos y
+visibles, con volumen. Anatomía y proporciones de animal de verdad,
+apenas estilizadas. Colores naturales, terrosos y apagados: nada de
+pastel de guardería ni de saturación digital.
+
+Ternura por la EXPRESIÓN —la mirada, el gesto—, nunca por deformar:
+tiene que gustarle igual a alguien de diez años y a alguien de
+cincuenta.
+
+NADA de esto:
+· chapetas ni círculos rosas en los mofletes
+· contorno blanco o crema alrededor de la figura, como una pegatina
+  troquelada
+· cabeza enorme sobre un cuerpo diminuto, ni patas de muñón
+· relleno plano de color, sin textura
+· lunares, estrellitas, corazones ni brillos decorativos
 
 MUY IMPORTANTE:
 · Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo, sin sombra
-  debajo — el personaje va recortado y solo.
+  debajo — el animal va recortado y solo.
 · Cuerpo entero, sentado, de tres cuartos, mirando ligeramente a la
   izquierda. Centrado, con un poco de aire alrededor.
 · Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
 · Cuadrado, 512 × 512 px.
 ```
+
+Los prompts de las seis primeras, más abajo, **se dejan tal cual salieron**: son
+el registro de cómo se generó lo que hoy está en la app. Si alguna hay que
+rehacerla, se rehace con este bloque.
 
 ### Cómo generarlas para que casen
 
@@ -553,16 +593,24 @@ la pena que sea un dinosaurio y no otro bicho redondo.**
 
 | | Nombre | Descripción para el prompt |
 |---|---|---|
-| **Dinosaurio** | Rex | `un dinosaurio pequeño y regordete, verde salvia con la panza crema y púas redondeadas y blandas en el lomo` |
+| **Dinosaurio** | Rex | `un dinosaurio joven pequeño, de piel verde oliva apagada con moteado pardo y el vientre color arena, piel granulada de reptil y placas bajas y redondeadas siguiendo el lomo` |
 
-### El añadido al bloque de estilo
+**Un dinosaurio verde menta con lunares no es un animal: es un juguete.** Los
+otros seis tienen color de animal —jengibre, gris de conejo, pardo de búho—, y
+el dinosaurio necesita el suyo: oliva apagado con moteado, que es lo que pinta
+cualquier lámina de paleontología. El color es la mitad de por qué la primera
+versión se caía de la fila.
 
-Un dinosaurio tiene una forma de salir mal que los otros seis no tienen, así
-que el bloque de estilo lleva una línea más:
+### Los dos añadidos al bloque de estilo
+
+Un dinosaurio tiene dos formas de salir mal que los otros seis no tienen, y las
+dos van escritas:
 
 ```
 · NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
-  ataque. Es un bebé dinosaurio de peluche, no un depredador.
+  ataque. Es un animal joven y tranquilo, no un depredador.
+· Y tampoco un peluche: piel de reptil con grano fino, no relleno liso;
+  cuello, patas y cola de animal real, no muñones.
 ```
 
 ### Dinosaurio · `dino`
@@ -570,18 +618,31 @@ que el bloque de estilo lleva una línea más:
 **Mensaje 1**
 
 ```
-Dibuja un dinosaurio pequeño y regordete, verde salvia con la panza crema y púas redondeadas y blandas en el lomo, sentado con las patitas despatarradas hacia delante, la cola enroscada a un lado, la cabeza inclinada y una sonrisa boba con los ojos cerrados, saludando con un bracito.
+Dibuja un dinosaurio joven pequeño, de piel verde oliva apagada con moteado pardo y el vientre color arena, piel granulada de reptil y placas bajas y redondeadas siguiendo el lomo, sentado con las patas estiradas hacia delante, la cola enroscada a un lado, la cabeza ladeada, los ojos entrecerrados de gusto y un bracito levantado saludando.
 
-Ilustración infantil en acuarela con línea de tinta suave, estilo libro
-álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
-Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
-redondeado, de cabeza grande y cuerpo pequeño.
+Ilustración naturalista de animales, en acuarela y lápiz de color, del
+estilo de un libro ilustrado de historia natural. Pintada a mano, con
+grano de papel. La piel dibujada a trazos finos y visibles, con volumen.
+Anatomía y proporciones de animal de verdad, apenas estilizadas. Colores
+naturales, terrosos y apagados: nada de pastel de guardería ni de
+saturación digital.
+
+Ternura por la EXPRESIÓN —la mirada, el gesto—, nunca por deformar:
+tiene que gustarle igual a alguien de diez años y a alguien de cincuenta.
+
+NADA de esto:
+· chapetas ni círculos rosas en los mofletes
+· contorno blanco o crema alrededor de la figura, como una pegatina
+  troquelada
+· cabeza enorme sobre un cuerpo diminuto, ni patas de muñón
+· relleno plano de color, sin textura
+· lunares, estrellitas, corazones ni brillos decorativos
+· dientes afilados, garras o gesto de ataque: es un animal joven y
+  tranquilo, no un depredador
 
 MUY IMPORTANTE:
-· NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
-  ataque. Es un bebé dinosaurio de peluche, no un depredador.
 · Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
-  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  debajo: el animal va recortado y solo. Si no puedes hacer el fondo
   transparente, hazlo de un magenta puro y plano (#FF00FF).
 · Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
   Centrado en el cuadro, con un poco de aire alrededor.
