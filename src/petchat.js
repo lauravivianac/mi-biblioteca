@@ -29,6 +29,7 @@
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
 import { petConfig, petState, petVista, petNombre } from './pet.js';
 import { petChat, isDenied } from './agent.js';
+import { fraseDeFallo } from './pet-core.js';
 
 /** El hilo de esta sesión. Se vacía al cerrar. */
 let hilo = [];
@@ -42,6 +43,11 @@ function sugerencias(libro) {
       '¿De qué trata sin destriparme nada?',
       'No me está enganchando, ¿lo dejo?',
       '¿Qué leo cuando lo termine?',
+      /* LA PUERTA DE SALIDA. Las tres de arriba hablan del libro en
+         curso, y tres sugerencias sobre lo mismo se leen como el menú
+         entero: parece que aquí solo se puede hablar de ESE libro. La
+         cuarta dice que no, y es la que hacía falta. */
+      'Quiero hablarte de otro libro',
     ];
   }
   return [
@@ -74,9 +80,14 @@ function pintar() {
       <div class="petchat-retrato" data-mood="${estado.mood}">${petVista(estado.mood, cfg)}</div>
       <div>
         <div class="petchat-nombre">${esc(nombre)}</div>
+        <!-- El libro solo se nombra si CONSTA que lo estás leyendo, y
+             aun así la línea dice que se puede hablar de cualquiera:
+             es contexto, no el tema obligatorio de la conversación.
+             Sin libro, «Solo habla de libros y de leer» describía el
+             cerco en vez de invitar — la misma frase, del revés. -->
         <div class="petchat-sub">${libro
-          ? `Está leyendo <strong>${esc(libro.title)}</strong> contigo`
-          : 'Solo habla de libros y de leer'}</div>
+          ? `Está leyendo <strong>${esc(libro.title)}</strong> contigo · pregúntale de cualquier libro`
+          : 'Pregúntale de cualquier libro, lo estés leyendo o no'}</div>
       </div>
     </div>
 
@@ -158,7 +169,13 @@ export async function enviarMascota(textoDado) {
       toast('Sin el asistente no puede conversar. Puedes encenderlo en Ajustes.');
       return;
     }
-    hilo.push({ mia: false, fallo: true, texto: err?.message || 'Ahora mismo no puedo contestarte.' });
+    /* EL MOTIVO DE VERDAD VA A LA CONSOLA, donde mira quien puede
+       arreglarlo; en la burbuja va lo que diría ella. Pintar aquí
+       `err.message` era lo que ponía «Esa consulta no está permitida»
+       en boca de la gata, delante de una niña y por una pregunta que
+       le había propuesto la propia app. */
+    console.warn('La mascota no pudo contestar:', err?.codigo, err?.message);
+    hilo.push({ mia: false, fallo: true, texto: fraseDeFallo(err?.codigo) });
   }
   pintar();
 }

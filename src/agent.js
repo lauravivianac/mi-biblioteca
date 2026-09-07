@@ -113,12 +113,27 @@ async function call(intent, text) {
       body: JSON.stringify({ intent, text }),
     });
   } catch {
-    throw new Error('No hay conexión con el asistente. Inténtalo en un rato.');
+    throw fallo('sin-red', 'No hay conexión con el asistente. Inténtalo en un rato.');
   }
 
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(MESSAGES[data.error] || data.message || 'No se pudo consultar.');
+  if (!r.ok) {
+    throw fallo(data.error, MESSAGES[data.error] || data.message || 'No se pudo consultar.');
+  }
   return data;
+}
+
+/* EL CÓDIGO VIAJA CON EL MENSAJE, y no en lugar de él.
+   `MESSAGES` traduce a un español correcto para un aviso de Ajustes,
+   que es donde nació. Pero el chat de la mascota necesita decir lo
+   mismo con OTRA voz —debajo de su nombre, «Esa consulta no está
+   permitida» la convierte en una ventanilla—, y para elegir la frase
+   hay que saber QUÉ falló, no cómo se cuenta. Traducir aquí y tirar el
+   código dejaba a quien llama con una cadena de texto y nada más. */
+function fallo(codigo, mensaje) {
+  const e = new Error(mensaje);
+  e.codigo = codigo || 'desconocido';
+  return e;
 }
 
 /**
@@ -245,9 +260,13 @@ export async function petChat(pregunta, { libro = null } = {}) {
   const texto = String(pregunta || '').trim();
   if (!texto) return null;
 
+  /* CONTEXTO, y así se llama. Con la etiqueta «LEYENDO:» el modelo
+     leía el libro como el asunto de la conversación y contestaba sobre
+     él vinieras a lo que vinieras. */
   const contexto = libro
-    ? `LEYENDO: ${libro.title}${libro.author ? ` — ${libro.author}` : ''}`
-    : 'LEYENDO: nada ahora mismo';
+    ? `CONTEXTO (solo por si viene al caso, está leyendo): ${libro.title}`
+      + `${libro.author ? ` — ${libro.author}` : ''}`
+    : 'CONTEXTO: no consta que esté leyendo nada ahora mismo';
 
   const r = await call('pet_chat', `${contexto}\nPREGUNTA: ${texto}`);
   return r?.dice || null;

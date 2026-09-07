@@ -528,11 +528,124 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ---
 
+## La séptima · Dinosaurio `dino` — *pendiente*
+
+### Por qué, y por qué es distinto
+
+Míralas juntas: gatita, coneja, búho, zorrita, panda, mapache. **Seis
+animalitos tiernos de bosque, todos del mismo registro.** Es un reparto
+coherente y sesgado: la app se lee como «para una niña a la que le gustan los
+animalitos», y eso deja fuera a muchos niños — y a muchas niñas también.
+
+Un dinosaurio no es tierno: es grande. Rompe el molde, que es justo lo que le
+falta al armario.
+
+**Se abre desde el primer día**, como la Gatita y la Coneja. Esconder detrás de
+diez libros la única mascota que no es un peluche anularía el motivo de
+tenerla.
+
+**Y sus poses son otras.** Las cinco de las seis primeras son de animal
+tranquilo —sentada, ovillada, un saltito—, y copiadas a un dinosaurio darían un
+séptimo animalito sentado. Aquí el ánimo es el mismo pero el cuerpo hace otra
+cosa: se despatarra, se tumba panza arriba con las patas al aire, se agacha con
+el culo en pompa como un perro que va a saltar. **Eso es lo que hace que valga
+la pena que sea un dinosaurio y no otro bicho redondo.**
+
+| | Nombre | Descripción para el prompt |
+|---|---|---|
+| **Dinosaurio** | Rex | `un dinosaurio pequeño y regordete, verde salvia con la panza crema y púas redondeadas y blandas en el lomo` |
+
+### El añadido al bloque de estilo
+
+Un dinosaurio tiene una forma de salir mal que los otros seis no tienen, así
+que el bloque de estilo lleva una línea más:
+
+```
+· NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
+  ataque. Es un bebé dinosaurio de peluche, no un depredador.
+```
+
+### Dinosaurio · `dino`
+
+**Mensaje 1**
+
+```
+Dibuja un dinosaurio pequeño y regordete, verde salvia con la panza crema y púas redondeadas y blandas en el lomo, sentado con las patitas despatarradas hacia delante, la cola enroscada a un lado, la cabeza inclinada y una sonrisa boba con los ojos cerrados, saludando con un bracito.
+
+Ilustración infantil en acuarela con línea de tinta suave, estilo libro
+álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
+Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
+redondeado, de cabeza grande y cuerpo pequeño.
+
+MUY IMPORTANTE:
+· NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
+  ataque. Es un bebé dinosaurio de peluche, no un depredador.
+· Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
+  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  transparente, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+  Centrado en el cuadro, con un poco de aire alrededor.
+· Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, y tienen que ser idénticas en color, forma y tamaño.
+```
+
+**Mensaje 2** — *leyendo*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora tiene un libro abierto apoyado contra la panza porque sus bracitos son demasiado cortos para sostenerlo, y lo mira con muchísima concentración, con la puntita de la lengua fuera.
+```
+
+**Mensaje 3** — *expectante*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está agachado con el pecho abajo y la cola levantada, como un perrito a punto de saltar a jugar, con los ojos enormes y muy abiertos.
+```
+
+**Mensaje 4** — *dormida*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dormido panza arriba, con las cuatro patitas al aire y la cola estirada y flojísima, la boca un poco abierta y cara de sueño profundo.
+```
+
+**Mensaje 5** — *celebrando*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dando un brinco con los dos bracitos arriba y la boca abierta en un rugido de alegría —contento, nunca fiero, sin dientes afilados—, la cola en el aire de puro entusiasmo.
+```
+
+**Ojo con la escala en el mensaje 4.** Panza arriba con las patas al aire es la
+pose más ancha y más baja de las treinta y cinco, y el lienzo no se recorta al
+contenido a propósito (así ninguna mascota pega un salto de tamaño al cambiar
+de ánimo). Si sale mucho más pequeño que los otros cuatro, pídelo otra vez
+diciendo «que ocupe el mismo alto de cuadro que las anteriores».
+
+---
+
 ## Estado
 
 **LAS SEIS PUESTAS** — treinta ilustraciones, cinco poses por especie, con la
 respiración lenta que sustituye a la animación dibujada. La salida A está
-completa.
+completa para el reparto original; el **dinosaurio** es una séptima que se
+añadió después y está pendiente de sus cinco poses.
 
 Mientras una especie no tenga sus cinco poses **se sigue dibujando por
 código**: las dos formas conviven a propósito (`ILUSTRADAS` en
@@ -551,6 +664,7 @@ A se lleva por delante. Ahora **la recompensa es la compañía**:
 | 🦊 Zorrita | *Un clásico* · el primer clásico universal |
 | 🦝 Mapache | *De todo un poco* · cinco géneros distintos |
 | 🐼 Panda | *Diez* · diez libros terminados |
+| 🦖 Dinosaurio | *pendiente* — abierto desde el primer día, como las dos primeras |
 
 Las seis **se ven desde el primer día**, con su candado y con la frase de lo
 que falta escrita debajo, no solo en el `title`: esto es una app de teléfono y
@@ -586,6 +700,18 @@ gato-celebrando.png   conejo-celebrando.png  buho-celebrando.png
 
 zorro-*.png           mapache-*.png          panda-*.png
 ```
+
+**Y las cinco de la séptima**, cuando lleguen — con las poses juguetonas de su
+propia sección, no con las de los otros seis:
+
+```
+dino-contenta.png   dino-leyendo.png   dino-expectante.png
+dino-dormida.png    dino-celebrando.png
+```
+
+Hasta que estén las cinco, el dinosaurio **no se añade a `SPECIES`**. Media
+especie en el selector es un botón que enseña una gata cuando le das: un mando
+muerto, que es el fallo que ya costó el pelaje y el rincón.
 
 **Si 30 son demasiadas, el mínimo son 18**: las tres primeras poses (contenta,
 leyendo, dormida) por especie. *Expectante* y *celebrando* reutilizan

@@ -53,7 +53,26 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
   const celebra = Boolean(terminado && terminado.finishedAt >= ultimaLectura);
 
   const casiTermina = leyendo.find((b) => (b.pct ?? 0) >= 85);
-  const enCurso = leyendo[0] || null;
+
+  /* «LEYENDO» NO ES LO MISMO QUE «EMPEZADO», y la app las confundía.
+     `readNow()` —el «¡A leer!» de un toque, y también el ganador de un
+     duelo y el libro que sigue al que acabas de terminar— marca el
+     libro como reading con la página a cero y sin ninguna lectura
+     apuntada. Con eso, la mascota anunciaba «Está leyendo Canción de
+     Navidad contigo» sobre un libro que nadie había abierto, y que
+     además había empezado la propia app en su nombre.
+
+     Peor todavía: si había varios así, cuál de ellos nombraba salía
+     del ORDEN DEL ARRAY, porque todos empataban a cero en la última
+     lectura. Y lo decía con el ánimo en «dormida», o sea afirmando que
+     lee contigo un libro mientras reconoce que nadie lee nada.
+
+     Así que ahora hace falta una prueba de vida: una página o una
+     lectura apuntada. Sin eso el libro está empezado, no en curso, y
+     la mascota no lo nombra — callarse es siempre mejor que inventar,
+     y más cuando lo que se inventa es lo que TÚ estás haciendo. */
+  const hayLectura = (b) => Boolean(b.lastReadAt) || (b.page || 0) > 0;
+  const enCurso = leyendo.find(hayLectura) || null;
 
   if (celebra) return { mood: 'celebrando', libro: terminado, diasCallada };
   if (casiTermina) return { mood: 'expectante', libro: casiTermina, diasCallada };
@@ -159,3 +178,67 @@ export function fraseMascota(estado, { ahora = Date.now(), nombre = '' } = {}) {
   return finales[huella(semilla) % finales.length]
     .replace(/\{[a-z]+\}/g, (m) => huecos[m] ?? '');
 }
+
+/* ── CUANDO NO PUEDE CONTESTAR ───────────────────────────────
+   LA MASCOTA NO ES UN MOSTRADOR.
+
+   El cliente del agente traduce los fallos del Worker a un español
+   correcto —«Esa consulta no está permitida», «Este dominio no está
+   autorizado en el Worker»—, y eso está bien donde nació: en un aviso
+   de Ajustes, leído por quien administra la app.
+
+   En una conversación, debajo de su nombre, es otra cosa. Ahí no lo
+   dice la app: lo dice CLEO. Y una compañera de lectura que contesta
+   «Esa consulta no está permitida» a una niña de nueve años no es una
+   compañera, es una ventanilla — con el agravante de que la pregunta
+   la había propuesto ella misma dos líneas más arriba.
+
+   DOS REGLAS, y de las dos sale todo lo de abajo:
+
+   1. NUNCA SE CULPA A QUIEN PREGUNTA. Casi todos estos fallos son de
+      configuración —el encargo no existe en el Worker desplegado, el
+      dominio no está en la lista, el proveedor no contestó—. De ésos
+      la lectora no tiene ni idea ni culpa, así que la frase dice «no
+      puedo», nunca «no se puede» y mucho menos «no está permitido».
+
+   2. NUNCA SE PONE TÉCNICA. Ni Worker, ni dominio, ni encargo, ni
+      HTTP. El motivo de verdad va a la consola, que es donde mira
+      quien puede arreglarlo.
+
+   Es el mismo fallo que «Failed to fetch», que arreglé para UN código
+   creyendo que era un caso suelto. No lo era: era toda la familia. */
+
+const FALLOS = {
+  /* Se cae la conexión. Ni de ella ni nuestro, y se arregla solo. */
+  'sin-red': 'Parece que te quedaste sin internet. Aquí te espero.',
+
+  /* Transitorio de verdad: vuelve a intentarlo y suele salir. */
+  proveedor: 'Me quedé sin palabras un momento. ¿Lo intentamos otra vez?',
+  'respuesta-ilegible': 'Me hice un lío al contestarte. Pregúntamelo otra vez.',
+
+  /* Accionables por ella, dichos sin regañar. */
+  'sin-sesion': 'Se cerró tu sesión. Entra otra vez y seguimos donde estábamos.',
+  'limite-diario': 'Por hoy ya charlamos bastante. Mañana te contesto otra vez — '
+    + 'y mientras, seguimos leyendo.',
+  'presupuesto-agotado': 'Este mes ya no me quedan palabras para conversar, pero aquí '
+    + 'sigo mientras lees. Volvemos el mes que viene.',
+
+  /* Y el que abrió todo esto: le pediste algo que no es de libros.
+     No es un rechazo, es un cambio de tema — y por eso es la misma
+     frase que dice cuando se queda en blanco. */
+  'fuera-de-tema': 'De eso no sé nada, pero de libros te cuento lo que quieras.',
+};
+
+/* Todo lo demás —el encargo que no existe en el Worker, el dominio sin
+   autorizar, el JSON mal formado, el método equivocado— es la app rota,
+   no una pregunta mala. Se dicen igual porque para quien lee son la
+   misma cosa: hoy no se puede, y no por su culpa. */
+const FALLO_NUESTRO = 'Ahora mismo no consigo contestarte, y no es por lo que '
+  + 'preguntaste: es cosa mía. Inténtalo en un rato.';
+
+/**
+ * Lo que dice cuando el asistente no contestó.
+ *
+ * @param {string} codigo  el del Worker (`err.codigo`), no su mensaje
+ */
+export const fraseDeFallo = (codigo) => FALLOS[codigo] || FALLO_NUESTRO;
