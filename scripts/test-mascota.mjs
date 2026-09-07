@@ -572,5 +572,66 @@ console.log('\n─── CADA ÁNIMO TIENE SU DIBUJO ───');
     POSES.includes(posePara('inventado-mañana')));
 }
 
+/* ── NADIE DIBUJA LA MASCOTA POR SU CUENTA ───────────────────
+   «Agregué un amigo pero ese no es su avatar: él tiene el oso y sale
+    este que está descontinuado.»
+
+   El perfil pintaba la mascota con `petSvg` —el dibujo por código— en
+   vez de con `petVista`, que sabe que nueve especies son ILUSTRACIÓN
+   desde hace tiempo. Así que el oso de su amigo salía como el bicho
+   genérico de antes. Lo mismo pasaba en la tarjeta que se comparte a
+   Instagram, y por lo mismo.
+
+   La causa de fondo no es el descuido: es que había DOS FORMAS de
+   pedir la misma cosa y una se quedó vieja. Cada pantalla nueva era
+   una tirada de moneda.
+
+   Ahora hay una puerta por cada necesidad —`petVista` para HTML,
+   `petFuente` para quien necesita una imagen— y `petSvg` es asunto
+   interno de pet.js. Esto lo comprueba leyendo los imports de verdad,
+   así que la próxima pantalla que se lo salte rompe una prueba en vez
+   de enseñar la mascota equivocada en el teléfono de alguien. */
+
+console.log('\n─── UNA SOLA PUERTA PARA DIBUJAR LA MASCOTA ───');
+{
+  const dir = new URL('../src/', import.meta.url);
+  const modulos = readdirSync(dir).filter((f) => f.endsWith('.js') && f !== 'pet.js');
+
+  const culpables = [];
+  for (const f of modulos) {
+    const fuente = readFileSync(new URL(f, dir), 'utf8');
+    /* Solo la LÍNEA DEL IMPORT: `petSvg` mencionado dentro de un
+       comentario que explica justo esto no es un uso. */
+    for (const linea of fuente.split('\n')) {
+      if (/^\s*(import|export)\b.*\bpetSvg\b/.test(linea)) culpables.push(f);
+    }
+  }
+  comprobar(`ninguno de los ${modulos.length} módulos importa petSvg`,
+    culpables.length === 0,
+    culpables.length ? `lo importan: ${[...new Set(culpables)].join(', ')} — usa petVista o petFuente` : '');
+
+  /* Y las dos puertas buenas existen y se exportan. Sin esto, la
+     prueba de arriba pasaría también si alguien borrara petVista. */
+  const pet = readFileSync(new URL('pet.js', dir), 'utf8');
+  comprobar('pet.js exporta petVista', /export (const|function) petVista\b/.test(pet));
+  comprobar('pet.js exporta petFuente', /export (const|function) petFuente\b/.test(pet));
+
+  /* La fuente de una especie ilustrada tiene que ser un fichero que
+     esté, y con la POSE del ánimo — no con el ánimo pegado. */
+  const ficheros = new Set(readdirSync(new URL('../img/mascota', import.meta.url)));
+  const especies = [...new Set([...ficheros].map((f) => f.split('-')[0]))];
+  const core = readFileSync(new URL('pet-core.js', dir), 'utf8');
+  const animos = [...new Set([...core.matchAll(/\bmood:\s*'([a-záéíóúñ]+)'/g)].map((m) => m[1]))];
+
+  const rotas = [];
+  for (const especie of especies) {
+    for (const mood of animos) {
+      if (!ficheros.has(`${especie}-${posePara(mood)}.webp`)) rotas.push(`${especie}/${mood}`);
+    }
+  }
+  comprobar('la fuente de cada especie ilustrada apunta a un fichero que existe',
+    rotas.length === 0, rotas.slice(0, 5).join(', '));
+}
+
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);
 process.exit(mal ? 1 : 0);

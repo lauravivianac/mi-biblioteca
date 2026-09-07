@@ -871,6 +871,23 @@ body:not(.signed-in) .fab { display: none; }
 .prof-city { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
 .prof-pet { width: 62px; height: 62px; flex-shrink: 0; }
 .prof-pet svg { width: 100%; height: 100%; }
+/* Las especies ilustradas llegan como IMAGEN, no como SVG, y traen
+   puestas dos cosas del inicio que aquí estorban:
+
+   · el margen negativo que las apoya en la balda —aquí no hay balda—;
+   · y la respiración, que en 62 px al lado de un nombre es un tic.
+     Además la escala llegaba a 1.022, así que el oso medía 63 en un
+     hueco de 62: medido, no supuesto.
+
+   Aquí es un retrato de la mascota de otra persona, quieto. */
+.prof-pet .pet-escena { display: block; width: 100%; height: 100%; }
+.prof-pet .pet-img {
+  width: 100%; height: 100%;
+  margin-bottom: 0;
+  animation: none;
+}
+/* Y sin su rincón: en 62 px, una escena detrás del bicho es ruido. */
+.prof-pet .pet-rincon { display: none; }
 .prof-bio {
   font-size: 13px; line-height: 1.65; color: var(--text);
   margin: 0 0 8px; font-style: italic;

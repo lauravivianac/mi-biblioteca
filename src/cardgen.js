@@ -220,9 +220,12 @@ export async function drawCard(tipo, datos = {}, { pet = null } = {}) {
 
   /* ── La mascota, si está ── */
   if (pet) {
-    const mascota = await cargarImagen(
-      `data:image/svg+xml;charset=utf-8,${encodeURIComponent(pet)}`,
-    );
+    /* `pet` es la FUENTE de la imagen, no una cadena de SVG: la da
+       `petFuente` en pet.js, y así una especie ilustrada llega como
+       .webp y una dibujada como data-uri sin que aquí haya que saber
+       cuál es cuál. Envolverla en un data-uri de SVG aquí era lo que
+       impedía usar las ilustraciones en la tarjeta. */
+    const mascota = await cargarImagen(pet);
     if (mascota) ctx.drawImage(mascota, ANCHO - 300, ALTO - PIE - 220, 200, 200);
   }
 
