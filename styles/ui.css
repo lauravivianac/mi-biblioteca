@@ -324,6 +324,9 @@ body:not(.signed-in) .fab { display: none; }
   padding: 11px 0; border-bottom: 1px solid var(--border-soft);
 }
 .ach:last-child { border-bottom: 0; }
+/* La columna del medio de `.ach`: sin esto un nombre largo empuja el
+   contador fuera de la fila en vez de partirse. */
+.ach-body { min-width: 0; }
 .ach-icon { font-size: 19px; width: 24px; text-align: center; opacity: .5; }
 .ach.got .ach-icon { opacity: 1; }
 .ach-name { font-size: 13.5px; color: var(--muted); }
@@ -585,6 +588,20 @@ body:not(.signed-in) .fab { display: none; }
   font-size: 14.5px; line-height: 1.7;
   color: var(--text);
   white-space: pre-wrap;
+}
+/* Una reseña en el perfil de alguien: papel citado, con su filete al
+   margen izquierdo como una cita larga en un libro. */
+.quote-card {
+  margin: 0 0 14px;
+  padding: 2px 0 0 14px;
+  border-left: 2px solid rgb(var(--gold-rgb) / .45);
+}
+.quote-card blockquote {
+  margin: 0;
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.55;
+  color: var(--text);
 }
 .quote-foot {
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px;

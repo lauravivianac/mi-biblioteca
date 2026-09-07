@@ -186,6 +186,67 @@ sí es texto: el estampado.
 
 ---
 
+## Los adornos
+
+En un libro impreso cada capítulo termina con una **viñeta del impresor**: una
+hoja, un rombo, una rama. No sirve para nada y por eso está — es lo que hace
+que un libro se sienta hecho por alguien.
+
+Cada tema tiene la suya, y cierra la lista cuando terminas de bajar: el sitio
+exacto donde un adorno no molesta, porque ya has leído todo lo demás.
+
+| | |
+|---|---|
+| **Ex Libris** | el florón del impresor |
+| **Grimorio** | una estrella fugaz |
+| **Obsidiana** | un rombo, y nada más |
+| **Pergamino** | la hoja de Aldo, el adorno de imprenta más viejo que existe |
+| **Herbario** | una ramita prensada |
+| **Marea** | el mar, alejándose |
+| **Gótico** | la vela que alumbra el capítulo |
+| **Sakura** | la rama en flor |
+| **El Principito** | la boa que se tragó a un elefante |
+| **Máquina** | una marca de arrastre de papel |
+
+Están dibujadas **con el mismo trazo que los iconos** —un solo grosor, sin
+relleno—, porque un adorno de otra mano se nota más que no tener ninguno.
+
+Los diez dibujos viven en el pliego `<svg>` del `index.html` y **se eligen solo
+con CSS**: nada que repintar al cambiar de tema, y ninguna posibilidad de que
+la viñeta se quede en la del tema anterior.
+
+### Y El Principito tiene una escena, a color
+
+Los colores solos no hacen un tema de *El Principito*. Abajo del todo hay una
+ilustración: **él**, con su capa y su corona, **la rosa que sostiene**, **el
+zorro** sentado a su lado —«no se ve bien sino con el corazón»—, las **rosas del
+jardín** que le enseñaron que la suya era única, y **la duna** del desierto donde
+cayó el aviador.
+
+**A color y con cara, no en línea suelta.** El primer intento era trazo fino
+como los iconos y no funcionaba: a ese tamaño un dibujo sin relleno no es un
+dibujo, es un plano. La escena se desvanece por arriba con una máscara para que
+no tenga un borde recto contra el fondo — la duna aparece, no se pega.
+
+> **Está dibujada aquí, no calcada.** Las ilustraciones originales de
+> Saint-Exupéry siguen protegidas en varios países y esta app va a las tiendas.
+> Del libro se toman **las cosas** —él, la rosa, el zorro, las rosas del
+> jardín—, no los trazos.
+
+Por eso su viñeta de remate no es la rosa: ya está en la escena, y repetirla
+sería decir lo mismo dos veces. Es el primer dibujo del libro, el que las
+personas mayores ven como un sombrero.
+
+Y por eso también, en este tema la lista termina **antes** de donde empieza la
+escena: sin ese hueco, la viñeta caía encima de su cabeza.
+
+### La estrella fugaz de Grimorio
+
+Cruza el cielo cada once segundos y se va. Es el único movimiento que se ha
+añadido, y **quien pida menos movimiento no la ve nunca**.
+
+---
+
 ## Qué NO se tocó, a propósito
 
 - **Los diez temas siguen ahí**, Grimorio incluido: sigue descrito como «el

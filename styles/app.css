@@ -298,6 +298,30 @@ body {
 .lomo-mini::before { top: 16%; }
 .lomo-mini::after { bottom: 16%; }
 
+/* ── EL AÑO ──
+   Los tres años son tres pestañas de un archivador, no tres botones
+   con degradado. El activo se marca abajo, en latón, igual que la
+   navegación y los filtros: una sola señal en toda la app. */
+.year-row {
+  display: flex;
+  gap: 22px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.year-btn {
+  padding: 8px 2px 8px;
+  border-bottom: 1.5px solid transparent;
+  margin-bottom: -1px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: var(--display-weight);
+  color: var(--muted);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s, border-color 0.2s;
+}
+.year-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
 /* ── EL MES ──
    Antes cada mes llevaba un cuadradito de color con un emoji dentro:
    doce colores distintos bajando por la pantalla, ninguno diciendo
@@ -879,6 +903,8 @@ body {
   margin: 10px 0 16px;
 }
 .privacy-row.privacy-off { opacity: 0.45; }
+/* El texto del interruptor: ocupa lo que queda y se parte si hace falta. */
+.privacy-copy { flex: 1; min-width: 0; }
 .privacy-switch {
   flex: none;
   width: 44px;

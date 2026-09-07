@@ -25,6 +25,7 @@ import { MONTH_ORDER } from './seed.js';
 import { achievementStatus, earnedCount } from './achievements.js';
 import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
+  speciesIlustrada, petVista,
   availableSpecies, currentScene, SCENES,
 } from './pet.js';
 import {
@@ -397,15 +398,23 @@ function renderThemeStore() {
 /** Segundo estante: la mascota. Nada se paga; todo se desbloquea leyendo. */
 function renderPetShelf() {
   const cfg = petConfig();
+  const especies = availableSpecies();
+  /* Las que faltan, con su pista, escritas debajo. El `title` no vale
+     aquí: esto es una app de teléfono y en un teléfono no hay ratón
+     que se pose encima, así que un candado explicado solo en el
+     `title` es un candado sin explicar. */
+  const porGanar = especies.filter((sp) => sp.locked && sp.hint);
+  /* El candado dice QUÉ falta, con las palabras del logro. «Se
+     desbloquea leyendo» no es una pista, es un cartel de cerrado. */
   const opt = (group, item, extra = '') => `
     <button class="pet-opt ${cfg[group] === item.id ? 'on' : ''} ${item.locked ? 'locked' : ''}"
             ${item.locked ? 'aria-disabled="true"' : `onclick="setPetPart('${group}','${item.id}')"`}
-            title="${item.locked ? 'Se desbloquea leyendo' : esc(item.name)}">
+            title="${esc(item.locked ? (item.hint || 'Se desbloquea leyendo') : item.name)}">
       ${extra}${item.locked ? '🔒 ' : ''}${esc(item.name)}
     </button>`;
 
   return `
-    <div class="pet-preview">${petSvg(petState().mood, cfg)}</div>
+    <div class="pet-preview">${petVista(petState().mood, cfg)}</div>
 
     <label class="pet-group-label" for="pet-name">Cómo se llama</label>
     <input class="pet-name-input" id="pet-name" maxlength="18"
@@ -414,9 +423,18 @@ function renderPetShelf() {
 
     <div class="pet-group-label">Quién te acompaña</div>
     <div class="pet-options">
-      ${availableSpecies().map((sp) => opt('species', sp, `${sp.emoji} `)).join('')}
+      ${especies.map((sp) => opt('species', sp, `${sp.emoji} `)).join('')}
     </div>
+    ${porGanar.length ? `<ul class="pet-porganar">
+      ${porGanar.map((sp) => `<li><span class="pet-porganar-quien">${sp.emoji} ${esc(sp.name)}</span>
+        ${esc(sp.hint)}</li>`).join('')}
+    </ul>` : ''}
 
+    ${speciesIlustrada(cfg.species) ? `
+    <p class="planner-hint">
+      El pelaje y el accesorio no se eligen en esta: viene pintada a mano,
+      con su color y sin postizos.
+    </p>` : `
     <div class="pet-group-label">Pelaje</div>
     <div class="pet-options">
       ${availableFurs().map((f) => opt('fur', f,
@@ -424,7 +442,7 @@ function renderPetShelf() {
     </div>
 
     <div class="pet-group-label">Accesorio</div>
-    <div class="pet-options">${availableAccessories().map((a) => opt('accessory', a)).join('')}</div>
+    <div class="pet-options">${availableAccessories().map((a) => opt('accessory', a)).join('')}</div>`}
 
     <div class="pet-group-label">Su rincón</div>
     <div class="pet-options">${availableCorners().map((c) => opt('corner', c)).join('')}</div>
@@ -434,8 +452,8 @@ function renderPetShelf() {
     </p>` : ''}
 
     <p class="set-fineprint">
-      Todo se desbloquea leyendo. Un accesorio que costó terminar un libro de 900 páginas
-      significa algo; uno que costó dos dólares, no.
+      Aquí no se compra nada. Una compañera que costó terminar un libro de 900 páginas
+      significa algo; una que costó dos dólares, no.
     </p>`;
 }
 

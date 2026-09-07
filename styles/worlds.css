@@ -279,8 +279,148 @@
 }
 
 
+
+
+/* ═════════════════════════════════════════════════════════════
+   LOS ADORNOS
+
+   En un libro impreso cada capítulo termina con una viñeta del
+   impresor: una hoja, un rombo, una rama. Aquí cada tema tiene la
+   suya y cierra la lista cuando terminas de bajar — el premio por
+   haber llegado al final, que es justo donde no molesta.
+
+   Los diez dibujos están en el pliego del index.html y se eligen
+   SOLO CON CSS: nada de repintar al cambiar de tema, y ninguna
+   posibilidad de que la viñeta se quede en la del tema anterior.
+   ═════════════════════════════════════════════════════════════ */
+
+.vineta {
+  display: flex;
+  justify-content: center;
+  padding: 34px 0 14px;
+  color: var(--gold);
+  opacity: .48;
+}
+.vineta svg {
+  width: 92px; height: 50px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+/* Una lista vacía no se remata: no ha terminado nada. */
+.view:has(#plan-body:empty) .vineta,
+.view:has(#lib-body:empty) .vineta,
+.view:has(#tracker-body:empty) .vineta { display: none; }
+
+.vineta use { display: none; }
+[data-theme="exlibris"] .vineta use[data-tema="exlibris"],
+[data-theme="grimorio"] .vineta use[data-tema="grimorio"],
+[data-theme="obsidiana"] .vineta use[data-tema="obsidiana"],
+[data-theme="pergamino"] .vineta use[data-tema="pergamino"],
+[data-theme="herbario"] .vineta use[data-tema="herbario"],
+[data-theme="marea"] .vineta use[data-tema="marea"],
+[data-theme="gotico"] .vineta use[data-tema="gotico"],
+[data-theme="sakura"] .vineta use[data-tema="sakura"],
+[data-theme="principito"] .vineta use[data-tema="principito"],
+[data-theme="maquina"] .vineta use[data-tema="maquina"] { display: block; }
+/* Antes de que el módulo aplique el tema, el de casa. */
+html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
+
+/* ── LO QUE VIVE EN EL FONDO ────────────────────────────────── */
+.mundo {
+  position: fixed;
+  inset: auto 0 0 0;
+  /* Bajo y pequeño: es el horizonte, no la escena principal. Con
+     `slice` se ampliaba hasta pisar la lista de libros. */
+  height: 34vh;
+  max-height: 250px;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: 50% 100%;
+  /* Se desvanece por arriba para que la escena no tenga un borde recto
+     contra el fondo: el horizonte aparece, no se pega. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 42%);
+  mask-image: linear-gradient(180deg, transparent, #000 42%);
+}
+/* CADA TEMA CON ESCENA, SU IMAGEN. Esta lista es el inventario: si un
+   tema no está aquí es que aún no tiene lámina, y su fondo queda vacío
+   sin que haya nada que apagar.
+
+   Va por `background-image` a propósito. Con un <img> por tema había
+   que esconder nueve, y una imagen con `display:none` se descarga
+   igual: eran ~430 KB en cada apertura para enseñar unos 60. El fondo
+   de una regla que no casa no se pide NUNCA, así que aquí la carga
+   perezosa la hace el navegador y no hay que programarla.
+
+   Se coloca por el borde de abajo y recorta por los lados: la lámina
+   llega a 2:1 y una pantalla estrecha es más alta que eso, así que o
+   se recorta o se deforma. */
+[data-theme="exlibris"]   .mundo { background-image: url('../img/tema/exlibris.webp'); }
+[data-theme="grimorio"]   .mundo { background-image: url('../img/tema/grimorio.webp'); }
+[data-theme="obsidiana"]  .mundo { background-image: url('../img/tema/obsidiana.webp'); }
+[data-theme="pergamino"]  .mundo { background-image: url('../img/tema/pergamino.webp'); }
+[data-theme="herbario"]   .mundo { background-image: url('../img/tema/herbario.webp'); }
+[data-theme="marea"]      .mundo { background-image: url('../img/tema/marea.webp'); }
+[data-theme="gotico"]     .mundo { background-image: url('../img/tema/gotico.webp'); }
+[data-theme="sakura"]     .mundo { background-image: url('../img/tema/sakura.webp'); }
+[data-theme="principito"] .mundo { background-image: url('../img/tema/principito.webp'); }
+
+/* Un tema con escena necesita que la lista termine ANTES de ella: si
+   no, la viñeta de remate cae encima del dibujo y parece un descuido.
+   Esta lista va con la de arriba: un tema que gane escena y no entre
+   aquí se queda con el remate pisando la lámina. */
+[data-theme="exlibris"] .scroll-area,
+[data-theme="grimorio"] .scroll-area,
+[data-theme="obsidiana"] .scroll-area,
+[data-theme="pergamino"] .scroll-area,
+[data-theme="herbario"] .scroll-area,
+[data-theme="marea"] .scroll-area,
+[data-theme="gotico"] .scroll-area,
+[data-theme="sakura"] .scroll-area,
+[data-theme="principito"] .scroll-area { padding-bottom: 270px; }
+
+/* ── LA ESTRELLA FUGAZ · Grimorio ───────────────────────────── */
+.fugaz {
+  position: fixed;
+  top: 0; left: 0;
+  width: 2px; height: 2px;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgb(var(--gold-rgb) / .9);
+}
+.fugaz::before {
+  content: '';
+  position: absolute;
+  right: 1px; top: 50%;
+  width: 84px; height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(270deg, rgb(255 255 255 / .85), transparent);
+}
+[data-theme="grimorio"] .fugaz {
+  animation: fugaz 11s cubic-bezier(.2, .5, .4, 1) infinite;
+}
+/* Cruza una vez y desaparece: los otros nueve segundos no está. */
+@keyframes fugaz {
+  0%      { opacity: 0; transform: translate(78vw, -6vh) rotate(28deg); }
+  2%      { opacity: 1; }
+  11%     { opacity: 1; }
+  14%     { opacity: 0; transform: translate(14vw, 40vh) rotate(28deg); }
+  100%    { opacity: 0; transform: translate(14vw, 40vh) rotate(28deg); }
+}
+
+
 /* ── Nadie debería marearse por un tema. ── */
 @media (prefers-reduced-motion: reduce) {
+  .fugaz { animation: none !important; }
   [data-theme="marea"] .bg-canvas::after,
   [data-theme="principito"] .bg-canvas::after { animation: none; }
 }

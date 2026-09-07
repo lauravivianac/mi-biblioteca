@@ -155,9 +155,18 @@ for (const tema of TEMAS) {
   await pagina.waitForTimeout(1400);
   await foto(`30-tema-${tema}`);
 
-  await pagina.evaluate(() => window.nav('plan'));
-  await pagina.waitForTimeout(1000);
-  await foto(`31-plan-${tema}`);
+  /* Y el FINAL de la lista, que es donde vive la viñeta de remate:
+     una captura desde arriba no la enseña nunca. */
+  await pagina.evaluate(() => {
+    const s = document.querySelector('.scroll-area');
+    if (s) s.scrollTop = s.scrollHeight;
+  });
+  await pagina.waitForTimeout(700);
+  await foto(`31-remate-${tema}`);
+  await pagina.evaluate(() => {
+    const s = document.querySelector('.scroll-area');
+    if (s) s.scrollTop = 0;
+  });
 }
 
 /* Se vuelve al de casa para las hojas que faltan. */

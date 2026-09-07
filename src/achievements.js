@@ -5,9 +5,15 @@
    que costó terminar un libro de 900 páginas significa algo; uno
    que costó dos dólares, no.
 
-   De aquí cuelgan los temas de temporada (#80) y los accesorios
-   de la mascota (#41). Hasta ahora Gótico y Sakura estaban
-   bloqueados sin nada que pudiera desbloquearlos.
+   De aquí cuelgan los temas de temporada (#80), los rincones de la
+   mascota y —desde la tanda de ilustraciones— las cuatro especies
+   que no vienen abiertas (#41). Hasta el #80, Gótico y Sakura
+   estaban bloqueados sin nada que pudiera desbloquearlos.
+
+   El premio se movió del pelaje a la especie a propósito: una
+   especie ilustrada llega pintada y sin postizos, así que el
+   guardarropa desaparece con ellas y un logro no puede colgar de
+   algo que se va.
 
    Cada logro dice qué falta, porque saberlo es parte del incentivo.
    ───────────────────────────────────────────────────────────── */

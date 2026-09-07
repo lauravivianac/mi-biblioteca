@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "npm run test:contrast && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:taste && npm run test:gaps && npm run test:duel && npm run test:streak && npm run test:year && npm run test:username && npm run test:cards && npm run test:profile && npm run test:follows && npm run test:qr && npm run test:feed && npm run test:moderation && npm run test:alsoread && npm run test:swap && npm run test:explore && npm run test:chat && npm run test:posts && npm run test:legal && npm run test:worker",
+    "test": "npm run test:contrast && npm run test:clases && npm run test:escenas && npm run test:planner && npm run test:booklookup && npm run test:ean && npm run test:shelves && npm run test:quotes && npm run test:suggest && npm run test:reviews && npm run test:taste && npm run test:gaps && npm run test:duel && npm run test:streak && npm run test:year && npm run test:username && npm run test:cards && npm run test:profile && npm run test:follows && npm run test:qr && npm run test:feed && npm run test:moderation && npm run test:alsoread && npm run test:swap && npm run test:explore && npm run test:chat && npm run test:posts && npm run test:legal && npm run test:worker",
     "test:contrast": "node scripts/check-contrast.mjs",
     "test:planner": "node scripts/test-planner.mjs",
     "test:booklookup": "node scripts/test-booklookup.mjs",
@@ -39,7 +39,11 @@
     "legal": "node scripts/build-legal.mjs",
     "test:legal": "node scripts/test-legal.mjs",
     "test:e2e": "firebase emulators:exec --only firestore,auth --project demo-biblioteca \"node scripts/test-e2e.mjs\"",
-    "capturas": "firebase emulators:exec --only firestore,auth --project demo-biblioteca \"node scripts/capturas.mjs\""
+    "capturas": "firebase emulators:exec --only firestore,auth --project demo-biblioteca \"node scripts/capturas.mjs\"",
+    "test:clases": "node scripts/test-clases.mjs",
+    "mascotas": "node scripts/mascotas.mjs",
+    "escenas": "node scripts/escenas.mjs",
+    "test:escenas": "node scripts/test-escenas.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",
