@@ -631,6 +631,42 @@ console.log('\n─── UNA SOLA PUERTA PARA DIBUJAR LA MASCOTA ───');
   }
   comprobar('la fuente de cada especie ilustrada apunta a un fichero que existe',
     rotas.length === 0, rotas.slice(0, 5).join(', '));
+
+  /* ── Y NINGUNA ESPECIE SE VUELVE GATA ──────────────────────
+     `petSvg` hace `SPECIES_PARTS[especie] || SPECIES_PARTS.gato`, y
+     el oso, el lobo y el cuervo llegaron ya ilustrados: nunca se
+     dibujaron por código. Para esos tres el respaldo no da «el mismo
+     bicho peor dibujado», DA UN GATO — que es lo que salió en el
+     perfil de su amigo, y por eso no parecía un oso viejo sino otro
+     animal.
+
+     El respaldo se queda (un dibujo raro es mejor que un hueco). Lo
+     que se comprueba es que nunca haga falta: toda especie que se
+     pueda ELEGIR tiene que estar ilustrada o tener partes. */
+  const trozo = (marca, abre, cierra) => {
+    const i = pet.indexOf(marca);
+    if (i < 0) return '';
+    const j = pet.indexOf(abre, i);
+    let d = 0;
+    for (let k = j; k < pet.length; k++) {
+      if (pet[k] === abre) d++;
+      else if (pet[k] === cierra && --d === 0) return pet.slice(j, k);
+    }
+    return '';
+  };
+  const elegibles = [...trozo('export const SPECIES =', '[', ']').matchAll(/id:\s*'(\w+)'/g)].map((m) => m[1]);
+  const conPartes = [...trozo('const SPECIES_PARTS =', '{', '}').matchAll(/^ {2}(\w+):\s*\{/gm)].map((m) => m[1]);
+  const ilustradas = (pet.match(/export const ILUSTRADAS = \[([^\]]*)\]/) || [, ''])[1]
+    .match(/'(\w+)'/g)?.map((x) => x.replace(/'/g, '')) || [];
+
+  comprobar('se leyeron las tres listas de especies',
+    elegibles.length > 0 && conPartes.length > 0 && ilustradas.length > 0,
+    `elegibles ${elegibles.length}, con partes ${conPartes.length}, ilustradas ${ilustradas.length}`);
+
+  const gatunas = elegibles.filter((e) => !ilustradas.includes(e) && !conPartes.includes(e));
+  comprobar('ninguna especie elegible acaba dibujada como un gato',
+    gatunas.length === 0,
+    gatunas.length ? `${gatunas.join(', ')} — sin ilustración y sin partes` : '');
 }
 
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);
