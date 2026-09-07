@@ -14,7 +14,11 @@
    ───────────────────────────────────────────────────────────── */
 
 const FIREBASE_PROJECT = 'mi-biblioteca-7a3a5';
-const CERTS = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+/* LAS CLAVES DE GOOGLE, EN JWKS Y NO EN X.509.
+   El mismo juego de claves se publica en los dos formatos. El de
+   certificados obliga a sacar la clave pública de dentro de un X.509 a
+   mano, y eso es exactamente lo que se rompió: ver `verifyToken`. */
+const CERTS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 
 /* ── LOS ENCARGOS PERMITIDOS ─────────────────────────────────
    Una lista blanca. Cualquier otra cosa se rechaza ANTES de gastar
@@ -320,10 +324,12 @@ const b64url = (s) => {
 
 let certCache = { at: 0, keys: null };
 
+/** Las claves públicas de Google, por `kid`, listas para importar. */
 async function certs() {
   if (certCache.keys && Date.now() - certCache.at < 3600_000) return certCache.keys;
   const r = await fetch(CERTS);
-  certCache = { at: Date.now(), keys: await r.json() };
+  const { keys = [] } = await r.json();
+  certCache = { at: Date.now(), keys: Object.fromEntries(keys.map((k) => [k.kid, k])) };
   return certCache.keys;
 }
 
@@ -333,6 +339,20 @@ async function certs() {
  * cualquiera que descubra la URL.
  */
 async function verifyToken(jwt) {
+  /* NADA DE AQUÍ DENTRO PUEDE LANZAR. Un token con una base64 rota o
+     un JSON a medias es una sesión mala —`sin-sesion`, que la app dice
+     en español—, no una caída del Worker. Antes cualquiera de esos dos
+     `JSON.parse` tumbaba la petición entera, y como una caída sale sin
+     CORS, en la app aparecía como un problema de conexión. */
+  try {
+    return await comprobarToken(jwt);
+  } catch (e) {
+    console.warn('Token no verificable:', e?.message || e);
+    return null;
+  }
+}
+
+async function comprobarToken(jwt) {
   const [h, p, s] = String(jwt || '').split('.');
   if (!h || !p || !s) return null;
 
@@ -344,33 +364,35 @@ async function verifyToken(jwt) {
   if (payload.exp * 1000 < Date.now()) return null;
   if (!payload.sub) return null;
 
-  const pem = (await certs())[header.kid];
-  if (!pem) return null;
+  const jwk = (await certs())[header.kid];
+  if (!jwk) return null;
 
-  const der = b64url(
-    pem.replace(/-----(BEGIN|END) CERTIFICATE-----/g, '').replace(/\s/g, '')
-  );
+  /* SE IMPORTA LA CLAVE TAL CUAL LA PUBLICA GOOGLE, sin abrirla.
+     Antes se bajaba el certificado X.509 y se buscaba la clave pública
+     DENTRO, escaneando bytes hacia atrás en busca de un 0x30 0x82 con
+     un 0x2a seis bytes después. Cuando no la encontraba —y Google rota
+     estos certificados cada pocos días— devolvía el certificado entero,
+     `importKey` lanzaba `DataError: Invalid keyData`, y como esa
+     excepción no la cogía nadie, el Worker se caía SIN cabeceras CORS.
+     La app no puede distinguir eso de un cable desenchufado, así que le
+     decía a quien lee «parece que te quedaste sin internet».
+
+     Comprobado: los CUATRO certificados publicados el día que esto se
+     escribió reventaban los cuatro. No era una rotación desafortunada:
+     el escaneo llevaba roto quién sabe cuánto, y como el fallo se
+     disfrazaba de problema de conexión, nadie lo miró.
+
+     El mismo juego de claves está publicado en JWKS, que Web Crypto
+     importa directamente. Cero bytes que interpretar, cero heurística.
+     Ver `scripts/test-worker.mjs`. */
   const key = await crypto.subtle.importKey(
-    'spki', extractSpki(der),
+    'jwk', jwk,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'],
   );
   const valid = await crypto.subtle.verify(
     'RSASSA-PKCS1-v1_5', key, b64url(s), new TextEncoder().encode(`${h}.${p}`),
   );
   return valid ? payload.sub : null;
-}
-
-/** Saca la clave pública del certificado X.509. */
-function extractSpki(der) {
-  // La clave pública es el último SEQUENCE con el OID de RSA; se localiza por patrón.
-  const marker = [0x30, 0x82];
-  for (let i = der.length - 300; i > 0; i--) {
-    if (der[i] === marker[0] && der[i + 1] === marker[1]) {
-      const len = (der[i + 2] << 8) + der[i + 3] + 4;
-      if (i + len <= der.length && der[i + 6] === 0x2a) return der.slice(i, i + len);
-    }
-  }
-  return der;
 }
 
 /* ── LIMPIEZA DE ENTRADA ─────────────────────────────────────── */
