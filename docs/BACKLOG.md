@@ -380,3 +380,60 @@ iPhone solo entrega notificaciones a una PWA **instalada en la pantalla de inici
 un fallo que se pueda arreglar desde aquí: si la mayoría de las lectoras van a usar la app
 desde el navegador de Safari sin instalarla, esta historia les llega a medias, y eso hay
 que saberlo **antes** de construir la rebanada 2, no después.
+
+### Nueva · Cafés y librerías cerca — *sin abrir, y depende de una decisión suya*
+
+> «Podríamos ubicar cafés o librerías cercanas. ¿Podemos hacer esto con alguna
+> integración de internet?»
+
+Sí se puede, sin pagar y sin clave. Pero la pregunta que decide esto no es técnica, así
+que va primero.
+
+#### Para qué, que no es lo mismo
+
+Hay dos funciones distintas escondidas en la misma frase, y una es mucho mejor idea que
+la otra:
+
+| | |
+|---|---|
+| **A · «Dónde leer»** — un café con luz cerca de ti | Bonito y prescindible. Pide la ubicación de alguien que solo quería mirar su biblioteca, y no resuelve ningún problema que la app tenga hoy. |
+| **B · «Dónde quedar»** — un sitio público y neutral para el intercambio | **Esta sí.** El chat del intercambio (#85) termina con dos desconocidas quedando en persona, y ahora mismo el sitio lo improvisan ellas por chat. Proponer tres sitios públicos —una librería, una biblioteca, un café— es un aviso de seguridad (#88) disfrazado de comodidad. |
+
+**La recomendación es hacer solo la B**, y dentro del intercambio. La A añade un permiso
+de ubicación a la pantalla principal de una app que usan niñas, y eso se paga caro en las
+dos tiendas (Data Safety de Google Play, etiqueta de privacidad de Apple) por una función
+que nadie ha pedido.
+
+#### De dónde saldrían los sitios
+
+**OpenStreetMap por Overpass**, y no Google Places:
+
+| | |
+|---|---|
+| Overpass (OSM) | Sin clave, sin cuenta, gratis. Etiquetas `amenity=cafe`, `shop=books`, `amenity=library`. Licencia ODbL: hay que poner «© colaboradores de OpenStreetMap» a la vista. |
+| Google Places | Mejores datos y **clave obligatoria**. Una clave en una app estática se ve con F12, así que iría por el Worker igual — y encima se factura. |
+
+Va **por el Worker**, aunque Overpass no pida clave, por tres razones que no son la
+clave: las instancias públicas limitan por IP y una app entera pegando desde miles de
+móviles se queda fuera; el Worker puede **cachear por celda** y convertir mil consultas en
+una; y Overpass pide un `User-Agent` identificable que un navegador no deja poner.
+
+#### La regla que ya está escrita, y que no cambia
+
+`place-core.js` lo dice desde la #81: **nunca se pide ni se guarda la dirección exacta.**
+Esto no es una excepción.
+
+- La ubicación se pide **en el momento**, para esta pantalla, y se tira.
+- Lo que viaja al Worker es la **celda de geohash-6** (poco más de un kilómetro), no las
+  coordenadas. Buscar cafés en una celda de un kilómetro funciona igual de bien.
+- No se guarda nada: ni en Firestore, ni en el perfil, ni en la publicación. Las reglas ya
+  rechazan `lat`, `lon` y `address` en `swaps`, y eso se queda como está.
+- Sin permiso de ubicación la función **no desaparece**: se buscan sitios por la ciudad
+  que ya está en el perfil, que es texto libre y no hace falta pedir nada.
+
+#### Tamaño y orden
+
+M. No es urgente y no debería colarse delante de lo que está roto: es una función nueva en
+una app cuyo camino de añadir libros acaba de caerse en producción. Cuando toque, la
+rebanada mínima es un botón en el chat del intercambio —«proponer un sitio»— con tres
+opciones públicas y su atribución, y nada más.
