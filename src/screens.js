@@ -162,13 +162,22 @@ export function renderUsername() {
   const puede = canChangeUsername(settings());
   const s = userState;
 
+  /* SON DOS COSAS Y VAN SEPARADAS. El nombre que ya tienes es un DATO
+     —se lee—, y elegir uno nuevo es un FORMULARIO, con su campo y su
+     botón. Metidos en la misma tarjeta, el botón de «Quedármelo»
+     salía a lo ancho pegado a los bordes y la tarjeta parecía rota.
+     El dato lleva su propia tarjeta; el formulario va suelto debajo,
+     que es donde vive un formulario. */
   return `
-    ${actual ? `<div class="set-row" style="cursor:default">
-      <div><div class="set-row-title">${esc(displayHandle(actual))}</div>
-        <div class="set-row-sub">${puede.ok
-          ? 'Así te encuentran. Puedes cambiarlo abajo.'
-          : esc(puede.error)}</div></div>
-    </div>` : `<p class="planner-hint">
+    ${actual ? `<div class="set-card">
+      <div class="set-fact">
+        <span class="set-fact-label">Tu @usuario</span>
+        <span class="set-fact-value">${esc(displayHandle(actual))}</span>
+      </div>
+    </div>
+    <p class="set-fineprint">${puede.ok
+      ? 'Así te encuentran tus amigas. Puedes cambiarlo aquí abajo.'
+      : esc(puede.error)}</p>` : `<p class="planner-hint">
       Todavía no tienes nombre. Es con lo que te encontrarán tus amigas.
     </p>`}
 
@@ -534,6 +543,26 @@ export function pokePet() {
 
 /* ── AJUSTES  ·  historias #20, #21 ──────────────────────────── */
 
+/* ── LAS DOS PIEZAS DE AJUSTES ───────────────────────────────
+   Una fila LLEVA A OTRO SITIO; un dato SE LEE Y YA. Antes las dos se
+   pintaban igual —título, subtítulo y, si acaso, una flecha— así que
+   «Tu ritmo real» parecía un menú roto: se toca y no pasa nada. Que
+   se distingan a simple vista es la mitad de lo que hace legible una
+   pantalla de ajustes. */
+
+const filaAjuste = (accion, titulo, sub = '', chevron = '›') => `
+  <div class="set-row"${accion ? ` onclick="${accion}"` : ''}>
+    <div><div class="set-row-title">${titulo}</div>
+      ${sub ? `<div class="set-row-sub">${sub}</div>` : ''}</div>
+    <span class="set-chev">${chevron}</span>
+  </div>`;
+
+const datoAjuste = (etiqueta, valor) => `
+  <div class="set-fact">
+    <span class="set-fact-label">${etiqueta}</span>
+    <span class="set-fact-value">${valor}</span>
+  </div>`;
+
 export function openSettings() {
   const user = currentUser();
   const s = settings();
@@ -551,70 +580,51 @@ export function openSettings() {
     </div>
 
     <div class="section-heading"><span class="section-heading-text">Lectura</span></div>
-    <div class="set-row" onclick="openPlanner()">
-      <div><div class="set-row-title">Tiempo y objetivo</div>
-        <div class="set-row-sub">${s.minutesWeekday != null ? `${s.minutesWeekday} min entre semana` : 'Sin configurar'}${
-          s.goalValue ? ` · meta de ${s.goalValue} ${s.goalKind === 'books' ? 'libros' : s.goalKind}` : ''}</div></div>
-      <span class="set-chev">›</span>
+    <div class="set-card">
+      ${filaAjuste('openPlanner()', 'Tiempo y objetivo',
+        `${s.minutesWeekday != null ? `${s.minutesWeekday} min entre semana` : 'Sin configurar'}${
+          s.goalValue ? ` · meta de ${s.goalValue} ${s.goalKind === 'books' ? 'libros' : s.goalKind}` : ''}`)}
+      ${/* «estimado · provisional» decía lo mismo dos veces y empujaba
+            la etiqueta contra el borde en una pantalla estrecha. */''}
+      ${datoAjuste('Tu ritmo real',
+        `${pace.pagesPerDay.toFixed(0)} páginas al día${pace.provisional ? ' · estimación' : ` · ${pace.source}`}`)}
+      ${progress ? datoAjuste('Avance del año',
+        `${progress.done} de ${progress.goal} · ${progress.ahead
+          ? `${progress.diffUnits} por delante 🎉` : `${progress.diffUnits} por detrás`}`) : ''}
     </div>
-    <div class="set-row">
-      <div><div class="set-row-title">Tu ritmo real</div>
-        <div class="set-row-sub">${pace.pagesPerDay.toFixed(0)} páginas al día · ${pace.source}${pace.provisional ? ' · estimación provisional' : ''}</div></div>
-    </div>
-    ${progress ? `<div class="set-row">
-      <div><div class="set-row-title">Avance del año</div>
-        <div class="set-row-sub">${progress.done} de ${progress.goal} · ${progress.ahead
-          ? `vas ${progress.diffUnits} por delante 🎉` : `vas ${progress.diffUnits} por detrás`}</div></div>
-    </div>` : ''}
 
-    <div class="section-heading"><span class="section-heading-text">Tu nombre</span></div>
+    <div class="section-heading"><span class="section-heading-text">Tu perfil</span></div>
     <div id="username-slot">${renderUsername()}</div>
-
-    <div class="set-row" onclick="openProfile()">
-      <div><div class="set-row-title">Tu perfil público</div>
-        <div class="set-row-sub">${myUsername()
-          ? 'Míralo como lo ve quien abre tu link'
-          : 'Elige tu @usuario para tenerlo'}</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="openPlace()">
-      <div><div class="set-row-title">Dónde estás</div>
-        <div class="set-row-sub">Para intercambiar. Solo la ciudad, nunca la dirección</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="openMySwaps()">
-      <div><div class="set-row-title">Mis libros ofrecidos</div>
-        <div class="set-row-sub">Lo que tienes disponible para intercambio</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="openLegal()">
-      <div><div class="set-row-title">Privacidad, términos y soporte</div>
-        <div class="set-row-sub">Qué se guarda, qué no, y cómo escribirnos</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="openPosts()">
-      <div><div class="set-row-title">Lo que escribo</div>
-        <div class="set-row-sub">Tus notas de lectura, reseñas y listas</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="openBlocked()">
-      <div><div class="set-row-title">Bloqueadas y silenciadas</div>
-        <div class="set-row-sub">Quién no te ve y a quién no ves</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="openInvite()">
-      <div><div class="set-row-title">Invitar a alguien</div>
-        <div class="set-row-sub">Tu link y tu código QR, para enseñarlo en persona</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="openProfileSettings()">
-      <div><div class="set-row-title">Qué se ve en tu perfil</div>
-        <div class="set-row-sub">Tu bio, tu ciudad y qué secciones se publican</div></div>
-      <span class="set-chev">›</span>
+    <div class="set-card">
+      ${filaAjuste('openProfile()', 'Tu perfil público', myUsername()
+        ? 'Míralo como lo ve quien abre tu link'
+        : 'Elige tu @usuario para tenerlo')}
+      ${filaAjuste('openProfileSettings()', 'Qué se ve en tu perfil',
+        'Tu bio, tu ciudad y qué secciones se publican')}
+      ${filaAjuste('openPosts()', 'Lo que escribo',
+        'Tus notas de lectura, reseñas y listas')}
     </div>
 
+    <div class="section-heading"><span class="section-heading-text">Tu gente</span></div>
+    <div class="set-card">
+      ${filaAjuste('openInvite()', 'Invitar a alguien',
+        'Tu link y tu código QR, para enseñarlo en persona')}
+      ${filaAjuste('openBlocked()', 'Bloqueadas y silenciadas',
+        'Quién no te ve y a quién no ves')}
+    </div>
+
+    <div class="section-heading"><span class="section-heading-text">Intercambio</span></div>
+    <div class="set-card">
+      ${filaAjuste('openPlace()', 'Dónde estás',
+        'Solo la ciudad, nunca la dirección')}
+      ${filaAjuste('openMySwaps()', 'Mis libros ofrecidos')}
+    </div>
+
+    ${/* La regla del resto de la hoja: lo que es una LISTA DE FILAS va
+          en tarjeta; lo que es un formulario o un par de botones, no.
+          Los logros son una lista, así que llevan la suya. */''}
     <div class="section-heading"><span class="section-heading-text">Logros</span></div>
-    <div class="ach-list">
+    <div class="set-card"><div class="ach-list">
       ${achievementStatus().map((a) => `
         <div class="ach ${a.earned ? 'got' : ''}">
           <span class="ach-icon">${a.earned ? a.icon : '🔒'}</span>
@@ -627,31 +637,26 @@ export function openSettings() {
             ? `<button class="btn-mini" onclick="shareAchievement('${esc(a.name).replace(/'/g, "&#39;")}')">Presumir</button>`
             : `<span class="ach-count">${a.done}/${a.need}${a.unit}</span>`}
         </div>`).join('')}
-    </div>
+    </div></div>
 
     <div class="section-heading"><span class="section-heading-text">Apariencia</span></div>
-    <div class="set-row" onclick="togglePet()">
-      <div><div class="set-row-title">Mascota lectora</div>
-        <div class="set-row-sub">${petConfig().hidden
-          ? 'Oculta · toca para traerla de vuelta'
-          : 'Visible en el inicio · toca para ocultarla'}</div></div>
-      <span class="set-chev">${petConfig().hidden ? '○' : '●'}</span>
-    </div>
-    <div class="set-row" onclick="openThemeStore()">
-      <div><div class="set-row-title">Tienda de temas</div>
-        <div class="set-row-sub">Nueve temas para cambiarle la cara a la app · ${earnedCount()} logros conseguidos</div></div>
-      <span class="set-chev">›</span>
+    <div class="set-card">
+      ${filaAjuste('togglePet()', 'Mascota lectora', petConfig().hidden
+        ? 'Oculta · toca para traerla de vuelta'
+        : 'Visible en el inicio · toca para ocultarla',
+        petConfig().hidden ? '○' : '●')}
+      ${filaAjuste('openThemeStore()', 'Tienda de temas',
+        `Diez temas para cambiarle la cara a la app · ${earnedCount()} logros conseguidos`)}
     </div>
 
     ${workerUrl() ? `
     <div class="section-heading"><span class="section-heading-text">El agente</span></div>
-    <div class="set-row" onclick="toggleAgent()">
-      <div><div class="set-row-title">El agente lector</div>
-        <div class="set-row-sub">${
-          !agentDecided() ? 'Sin decidir · te preguntaremos la primera vez que lo uses'
-          : agentAvailable() ? 'Encendido · «¿me lo leo?» y qué leer después'
-          : 'Apagado · no se envía nada'}</div></div>
-      <span class="set-chev">${!agentDecided() ? '·' : agentAvailable() ? '●' : '○'}</span>
+    <div class="set-card">
+      ${filaAjuste('toggleAgent()', 'El agente lector',
+        !agentDecided() ? 'Sin decidir · te preguntaremos la primera vez que lo uses'
+        : agentAvailable() ? 'Encendido · «¿me lo leo?» y qué leer después'
+        : 'Apagado · no se envía nada',
+        !agentDecided() ? '·' : agentAvailable() ? '●' : '○')}
     </div>
     <button class="link-btn" onclick="showAgentNotice()">Ver exactamente qué se envía</button>
     <p class="set-fineprint">
@@ -688,23 +693,25 @@ export function openSettings() {
     </p>
 
     <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
-    <div class="set-row" onclick="doExportJson()">
-      <div><div class="set-row-title">Exportar a JSON</div>
-        <div class="set-row-sub">Una copia tuya, legible, de todo lo registrado</div></div>
-      <span class="set-chev">›</span>
-    </div>
-    <div class="set-row" onclick="doExportCsv()">
-      <div><div class="set-row-title">Exportar a CSV</div>
-        <div class="set-row-sub">Compatible con la importación de Goodreads</div></div>
-      <span class="set-chev">›</span>
+    <div class="set-card">
+      ${filaAjuste('doExportJson()', 'Exportar a JSON',
+        'Una copia tuya, legible, de todo lo registrado')}
+      ${filaAjuste('doExportCsv()', 'Exportar a CSV',
+        'Compatible con la importación de Goodreads')}
     </div>
 
-    <div class="section-heading"><span class="section-heading-text">Ayuda</span></div>
-    <a class="set-row" href="${soporteHref()}" style="text-decoration:none;color:inherit">
-      <div><div class="set-row-title">Escríbenos</div>
-        <div class="set-row-sub">${esc(soporteCorreo())}</div></div>
-      <span class="set-chev">›</span>
-    </a>
+    <!-- Privacidad estaba suelta en medio del perfil y «cómo escribirnos»
+         repetía la fila de abajo. Las dos van juntas: son lo mismo. -->
+    <div class="section-heading"><span class="section-heading-text">Privacidad y ayuda</span></div>
+    <div class="set-card">
+      ${filaAjuste('openLegal()', 'Privacidad y términos',
+        'Qué se guarda de ti y qué no')}
+      <a class="set-row" href="${soporteHref()}">
+        <div><div class="set-row-title">Escríbenos</div>
+          <div class="set-row-sub">${esc(soporteCorreo())}</div></div>
+        <span class="set-chev">›</span>
+      </a>
+    </div>
     <p class="set-fineprint">
       Si alguien te está molestando, puedes reportarlo desde su perfil o desde
       cualquier comentario, y bloquearla desde ahí mismo.

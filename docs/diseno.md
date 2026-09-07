@@ -291,6 +291,59 @@ npm run test:e2e         # la app entera contra el emulador
 
 ---
 
+## Los ajustes, y por qué no son un menú lateral
+
+> «Esto así cuesta trabajo leerlo, sería mejor rediseñarlo en cards o algo
+> o un menú lateral, los menús no son claros.»
+
+**El problema no era el menú: eran los encabezados.** El que decía «Tu
+nombre» tenía debajo **ocho** filas —perfil público, dónde estás, libros
+ofrecidos, privacidad, lo que escribo, bloqueadas, invitar, qué se ve— y
+solo la primera tenía algo que ver con el nombre. Cada fila nueva se había
+ido pegando a la sección que quedaba encima, hasta que los títulos dejaron
+de ser verdad. Cuando el encabezado miente, no hay dónde apoyar la vista y
+diecisiete filas del mismo peso se leen como un muro.
+
+Tres cosas, en este orden de importancia:
+
+**1 · Encabezados que sí son verdad.** Lectura · Tu perfil · Tu gente ·
+Intercambio · Logros · Apariencia · El agente · Estanterías · Tus datos ·
+Privacidad y ayuda · Cuenta. Ninguno tiene debajo nada que no nombre.
+«Privacidad» estaba suelta en medio del perfil y su subtítulo prometía
+«cómo escribirnos», que era literalmente la fila de Ayuda: ahora son un
+bloque.
+
+**2 · Cada grupo con su superficie.** Es lo que pedía Laura por «cards», y
+es lo que permite que el ojo trocee la pantalla sin leerla. La regla:
+**una lista de filas va en tarjeta; un formulario o un par de botones,
+no.** Por eso Logros la lleva y Estanterías o Cuenta no.
+
+**3 · Un dato no es un menú.** «Tu ritmo real» y «Avance del año» no
+llevan a ninguna parte, pero se pintaban igual que las filas que sí: se
+tocaban y no pasaba nada. Ahora van con la etiqueta a la izquierda y el
+número a la derecha, que es como se lee un dato y no como se lee un menú.
+
+### Por qué NO un menú lateral
+
+Un cajón lateral no arregla nada de lo de arriba: mueve las mismas
+diecisiete filas detrás de un gesto. Añade una capa de navegación para
+llegar a los mismos sitios, en una app que se usa con una mano y en la que
+Ajustes ya es una hoja que sube. El desorden seguiría dentro, solo que
+tapado.
+
+### Y por qué NO un icono por fila
+
+Fue lo primero que probé, porque escanear por forma es más rápido que
+escanear leyendo. Pero el pliego tiene 19 iconos y solo **nueve** de las
+filas tienen uno honesto —`sitio` para «Dónde estás», `candado` para
+«Bloqueadas», `cruce` para «Mis libros ofrecidos»—. Las otras seis
+saldrían con el icono más parecido que hubiera, que es exactamente la
+manera de volver al «se ve prompteada» del que salimos. Si algún día
+queremos iconos aquí, lo que toca es dibujar los que faltan a propósito,
+no reciclar el que menos desentona.
+
+---
+
 ## La regla para lo que venga
 
 Antes de añadir una pantalla, tres preguntas:
