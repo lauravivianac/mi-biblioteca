@@ -300,13 +300,21 @@ por su cuenta**; lo que la lectora busca y añade a mano es suyo.
 
 ---
 
-### Nueva · La mascota pregunta también por notificación — *abierta*
+### La mascota pregunta también por notificación — *abierta* · concreta #95 y #69
 
 > «Haz que la mascota pregunte también por notificación.»
 
-Las dos preguntas de la historia #45 ya funcionan, pero **solo cuando abres la app** — y
-quien lleva cinco días sin leer es justamente quien no la abre. Sin esto, la pregunta
-llega a todo el mundo menos a quien iba dirigida.
+**No es una historia nueva: es el contenido que les faltaba a dos que ya estaban.**
+#95 (*Notificaciones push con FCM*, E9) tenía el cómo y ningún qué; #69 (*Recordatorio de
+lectura a mi hora habitual*, E5) tenía un qué genérico — un recordatorio a una hora fija,
+que es el tipo de aviso que se ignora en tres días porque siempre dice lo mismo.
+
+Lo que las junta y las hace valer la pena es la historia #45: **la mascota ya tiene algo
+concreto que preguntar**, y distinto cada vez, porque sale de tus libros.
+
+Las dos preguntas de la #45 ya funcionan, pero **solo cuando abres la app** — y quien
+lleva cinco días sin leer es justamente quien no la abre. Sin esto, la pregunta llega a
+todo el mundo menos a quien iba dirigida.
 
 #### Por qué no es un rato de trabajo
 
