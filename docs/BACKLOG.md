@@ -297,3 +297,78 @@ La forma que sale barata y sirve igual:
 Lo que **no** debe hacer: bloquear libros. Una biblioteca que esconde títulos es censura y
 además no funciona —se sortea en un minuto—. Lo que se filtra es **lo que la app propone
 por su cuenta**; lo que la lectora busca y añade a mano es suyo.
+
+---
+
+### Nueva · La mascota pregunta también por notificación — *abierta*
+
+> «Haz que la mascota pregunte también por notificación.»
+
+Las dos preguntas de la historia #45 ya funcionan, pero **solo cuando abres la app** — y
+quien lleva cinco días sin leer es justamente quien no la abre. Sin esto, la pregunta
+llega a todo el mundo menos a quien iba dirigida.
+
+#### Por qué no es un rato de trabajo
+
+En el repo no hay nada: `sw.js` son 76 líneas de caché. Y una notificación con la app
+cerrada **no se puede programar desde el navegador** — no hay API fiable para eso en
+ningún sitio, y menos en iPhone. Hace falta lo que esta app nunca ha tenido: **algo que
+se despierte solo**.
+
+| Pieza | Dónde |
+|---|---|
+| Permiso del navegador y token del dispositivo | Cliente |
+| Guardar el token | Firestore, bajo la usuaria |
+| Decidir a quién y qué | Un cron diario |
+| Mandarlo | FCM |
+| Pintarlo y abrir la hoja al tocarlo | `sw.js` |
+
+**Lo que ya está resuelto y encaja solo:** `estadoMascota` y `fraseMascota` viven en
+`pet-core.js`, sin DOM y sin Firebase. El cron **importa el mismo módulo** y manda
+exactamente la misma frase que verías en el inicio. Una sola voz en los dos sitios, sin
+un segundo juego de frases que se desincronice — que es como esto sale mal siempre.
+
+#### La decisión que no es técnica
+
+El cron **lee la biblioteca de cada persona todos los días**, aunque nadie abra la app.
+Hoy el Worker solo ve lo que le mandas en el momento y no guarda nada. Esto es otra cosa,
+y hay que decirlo en el aviso de privacidad antes de encenderlo — sobre todo porque puede
+ser la biblioteca de una niña.
+
+Lo que lo hace aceptable, y es parte de la historia y no un detalle: **el cron lee, decide
+y olvida.** No guarda ni un registro de lo que vio, ni el texto que mandó. Lo único que
+persiste es el token del dispositivo y la fecha del último aviso.
+
+#### Y la regla de este módulo, que aquí pesa el doble
+
+**La mascota nunca castiga.** En una pantalla que abriste tú, una frase floja se perdona;
+una notificación entra en el teléfono sin que nadie la haya pedido en ese momento, y el
+mismo texto se lee mucho más duro. Así que:
+
+- **Una al día como mucho**, y solo si hay algo que preguntar de verdad.
+- **Nunca de rachas ni de metas.** «Vas a perder tu racha» es la frase que hace que la
+  gente desinstale, y encima es mentira: aquí no se pierde nada.
+- **Franja horaria**, y por defecto ninguna de noche.
+- **Se apaga en un toque**, desde la propia notificación y desde Ajustes.
+- **El permiso se pide cuando se entiende para qué es** —al responder por primera vez a
+  una pregunta de la mascota—, nunca al registrarse. La misma regla que el consentimiento
+  del agente en la historia #61.
+
+#### En rebanadas
+
+1. Permiso, token y el interruptor en Ajustes. Sin cron todavía: no manda nada, pero
+   tampoco promete nada.
+2. El cron diario leyendo `pet-core.js`, con el aviso de privacidad actualizado **en el
+   mismo cambio**.
+3. Tocar la notificación abre la hoja de respuesta directamente, en el libro que toca.
+
+La 1 y la 3 son de esta app. **La 2 es un servicio nuevo**, con su secreto de cuenta de
+servicio —que va por `wrangler secret put` y no se pega en ningún sitio, como la key del
+agente— y su propio coste.
+
+#### Lo que NO cubre
+
+iPhone solo entrega notificaciones a una PWA **instalada en la pantalla de inicio**. No es
+un fallo que se pueda arreglar desde aquí: si la mayoría de las lectoras van a usar la app
+desde el navegador de Safari sin instalarla, esta historia les llega a medias, y eso hay
+que saberlo **antes** de construir la rebanada 2, no después.
