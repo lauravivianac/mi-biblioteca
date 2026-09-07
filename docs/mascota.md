@@ -525,8 +525,9 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ## Estado
 
-**La Gatita ya está puesta** — las cinco poses, con la respiración lenta que
-sustituye a la animación dibujada. Faltan las otras cinco especies.
+**Puestas: la Gatita y la Coneja** — las cinco poses de cada una, con la
+respiración lenta que sustituye a la animación dibujada. Faltan el Búho, la
+Zorrita, el Mapache y el Panda.
 
 Mientras una especie no tenga sus cinco poses **se sigue dibujando por
 código**: las dos formas conviven a propósito (`ILUSTRADAS` en
@@ -534,7 +535,14 @@ código**: las dos formas conviven a propósito (`ILUSTRADAS` en
 una sin dejar nada a medias.
 
 El conversor está en `npm run mascotas <carpeta>`: toma los PNG tal cual
-llegan y deja los WebP en `img/mascota/`. Con la Gatita, **8,1 MB → 134 KB**.
+llegan y deja los WebP en `img/mascota/`. Unos 8 MB por tanda → unos 120 KB.
+
+**Y recorta las que lleguen con el fondo pegado.** Dos de las cinco de la
+Coneja venían con el cuadriculado de «esto es transparente» pintado encima,
+como píxeles opacos. Se detecta contando —una recortada tiene medio lienzo
+transparente, una con el fondo pegado tiene cero— y se quita por inundación
+desde el borde, no filtrando por color: la coneja tiene la panza casi blanca y
+quitar «todo lo claro» se la comería. Si te pasa, no hagas nada: mándala igual.
 
 ---
 
