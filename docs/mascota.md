@@ -26,7 +26,7 @@ Así que hay que elegir. No es una decisión técnica, es tuya.
 
 ## Las dos salidas
 
-### A · Imágenes, con menos opciones ← lo que yo haría
+### A · Imágenes, con menos opciones ← **elegida**
 
 **30 ilustraciones**: 6 especies × 5 ánimos. Cada especie con su color natural
 —la zorra naranja, el panda blanco y negro— y sin accesorios.
@@ -115,6 +115,411 @@ Un prompt completo queda así:
 > *[bloque de estilo]* + `una zorrita naranja teja con la punta de la cola y la
 > panza blancas, sentada con un libro abierto pequeño entre las patas, mirando
 > el libro con atención.`
+
+---
+
+## Los prompts, listos para copiar
+
+**Seis conversaciones, una por especie. Cinco mensajes en cada una, seguidos.**
+Eso es lo que hace que la mascota no cambie de tamaño ni de cara al pasar de un
+ánimo a otro — y eso se nota más que si estuviera mal dibujada.
+
+Si la herramienta no sabe hacer el fondo transparente, el prompt le pide un
+magenta plano: ese color no está en ninguna mascota, así que lo recorto yo sin
+que se coma un solo pelo.
+
+### Gatita · `gato`
+
+**Mensaje 1**
+
+```
+Dibuja una gatita atigrada color miel, con la panza crema y rayas suaves, sentada tranquila, con los ojos cerrados en una sonrisa y las orejas relajadas.
+
+Ilustración infantil en acuarela con línea de tinta suave, estilo libro
+álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
+Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
+redondeado, de cabeza grande y cuerpo pequeño.
+
+MUY IMPORTANTE:
+· Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
+  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  transparente, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+  Centrado en el cuadro, con un poco de aire alrededor.
+· Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, y tienen que ser idénticas en color, forma y tamaño.
+```
+
+**Mensaje 2** — *leyendo*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está sentada con un libro abierto pequeño entre las patas delanteras, mirando el libro con atención.
+```
+
+**Mensaje 3** — *expectante*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está inclinada hacia delante, con las orejas muy arriba y los ojos grandes, brillantes y muy abiertos, como a punto de algo.
+```
+
+**Mensaje 4** — *dormida*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está hecha un ovillo durmiendo, con los ojos cerrados, muy relajada y la cola alrededor del cuerpo.
+```
+
+**Mensaje 5** — *celebrando*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dando un saltito de alegría, con las patitas delanteras arriba y los ojos cerrados de contenta.
+```
+
+### Coneja · `conejo`
+
+**Mensaje 1**
+
+```
+Dibuja una coneja gris claro, de orejas largas caídas y panza blanca, sentada tranquila, con los ojos cerrados en una sonrisa y las orejas relajadas.
+
+Ilustración infantil en acuarela con línea de tinta suave, estilo libro
+álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
+Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
+redondeado, de cabeza grande y cuerpo pequeño.
+
+MUY IMPORTANTE:
+· Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
+  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  transparente, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+  Centrado en el cuadro, con un poco de aire alrededor.
+· Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, y tienen que ser idénticas en color, forma y tamaño.
+```
+
+**Mensaje 2** — *leyendo*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está sentada con un libro abierto pequeño entre las patas delanteras, mirando el libro con atención.
+```
+
+**Mensaje 3** — *expectante*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está inclinada hacia delante, con las orejas muy arriba y los ojos grandes, brillantes y muy abiertos, como a punto de algo.
+```
+
+**Mensaje 4** — *dormida*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está hecha un ovillo durmiendo, con los ojos cerrados, muy relajada y la cola alrededor del cuerpo.
+```
+
+**Mensaje 5** — *celebrando*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dando un saltito de alegría, con las patitas delanteras arriba y los ojos cerrados de contenta.
+```
+
+### Búho · `buho`
+
+**Mensaje 1**
+
+```
+Dibuja un búho pequeño y regordete, marrón cálido, con plumas moteadas y ojos grandes de ámbar, sentada tranquila, con los ojos cerrados en una sonrisa y las orejas relajadas.
+
+Ilustración infantil en acuarela con línea de tinta suave, estilo libro
+álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
+Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
+redondeado, de cabeza grande y cuerpo pequeño.
+
+MUY IMPORTANTE:
+· Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
+  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  transparente, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+  Centrado en el cuadro, con un poco de aire alrededor.
+· Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, y tienen que ser idénticas en color, forma y tamaño.
+```
+
+**Mensaje 2** — *leyendo*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está sentada con un libro abierto pequeño entre las patas delanteras, mirando el libro con atención.
+```
+
+**Mensaje 3** — *expectante*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está inclinada hacia delante, con las orejas muy arriba y los ojos grandes, brillantes y muy abiertos, como a punto de algo.
+```
+
+**Mensaje 4** — *dormida*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está hecha un ovillo durmiendo, con los ojos cerrados, muy relajada y la cola alrededor del cuerpo.
+```
+
+**Mensaje 5** — *celebrando*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dando un saltito de alegría, con las patitas delanteras arriba y los ojos cerrados de contenta.
+```
+
+### Zorrita · `zorro`
+
+**Mensaje 1**
+
+```
+Dibuja una zorrita naranja teja, con la punta de la cola y la panza blancas, sentada tranquila, con los ojos cerrados en una sonrisa y las orejas relajadas.
+
+Ilustración infantil en acuarela con línea de tinta suave, estilo libro
+álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
+Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
+redondeado, de cabeza grande y cuerpo pequeño.
+
+MUY IMPORTANTE:
+· Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
+  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  transparente, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+  Centrado en el cuadro, con un poco de aire alrededor.
+· Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, y tienen que ser idénticas en color, forma y tamaño.
+```
+
+**Mensaje 2** — *leyendo*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está sentada con un libro abierto pequeño entre las patas delanteras, mirando el libro con atención.
+```
+
+**Mensaje 3** — *expectante*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está inclinada hacia delante, con las orejas muy arriba y los ojos grandes, brillantes y muy abiertos, como a punto de algo.
+```
+
+**Mensaje 4** — *dormida*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está hecha un ovillo durmiendo, con los ojos cerrados, muy relajada y la cola alrededor del cuerpo.
+```
+
+**Mensaje 5** — *celebrando*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dando un saltito de alegría, con las patitas delanteras arriba y los ojos cerrados de contenta.
+```
+
+### Mapache · `mapache`
+
+**Mensaje 1**
+
+```
+Dibuja un mapache gris, con antifaz negro y cola anillada, sentada tranquila, con los ojos cerrados en una sonrisa y las orejas relajadas.
+
+Ilustración infantil en acuarela con línea de tinta suave, estilo libro
+álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
+Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
+redondeado, de cabeza grande y cuerpo pequeño.
+
+MUY IMPORTANTE:
+· Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
+  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  transparente, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+  Centrado en el cuadro, con un poco de aire alrededor.
+· Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, y tienen que ser idénticas en color, forma y tamaño.
+```
+
+**Mensaje 2** — *leyendo*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está sentada con un libro abierto pequeño entre las patas delanteras, mirando el libro con atención.
+```
+
+**Mensaje 3** — *expectante*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está inclinada hacia delante, con las orejas muy arriba y los ojos grandes, brillantes y muy abiertos, como a punto de algo.
+```
+
+**Mensaje 4** — *dormida*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está hecha un ovillo durmiendo, con los ojos cerrados, muy relajada y la cola alrededor del cuerpo.
+```
+
+**Mensaje 5** — *celebrando*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dando un saltito de alegría, con las patitas delanteras arriba y los ojos cerrados de contenta.
+```
+
+### Panda · `panda`
+
+**Mensaje 1**
+
+```
+Dibuja un panda pequeño y regordete, blanco y negro, sentada tranquila, con los ojos cerrados en una sonrisa y las orejas relajadas.
+
+Ilustración infantil en acuarela con línea de tinta suave, estilo libro
+álbum. Pintada a mano, con grano de papel y bordes de pigmento visibles.
+Colores apagados y cálidos, nada saturado ni digital. Personaje tierno y
+redondeado, de cabeza grande y cuerpo pequeño.
+
+MUY IMPORTANTE:
+· Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo y SIN SOMBRA
+  debajo: el personaje va recortado y solo. Si no puedes hacer el fondo
+  transparente, hazlo de un magenta puro y plano (#FF00FF).
+· Cuerpo entero, de tres cuartos, mirando ligeramente a la izquierda.
+  Centrado en el cuadro, con un poco de aire alrededor.
+· Sin texto, sin letras, sin firma, sin marca de agua, sin marco.
+· Cuadrado, 512 × 512 px.
+
+Guarda este personaje como referencia: te voy a pedir cuatro poses más
+del MISMO, y tienen que ser idénticas en color, forma y tamaño.
+```
+
+**Mensaje 2** — *leyendo*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está sentada con un libro abierto pequeño entre las patas delanteras, mirando el libro con atención.
+```
+
+**Mensaje 3** — *expectante*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está inclinada hacia delante, con las orejas muy arriba y los ojos grandes, brillantes y muy abiertos, como a punto de algo.
+```
+
+**Mensaje 4** — *dormida*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está hecha un ovillo durmiendo, con los ojos cerrados, muy relajada y la cola alrededor del cuerpo.
+```
+
+**Mensaje 5** — *celebrando*
+
+```
+El mismo personaje exacto de la imagen anterior: mismo tamaño de cabeza,
+mismo cuerpo, mismos colores, misma escala dentro del cuadro y misma
+altura de los ojos. Fondo transparente y sin sombra, igual que antes.
+
+Solo cambia la pose: ahora está dando un saltito de alegría, con las patitas delanteras arriba y los ojos cerrados de contenta.
+```
+
+Los cuatro mensajes de seguimiento son **los mismos para las seis especies**:
+cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízalos.
 
 ---
 
