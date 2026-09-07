@@ -29,7 +29,9 @@
    ───────────────────────────────────────────────────────────── */
 
 import { readFileSync } from 'node:fs';
-import { estadoMascota, fraseMascota, fraseDeFallo, FRASES, DIA } from '../src/pet-core.js';
+import {
+  estadoMascota, fraseMascota, fraseDeFallo, avisoDelDia, FRASES, DIA,
+} from '../src/pet-core.js';
 
 let bien = 0;
 let mal = 0;
@@ -355,6 +357,92 @@ console.log('\n─── LO QUE DICE CUANDO FALLA ───');
   /* Y el cerco temático no es un rechazo: es cambiar de tema. */
   comprobar('«fuera de tema» redirige en vez de negar',
     /de libros te cuento/i.test(fraseDeFallo('fuera-de-tema')));
+}
+
+/* ── 7 · EL AVISO DEL DÍA  ·  historias #95 y #69 ────────────
+
+   Lo que se prueba aquí no es que avise: es que CASI NUNCA avisa. Una
+   frase floja en una pantalla que abriste tú se perdona; la misma
+   entrando sola en el teléfono se lee mucho más dura, y una app de
+   leer que suena cuando no toca se desinstala en una semana. */
+
+console.log('\n─── CUÁNDO SUENA EL TELÉFONO, Y CUÁNDO NO ───');
+
+{
+  const conPregunta = estadoMascota([{
+    id: 'a', title: 'Bartleby', total: 300, page: 80, status: 'reading', pct: 27,
+    lastReadAt: AHORA - 6 * DIA, finishedAt: 0,
+  }], AHORA);
+  comprobar('el caso base es una pregunta de verdad',
+    conPregunta.mood === 'preguntando', conPregunta.mood);
+
+  const base = { nombre: 'Cleo', hora: 18, ultimoAviso: '', hoy: '2026-09-07', ahora: AHORA };
+  const aviso = avisoDelDia(conPregunta, base);
+  comprobar('con una pregunta pendiente y a media tarde, avisa',
+    Boolean(aviso), JSON.stringify(aviso));
+  comprobar('y lo firma ELLA, no la app',
+    aviso.titulo === 'Cleo', aviso.titulo);
+  comprobar('el cuerpo es la MISMA frase que se ve en el inicio',
+    aviso.cuerpo === fraseMascota(conPregunta, { ahora: AHORA, nombre: 'Cleo' }), aviso.cuerpo);
+  comprobar('y trae el libro, para poder abrir su hoja al tocarla',
+    aviso.libroId === 'a', aviso.libroId);
+
+  /* Y ahora todas las veces que NO debe sonar. */
+  comprobar('no avisa a las 7 de la mañana',
+    avisoDelDia(conPregunta, { ...base, hora: 7 }) === null);
+  comprobar('no avisa a las 11 de la noche',
+    avisoDelDia(conPregunta, { ...base, hora: 23 }) === null);
+  comprobar('no avisa dos veces el mismo día',
+    avisoDelDia(conPregunta, { ...base, ultimoAviso: '2026-09-07' }) === null);
+  comprobar('pero sí al día siguiente',
+    Boolean(avisoDelDia(conPregunta, { ...base, ultimoAviso: '2026-09-06' })));
+
+  /* Los ánimos que NO justifican encender un teléfono. */
+  const sinPregunta = {
+    /* «contenta» pide una lectura reciente y NADA en curso: un libro
+       terminado hace días pero leído ayer. Una biblioteca vacía no
+       vale — esa da «dormida», que es otra cosa. */
+    contenta: estadoMascota([{ id: 'a', title: 'W', total: 200, page: 200, status: 'read',
+      pct: 100, lastReadAt: AHORA - DIA, finishedAt: AHORA - 5 * DIA }], AHORA),
+    dormida: estadoMascota([], AHORA),
+    leyendo: estadoMascota([{ id: 'b', title: 'X', total: 300, page: 90, status: 'reading',
+      pct: 30, lastReadAt: AHORA - 3600e3, finishedAt: 0 }], AHORA),
+    celebrando: estadoMascota([{ id: 'c', title: 'Y', total: 100, page: 100, status: 'read',
+      pct: 100, lastReadAt: AHORA - DIA, finishedAt: AHORA - DIA }], AHORA),
+    expectante: estadoMascota([{ id: 'd', title: 'Z', total: 300, page: 280, status: 'reading',
+      pct: 93, lastReadAt: AHORA - 3600e3, finishedAt: 0 }], AHORA),
+  };
+  for (const [esperado, estado] of Object.entries(sinPregunta)) {
+    comprobar(`«${esperado}» no enciende el teléfono de nadie`,
+      estado.mood === esperado && avisoDelDia(estado, base) === null,
+      `mood=${estado.mood} aviso=${JSON.stringify(avisoDelDia(estado, base))}`);
+  }
+
+  /* Terminar un libro es la mejor noticia del módulo Y AUN ASÍ no se
+     manda: para cuando llegue el aviso, ya lo has celebrado tú. */
+  comprobar('ni siquiera celebrar justifica una notificación',
+    avisoDelDia(sinPregunta.celebrando, base) === null);
+
+  /* La regla que más cuesta escribir y más importa: NADA DE RACHAS. */
+  const RECLAMO = /racha|vas a perder|no pierdas|meta|objetivo|llevas \d+ días sin/i;
+  const cuerpos = [];
+  for (const dias of [5, 6, 9, 20]) {
+    const e = estadoMascota([{ id: 'a', title: 'Bartleby', total: 300, page: 80,
+      status: 'reading', pct: 27, lastReadAt: AHORA - dias * DIA, finishedAt: 0 }], AHORA);
+    const a = avisoDelDia(e, base);
+    if (a) cuerpos.push(a.cuerpo);
+  }
+  for (const mes of [1, 3]) {
+    const e = estadoMascota([{ id: 'z', title: 'Mi Historia', total: 426, page: 0,
+      status: 'reading', pct: 0, lastReadAt: 0, finishedAt: 0,
+      mes: 'Agosto', atrasadoMeses: mes }], AHORA);
+    const a = avisoDelDia(e, base);
+    if (a) cuerpos.push(a.cuerpo);
+  }
+  comprobar('hay avisos que comprobar', cuerpos.length >= 3, `${cuerpos.length}`);
+  const rachas = cuerpos.filter((c) => RECLAMO.test(c));
+  comprobar('NINGÚN aviso habla de rachas, metas ni días perdidos',
+    rachas.length === 0, rachas.join(' · '));
 }
 
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);

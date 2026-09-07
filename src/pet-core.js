@@ -59,6 +59,18 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
      anteayer. */
   const celebra = Boolean(terminado && terminado.finishedAt >= ultimaLectura);
 
+  /* ¿CONSTA QUE LO LEYERA? Marcar un libro como terminado es un toque;
+     leerlo deja rastro —una página apuntada o una lectura—. La
+     diferencia importa porque hay frases que dicen CUÁNTO leíste, y
+     decirle «eso fue 90 páginas, nada mal» a quien no ha abierto el
+     libro es atribuirle algo que no hizo.
+
+     Es la misma prueba de vida que separa «empezado» de «leyendo», que
+     apliqué al libro en curso y no aquí — el mismo descuido, en el otro
+     extremo del recorrido. */
+  const constaLectura = Boolean(terminado
+    && (terminado.page > 0 || terminado.lastReadAt));
+
   const casiTermina = leyendo.find((b) => (b.pct ?? 0) >= 85);
 
   /* «LEYENDO» NO ES LO MISMO QUE «EMPEZADO», y la app las confundía.
@@ -127,7 +139,15 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
      que convierte a una compañera en una app de productividad. */
   const activa = Boolean(enCurso) && diasCallada !== null && diasCallada < 2;
 
-  if (celebra) return { mood: 'celebrando', libro: terminado, diasCallada };
+  if (celebra) {
+    return {
+      mood: 'celebrando', libro: terminado, diasCallada,
+      /* Viaja con el estado para que la frase sepa si puede hablar de
+         páginas. Sin esto habría que volver a deducirlo al escribir, y
+         dos sitios deduciendo lo mismo se separan a la primera. */
+      constaLectura,
+    };
+  }
   if (casiTermina) return { mood: 'expectante', libro: casiTermina, diasCallada };
   if (preguntar) return { mood: 'preguntando', libro: preguntar, diasCallada };
   if (rescatar && !activa) return { mood: 'rescatando', libro: rescatar, diasCallada };
@@ -167,9 +187,14 @@ export const FRASES = {
     'Los libros no se van a ninguna parte.',
     'Cuando vuelvas, seguimos.',
   ],
+  /* «Eso fue {paginas} páginas» dice cuánto LEÍSTE, y solo puede
+     decirse si consta que leyeras. Las otras dos celebran el final sin
+     atribuirte nada, así que valen siempre. Ver `constaLectura`. */
   celebrando: [
     '¡Terminaste {libro}! 🎉',
     'Un libro menos en la pila.',
+  ],
+  celebrandoConPaginas: [
     'Eso fue {paginas} páginas. Nada mal.',
   ],
   expectante: [
@@ -229,6 +254,10 @@ export function fraseMascota(estado, { ahora = Date.now(), nombre = '' } = {}) {
 
   let cesta = FRASES[mood] || FRASES.contenta;
   if (mood === 'leyendo' && diasCallada >= 2) cesta = FRASES.estancada;
+  /* Solo se puede presumir de páginas si consta que las leyeras. */
+  if (mood === 'celebrando' && estado.constaLectura) {
+    cesta = [...FRASES.celebrando, ...FRASES.celebrandoConPaginas];
+  }
 
   const total = libro?.total || null;
   const pagina = libro?.page || 0;
@@ -286,8 +315,15 @@ export function fraseMascota(estado, { ahora = Date.now(), nombre = '' } = {}) {
    creyendo que era un caso suelto. No lo era: era toda la familia. */
 
 const FALLOS = {
-  /* Se cae la conexión. Ni de ella ni nuestro, y se arregla solo. */
+  /* Se cae la conexión. Ni de ella ni nuestro, y se arregla solo.
+     Solo sale cuando el navegador CONFIRMA que no hay red: si no lo
+     confirma, el fallo es nuestro y se dice como tal —achacarle a su
+     conexión una caída del Worker la manda a reiniciar el router. */
   'sin-red': 'Parece que te quedaste sin internet. Aquí te espero.',
+  'sin-respuesta': 'No conseguí contestarte, y tu conexión está bien. '
+    + 'Es cosa mía — prueba en un rato.',
+  'fallo-interno': 'Me atasqué por dentro. No es por lo que preguntaste; '
+    + 'inténtalo en un rato.',
 
   /* Transitorio de verdad: vuelve a intentarlo y suele salir. */
   proveedor: 'Me quedé sin palabras un momento. ¿Lo intentamos otra vez?',
@@ -319,3 +355,68 @@ const FALLO_NUESTRO = 'Ahora mismo no consigo contestarte, y no es por lo que '
  * @param {string} codigo  el del Worker (`err.codigo`), no su mensaje
  */
 export const fraseDeFallo = (codigo) => FALLOS[codigo] || FALLO_NUESTRO;
+
+/* ── EL AVISO DEL DÍA  ·  historias #95 y #69 ────────────────
+   «Haz que la mascota pregunte también por notificación.»
+
+   Las dos preguntas de la #45 solo llegan al abrir la app — y quien
+   lleva cinco días sin leer es justamente quien no la abre. Sin esto,
+   la pregunta le llega a todo el mundo menos a quien iba dirigida.
+
+   ESTA FUNCIÓN ES LA CABEZA DEL AVISO, y vive aquí por un motivo
+   concreto: `pet-core.js` no toca DOM ni Firebase, así que el cron que
+   manda las notificaciones puede IMPORTAR ESTE MISMO MÓDULO y decir
+   exactamente la misma frase que verías en el inicio. Una sola voz en
+   los dos sitios. Un segundo juego de frases en el servidor se
+   desincroniza del primero en la segunda semana — es como esto sale
+   mal siempre.
+
+   Y AQUÍ LA REGLA DEL MÓDULO PESA EL DOBLE. Una frase floja en una
+   pantalla que abriste tú se perdona; la misma entrando sola en el
+   teléfono se lee mucho más dura. Por eso el aviso NO se manda casi
+   nunca — y las cuatro condiciones de abajo son casi todas para
+   callarse, no para hablar. */
+
+/** Fuera de esta franja no se avisa, pase lo que pase. */
+export const FRANJA_AVISO = { desde: 10, hasta: 21 };
+
+/**
+ * ¿Hay algo que avisar hoy, y qué?
+ *
+ * @param {object} estado     el de `estadoMascota`
+ * @param {object} ctx
+ *   `nombre`  cómo se llama ella — es quien firma el aviso
+ *   `hora`    la hora local de quien lee, 0-23
+ *   `ultimoAviso` fecha local del último aviso, «2026-09-07»
+ *   `hoy`     la fecha local de hoy, mismo formato
+ *   `ahora`   para que la frase sea la misma que la del inicio
+ * @returns {{titulo: string, cuerpo: string, libroId: string}|null}
+ */
+export function avisoDelDia(estado, {
+  nombre = '', hora = 12, ultimoAviso = '', hoy = '', ahora = Date.now(),
+} = {}) {
+  /* 1 · SOLO SI HAY UNA PREGUNTA DE VERDAD. Los otros ánimos son
+     conversación de pantalla: «tu biblioteca está tranquila» no
+     justifica encender el teléfono de nadie. Celebrar tampoco — para
+     cuando el aviso llegue, ya lo has celebrado tú. */
+  if (estado.mood !== 'preguntando' && estado.mood !== 'rescatando') return null;
+
+  /* 2 · UNA AL DÍA COMO MUCHO, y por día del calendario de quien lee,
+     no por 24 horas: lo que se promete es «hoy no te molesto más». */
+  if (ultimoAviso && ultimoAviso === hoy) return null;
+
+  /* 3 · NI DE NOCHE NI DE MADRUGADA. Una app de leer que suena a las
+     siete de la mañana es una alarma, y a las once de la noche es peor
+     todavía: la mitad de las lectoras de esta app se están durmiendo. */
+  if (hora < FRANJA_AVISO.desde || hora >= FRANJA_AVISO.hasta) return null;
+
+  /* 4 · Y LO FIRMA ELLA. El título es su nombre porque eso es lo que se
+     lee en la pantalla bloqueada: «Cleo» y una pregunta se abre; «Mi
+     Biblioteca» y una pregunta se descarta. La diferencia entre un
+     mensaje de alguien y un aviso de una app está entera ahí. */
+  return {
+    titulo: nombre || 'Tu mascota',
+    cuerpo: fraseMascota(estado, { ahora, nombre }),
+    libroId: estado.libro?.id || '',
+  };
+}

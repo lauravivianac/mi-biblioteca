@@ -421,7 +421,35 @@ export function originAllowed(origin, allowed) {
 const escapeRx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 export default {
+  /* ── NINGUNA RESPUESTA SIN CORS  ·  el fallo que mentía ──────
+     Una excepción sin capturar aquí dentro NO devuelve un error
+     nuestro: devuelve la página de error de Cloudflare, que no lleva
+     cabeceras CORS. El navegador la bloquea, `fetch` revienta con un
+     TypeError, y la app —que no puede distinguir eso de un cable
+     desenchufado— le dice a quien lee «parece que te quedaste sin
+     internet».
+
+     O sea que un fallo NUESTRO se le achacaba a SU conexión. Y encima
+     es indepurable: en la consola no hay más que el TypeError.
+
+     Con esto, pase lo que pase sale un JSON con CORS y un código que
+     la app sabe traducir. `fallo-interno` es el único que no debería
+     verse nunca — si sale, el motivo está en `wrangler tail`. */
   async fetch(request, env) {
+    try {
+      return await manejar(request, env);
+    } catch (e) {
+      const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+      const origin = request.headers.get('Origin') || '';
+      const permitido = originAllowed(origin, allowed) ? origin : allowed[0] || '';
+      console.error('El Worker se cayó:', e?.stack || e?.message || e);
+      return json({ error: 'fallo-interno' }, 500, permitido);
+    }
+  },
+};
+
+async function manejar(request, env) {
+  {
     const allowed = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
     const origin = request.headers.get('Origin') || '';
     const allowOrigin = originAllowed(origin, allowed) ? origin : allowed[0] || '';
@@ -552,5 +580,5 @@ export default {
 
     // La salida se recorta a la forma de su encargo antes de devolverse
     return json(salida, 200, allowOrigin);
-  },
-};
+  }
+}
