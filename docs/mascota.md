@@ -525,9 +525,9 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ## Estado
 
-**Puestos: la Gatita, la Coneja, el Búho, la Zorrita y el Panda** — las cinco
-poses de cada uno, con la respiración lenta que sustituye a la animación
-dibujada. Falta solo el Mapache.
+**LAS SEIS PUESTAS** — treinta ilustraciones, cinco poses por especie, con la
+respiración lenta que sustituye a la animación dibujada. La salida A está
+completa.
 
 Mientras una especie no tenga sus cinco poses **se sigue dibujando por
 código**: las dos formas conviven a propósito (`ILUSTRADAS` en
