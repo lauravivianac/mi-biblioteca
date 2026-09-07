@@ -88,9 +88,11 @@ verdad, ternura por la expresión y no por la deformación. Eso es lo que aguant
 los diez y los cincuenta a la vez, y es lo que ahora dice el bloque.
 
 ```
-Ilustración naturalista de animales, en acuarela y lápiz de color, del
-estilo de un libro ilustrado de historia natural. Pintada a mano, con
-grano de papel. El pelaje o las plumas dibujados a trazos finos y
+Ilustración de animales en acuarela y lápiz de color, con técnica
+realista, del estilo de un libro ilustrado clásico de cuentos de
+animales. Pintada a mano, con grano de papel. NO es una lámina de
+historia natural: eso retrata un ejemplar adulto, y aquí el personaje
+es una cría. El pelaje o las plumas dibujados a trazos finos y
 visibles, con volumen. Anatomía y proporciones de animal de verdad,
 apenas estilizadas. Colores naturales, terrosos y apagados: nada de
 pastel de guardería ni de saturación digital.
@@ -99,6 +101,10 @@ Ternura por la EXPRESIÓN —la mirada, el gesto—, nunca por deformar:
 tiene que gustarle igual a alguien de diez años y a alguien de
 cincuenta.
 
+Y es una CRÍA, un animal joven: ojos grandes, redondos y oscuros,
+hocico corto, frente alta, piel o pelo LISOS Y TERSOS, cuerpo compacto
+y postura despierta.
+
 NADA de esto:
 · chapetas ni círculos rosas en los mofletes
 · contorno blanco o crema alrededor de la figura, como una pegatina
@@ -106,6 +112,9 @@ NADA de esto:
 · cabeza enorme sobre un cuerpo diminuto, ni patas de muñón
 · relleno plano de color, sin textura
 · lunares, estrellitas, corazones ni brillos decorativos
+· arrugas, pliegues colgando, papada, párpados caídos ni postura
+  desplomada: eso es un animal VIEJO, y ninguna de las siete lo es
+· ojo pequeño en una cabeza grande — en una cría es al revés
 
 MUY IMPORTANTE:
 · Fondo TRANSPARENTE. Sin fondo, sin escenario, sin suelo, sin sombra
@@ -593,7 +602,7 @@ la pena que sea un dinosaurio y no otro bicho redondo.**
 
 | | Nombre | Descripción para el prompt |
 |---|---|---|
-| **Dinosaurio** | Rex | `un dinosaurio joven pequeño, de piel verde oliva apagada con moteado pardo y el vientre color arena, piel granulada de reptil y placas bajas y redondeadas siguiendo el lomo` |
+| **Dinosaurio** | Rex | `una cría de dinosaurio, rechoncha y de piel lisa verde musgo con moteado suave y el vientre color crema, ojos grandes y oscuros, hocico corto y placas bajas y redondeadas siguiendo el lomo` |
 
 **Un dinosaurio verde menta con lunares no es un animal: es un juguete.** Los
 otros seis tienen color de animal —jengibre, gris de conejo, pardo de búho—, y
@@ -601,16 +610,36 @@ el dinosaurio necesita el suyo: oliva apagado con moteado, que es lo que pinta
 cualquier lámina de paleontología. El color es la mitad de por qué la primera
 versión se caía de la fila.
 
-### Los dos añadidos al bloque de estilo
+### Los tres añadidos al bloque de estilo
 
-Un dinosaurio tiene dos formas de salir mal que los otros seis no tienen, y las
-dos van escritas:
+**El dinosaurio se cae de la fila por tres lados, y hubo que pisar los tres.**
+Las dos primeras versiones fallaron en direcciones opuestas, que es la parte
+que merece quedar escrita:
+
+| | Qué salió | Por qué |
+|---|---|---|
+| 1.ª | Pegatina de cuarto de bebé | El bloque pedía «ilustración infantil» y «cabeza grande, cuerpo pequeño» |
+| 2.ª | **Un abuelo** | Al corregirlo se fue con las chapetas también la juventud |
+
+Y ahí está la lección: **«naturalista» y «cría» son dos ejes distintos, y yo
+los junté en uno.** Lo que hacía de peluche a la primera era el *acabado*
+—relleno plano, contorno de pegatina, chapetas—; lo que hace joven a un animal
+es la *anatomía* —ojo grande, hocico corto, piel tersa—. Al quitar el acabado
+de juguete me llevé por delante las señales de edad, y salió un reptil curtido
+con papada, pliegues en el cuello y párpados caídos.
+
+Un dinosaurio es el único de los siete donde esto se nota tanto, porque un
+reptil adulto de verdad *tiene* la piel arrugada: el modelo lo dibuja bien y
+sale un señor mayor. Con un gato no pasa.
 
 ```
 · NADA de aspecto feroz: sin dientes afilados, sin garras, sin gesto de
-  ataque. Es un animal joven y tranquilo, no un depredador.
-· Y tampoco un peluche: piel de reptil con grano fino, no relleno liso;
-  cuello, patas y cola de animal real, no muñones.
+  ataque. Es una cría tranquila, no un depredador.
+· NADA de viejo: sin arrugas, sin pliegues colgando en el cuello o la
+  panza, sin papada, sin párpados caídos, sin piel curtida. Es un
+  animal recién salido del huevo.
+· Y tampoco un peluche: escamas finas y apenas insinuadas, no relleno
+  liso; cuello, patas y cola de animal real, no muñones.
 ```
 
 ### Dinosaurio · `dino`
@@ -618,17 +647,25 @@ dos van escritas:
 **Mensaje 1**
 
 ```
-Dibuja un dinosaurio joven pequeño, de piel verde oliva apagada con moteado pardo y el vientre color arena, piel granulada de reptil y placas bajas y redondeadas siguiendo el lomo, sentado con las patas estiradas hacia delante, la cola enroscada a un lado, la cabeza ladeada, los ojos entrecerrados de gusto y un bracito levantado saludando.
+Dibuja una CRÍA de dinosaurio, un bebé recién salido del huevo: rechoncha, de piel lisa y tersa verde musgo con moteado suave y el vientre color crema, escamas finas apenas insinuadas, ojos GRANDES, redondos y oscuros, hocico corto, frente alta y placas bajas y redondeadas siguiendo el lomo. Sentada con las patas estiradas hacia delante, la cola enroscada a un lado, la cabeza ladeada, sonriendo y con un bracito levantado saludando.
 
-Ilustración naturalista de animales, en acuarela y lápiz de color, del
-estilo de un libro ilustrado de historia natural. Pintada a mano, con
-grano de papel. La piel dibujada a trazos finos y visibles, con volumen.
+Es un animal JOVEN: nada de arrugas, pliegues colgando, papada ni párpados caídos.
+
+Ilustración de animales en acuarela y lápiz de color, con técnica
+realista, del estilo de un libro ilustrado clásico de cuentos de
+animales. Pintada a mano, con grano de papel. NO es una lámina de
+historia natural: eso retrata un ejemplar adulto, y aquí el personaje
+es una cría. La piel dibujada a trazos finos y visibles, con volumen.
 Anatomía y proporciones de animal de verdad, apenas estilizadas. Colores
 naturales, terrosos y apagados: nada de pastel de guardería ni de
 saturación digital.
 
 Ternura por la EXPRESIÓN —la mirada, el gesto—, nunca por deformar:
 tiene que gustarle igual a alguien de diez años y a alguien de cincuenta.
+
+Y es una CRÍA, un animal joven: ojos grandes, redondos y oscuros,
+hocico corto, frente alta, piel o pelo LISOS Y TERSOS, cuerpo compacto
+y postura despierta.
 
 NADA de esto:
 · chapetas ni círculos rosas en los mofletes
@@ -637,6 +674,9 @@ NADA de esto:
 · cabeza enorme sobre un cuerpo diminuto, ni patas de muñón
 · relleno plano de color, sin textura
 · lunares, estrellitas, corazones ni brillos decorativos
+· arrugas, pliegues colgando, papada, párpados caídos ni postura
+  desplomada: eso es un animal VIEJO, y ninguna de las siete lo es
+· ojo pequeño en una cabeza grande — en una cría es al revés
 · dientes afilados, garras o gesto de ataque: es un animal joven y
   tranquilo, no un depredador
 
