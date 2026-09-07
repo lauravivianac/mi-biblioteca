@@ -16,11 +16,32 @@ let stream = null;
    entres, así que la pantalla tampoco pregunta. */
 const lectorNativo = () => 'BarcodeDetector' in window;
 
-/** Enciende la cámara trasera. Devuelve el stream para pintarlo en un <video>. */
+/**
+ * Enciende la cámara trasera. Devuelve el stream para pintarlo en un <video>.
+ *
+ * MÁS RESOLUCIÓN Y ENFOQUE CONTINUO, y las dos cosas por lo mismo: un
+ * código de barras de un libro mide unos cuatro centímetros, y a la
+ * distancia a la que uno sostiene un libro ocupa una franja pequeña
+ * del cuadro. Con 1280 de ancho, las barras finas caen en uno o dos
+ * píxeles y cualquier desenfoque las funde entre sí. Se pide 1920 —y
+ * si el teléfono no puede, `ideal` deja que dé lo que tenga: no es un
+ * requisito, es una preferencia.
+ *
+ * `focusMode: continuous` va dentro de `advanced`, que es la parte de
+ * la norma que los navegadores pueden IGNORAR en silencio en vez de
+ * fallar. Justo lo que se quiere aquí: donde exista, la cámara
+ * reenfoca sola cuando acercas el libro; donde no, todo lo demás
+ * sigue funcionando igual.
+ */
 export async function openCamera() {
   if (stream) return stream;
   stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+    video: {
+      facingMode: { ideal: 'environment' },
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+      advanced: [{ focusMode: 'continuous' }],
+    },
     audio: false,
   });
   return stream;
@@ -42,24 +63,37 @@ export function closeCamera() {
  * `onProgress` recibe cuánto queda, para que la espera no parezca que
  * la app se colgó.
  */
-export async function scanBarcode(video, { seconds = 15, onProgress = () => {} } = {}) {
+export async function scanBarcode(video, {
+  seconds = 15, seguir = () => true, onProgress = () => {},
+} = {}) {
   const detector = lectorNativo()
     ? new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a'] })
     : null;
-  const hasta = Date.now() + seconds * 1000;
+  const hasta = Number.isFinite(seconds) ? Date.now() + seconds * 1000 : Infinity;
 
-  while (Date.now() < hasta) {
+  while (seguir() && Date.now() < hasta) {
+    /* LOS DOS LECTORES EN CADA PASADA, y antes era uno u otro. Donde
+       existe `BarcodeDetector` el nuestro no se probaba nunca, así que
+       un cuadro que el del navegador no saca —y es exigente con el
+       ángulo y el brillo— se perdía aunque el nuestro lo hubiera
+       sacado. Probar los dos cuesta unos milisegundos por pasada y no
+       cuesta nada más: los dos exigen el dígito de control, así que
+       ninguno puede acertar por casualidad.
+
+       (El decodificador propio está medido: con el código dibujado a
+       módulo de 1 px, con ruido y desenfocado, sigue acertando. Lo que
+       fallaba no era leer, era mirar.) */
     if (detector) {
       try {
         const codes = await detector.detect(video);
         const hit = codes.find((c) => /^\d{8,13}$/.test(c.rawValue));
         if (hit) return hit.rawValue;
       } catch { /* la cámara aún no da un cuadro utilizable */ }
-    } else {
-      const codigo = readBarcodeFrame(video);
-      if (codigo) return codigo;
     }
-    onProgress(Math.max(0, (hasta - Date.now()) / 1000));
+    const nuestro = readBarcodeFrame(video);
+    if (nuestro) return nuestro;
+
+    onProgress(Number.isFinite(hasta) ? Math.max(0, (hasta - Date.now()) / 1000) : Infinity);
     await new Promise((r) => setTimeout(r, 220));
   }
   return null;

@@ -19,7 +19,7 @@ import { allBooks, statusOf, entry, settings, progressPct } from './store.js';
 import { pageCount } from './seed.js';
 import { ACHIEVEMENTS } from './achievements.js';
 import { esc } from './ui.js';
-import { estadoMascota, fraseMascota, librosEnCurso } from './pet-core.js';
+import { estadoMascota, fraseMascota, librosEnCurso, posePara } from './pet-core.js';
 import { stalledBooks } from './planner.js';
 
 /* ── PERSONALIZACIÓN ─────────────────────────────────────────
@@ -656,9 +656,14 @@ const RUTA_MASCOTA = './img/mascota';
 /** La imagen de una especie ilustrada, con su respiración. */
 function petImg(mood, cfg) {
   const sp = SPECIES.find((x) => x.id === cfg.species);
-  return `<img class="pet-img" src="${RUTA_MASCOTA}/${cfg.species}-${mood}.webp"`
+  /* La POSE, no el ánimo. Hay siete ánimos y cinco dibujos, y pegar el
+     ánimo al nombre del fichero es lo que dejó el cuadrito roto en
+     Ajustes en cuanto aparecieron «preguntando» y «rescatando». Quién
+     lleva qué pose lo decide pet-core.js, donde nacen los ánimos. */
+  const pose = posePara(mood);
+  return `<img class="pet-img" src="${RUTA_MASCOTA}/${cfg.species}-${pose}.webp"`
     + ` width="320" height="320" decoding="async"`
-    + ` alt="${esc(sp?.name || 'Tu mascota')} lectora, ${moodLabel(mood)}">`;
+    + ` alt="${esc(sp?.name || 'Tu mascota')} lectora, ${moodLabel(pose)}">`;
 }
 
 const moodLabel = (m) => ({

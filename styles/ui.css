@@ -456,6 +456,27 @@ body:not(.signed-in) .fab { display: none; }
 .scan-frame::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
 .scan-frame::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
 
+/* EL LATIDO DICE QUE ESTÁ MIRANDO.
+   «No se sabe si está viendo, tomando una foto o qué.» El marco era
+   idéntico mirando y sin mirar, y la cámara encendida no significa
+   nada: cualquier app enseña la cámara. Lo que hacía falta era una
+   señal de que ESTÁ BUSCANDO ahora mismo, y que se vea sin leer.
+
+   Es el borde el que late, no todo el marco: las cuatro esquinas se
+   quedan quietas para que siga sirviendo de guía de encuadre
+   mientras. */
+@keyframes scan-latido {
+  0%, 100% { border-color: rgb(var(--gold-rgb) / .35); }
+  50%      { border-color: rgb(var(--gold-rgb) / .95); }
+}
+.scan-frame.buscando { animation: scan-latido 1.6s ease-in-out infinite; }
+
+/* Quien tiene el movimiento reducido no necesita un latido para saber
+   que pasa algo: el texto de debajo ya lo dice. */
+@media (prefers-reduced-motion: reduce) {
+  .scan-frame.buscando { animation: none; border-color: rgb(var(--gold-rgb) / .95); }
+}
+
 /* ── LA FICHA ENCONTRADA ──────────────────────────────────────
    La portada al lado de los campos: se ve de inmediato si el
    catálogo trajo el libro correcto o uno parecido. */

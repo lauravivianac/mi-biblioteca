@@ -161,6 +161,38 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
   return { mood: 'contenta', libro: enCurso, diasCallada };
 }
 
+/* ── QUÉ POSE LLEVA CADA ÁNIMO ────────────────────────────────
+   Un ánimo NO es una pose. Hay siete ánimos y cinco ilustraciones por
+   especie, y cada ilustración cuesta un encargo — así que los ánimos
+   nuevos no traen dibujo, se ponen uno de los que hay.
+
+   Esto no es un detalle de estilo, es lo que se rompió: `petImg`
+   armaba el nombre del fichero pegando el ánimo tal cual
+   (`gato-preguntando.webp`), y al añadir «preguntando» y «rescatando»
+   —que no tienen dibujo— la etiqueta apuntaba a un fichero que no
+   existe. En pantalla eso es el cuadrito roto que salió en Ajustes,
+   justo donde se elige la mascota.
+
+   Vive aquí, en el módulo que DECIDE los ánimos, porque es el mismo
+   sitio donde se añadirá el próximo: quien invente un ánimo se
+   encuentra esta tabla en la misma pantalla y le da una pose. Y como
+   es un módulo puro, la prueba puede comprobar contra el disco que
+   cada pose existe de verdad.
+
+   Las dos que faltaban van a «expectante» a propósito: las dos están
+   esperando que le contestes algo. */
+export const POSES = ['contenta', 'leyendo', 'dormida', 'celebrando', 'expectante'];
+
+const POSE_DE = {
+  preguntando: 'expectante',
+  rescatando: 'expectante',
+  estancada: 'dormida',
+};
+
+/** La pose dibujada que le toca a un ánimo. Nunca devuelve una que no exista. */
+export const posePara = (mood) =>
+  (POSES.includes(mood) ? mood : (POSE_DE[mood] || 'contenta'));
+
 /**
  * LOS LIBROS QUE DE VERDAD ESTÁS LEYENDO, del más reciente al más
  * antiguo.

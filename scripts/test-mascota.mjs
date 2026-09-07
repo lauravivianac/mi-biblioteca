@@ -28,9 +28,9 @@
    y esto la comprueba.
    ───────────────────────────────────────────────────────────── */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import {
-  estadoMascota, fraseMascota, fraseDeFallo, avisoDelDia, librosEnCurso, FRASES, DIA,
+  estadoMascota, fraseMascota, fraseDeFallo, avisoDelDia, librosEnCurso, posePara, POSES, FRASES, DIA,
 } from '../src/pet-core.js';
 
 let bien = 0;
@@ -525,6 +525,51 @@ console.log('\n─── CUANDO LLEVAS VARIOS A LA VEZ ───');
     librosEnCurso([enCurso('a', 'Único', 3600e3)]).length === 1);
   comprobar('y sin ninguno, está vacía',
     librosEnCurso([]).length === 0);
+}
+
+/* ── CADA ÁNIMO TIENE UN DIBUJO QUE EXISTE ───────────────────
+   El fallo que esto caza salió en una foto suya: en Ajustes, donde se
+   elige la mascota, había un CUADRITO ROTO en vez del bicho.
+
+   La causa es de las que no se ven leyendo el código. `petImg` arma el
+   nombre del fichero pegando el ánimo —`gato-preguntando.webp`—, hay
+   siete ánimos y cinco dibujos por especie, y los dos ánimos que
+   añadí esta semana no tienen dibujo. Nada falla, nada avisa: el
+   navegador pide una imagen que no está y pinta el icono de rota.
+
+   Así que esto no compara cadenas, MIRA EL DISCO. Y los ánimos no se
+   escriben a mano aquí: se sacan del propio pet-core.js, para que el
+   ánimo que alguien invente mañana entre solo en la prueba en vez de
+   colarse por donde se coló este. */
+
+console.log('\n─── CADA ÁNIMO TIENE SU DIBUJO ───');
+{
+  const fuente = readFileSync(new URL('../src/pet-core.js', import.meta.url), 'utf8');
+  const animos = [...new Set([...fuente.matchAll(/\bmood:\s*'([a-záéíóúñ]+)'/g)].map((m) => m[1]))];
+
+  comprobar('se encontraron los ánimos en pet-core.js', animos.length >= 5, `salieron ${animos.length}`);
+
+  const ficheros = new Set(readdirSync(new URL('../img/mascota', import.meta.url)));
+  const especies = [...new Set([...ficheros].map((f) => f.split('-')[0]))].sort();
+  comprobar('hay especies ilustradas en el disco', especies.length > 0, `salieron ${especies.length}`);
+
+  const rotas = [];
+  for (const mood of animos) {
+    for (const especie of especies) {
+      const f = `${especie}-${posePara(mood)}.webp`;
+      if (!ficheros.has(f)) rotas.push(`${mood} → ${f}`);
+    }
+  }
+  comprobar(`ninguna de las ${animos.length * especies.length} combinaciones pide un fichero que no está`,
+    rotas.length === 0, rotas.slice(0, 6).join('\n      '));
+
+  /* Y al revés: una pose que no existiera en el disco dejaría la tabla
+     apuntando al vacío sin que nadie lo notara hasta ver el cuadrito. */
+  comprobar('todas las poses declaradas tienen dibujo en todas las especies',
+    POSES.every((p) => especies.every((e) => ficheros.has(`${e}-${p}.webp`))));
+
+  comprobar('un ánimo desconocido no rompe: cae en una pose que existe',
+    POSES.includes(posePara('inventado-mañana')));
 }
 
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);

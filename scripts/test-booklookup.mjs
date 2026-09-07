@@ -5,7 +5,7 @@
 
 import {
   looksLikeSame, titleSimilarity,
-  cleanIsbn, isValidIsbn, fold, guessGenre, scoreCandidate, mergeCandidates,
+  cleanIsbn, isValidIsbn, fold, guessGenre, scoreCandidate, mergeCandidates, buscarPorTitulo,
 } from '../src/booklookup.js';
 
 let pass = 0, fail = 0;
@@ -89,6 +89,75 @@ ok(!looksLikeSame('Memorias del fuego azul', 'Memorias de una geisha'),
 
 ok(titleSimilarity('Rayuela', 'rayuela') === 1, 'el parecido es 1 cuando son iguales');
 ok(titleSimilarity('Rayuela', 'Ficciones') === 0, 'el parecido es 0 sin nada en común');
+
+/* ── UN CATÁLOGO CAÍDO NO ES «TU LIBRO NO EXISTE» ────────────
+   El fallo que esto guarda salió de una cuenta nueva: «no está
+   buscando los libros de ninguna forma, me ha tocado incluirlos todos
+   a mano». Los tres caminos de añadir un libro acaban en estas dos
+   consultas, así que cuando las dos fallan fallan los tres — y
+   fallaban EN SILENCIO, porque un 429 trae un JSON de error y
+   `d.items || []` lo leía como lista vacía.
+
+   El daño no era no encontrar: era decir «Sin resultados, puedes
+   añadirlo a mano» y mandarla a teclear su biblioteca entera.
+
+   Se prueba con `fetch` sustituido, que es la única forma de tener un
+   429 a mano sin depender de que hoy Google esté de mal humor. */
+
+console.log('\nCUANDO EL CATÁLOGO NO CONTESTA');
+{
+  const fetchDeVerdad = globalThis.fetch;
+  const respuesta = (body, status = 200) => ({
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+  });
+  const UN_LIBRO = {
+    docs: [{ title: 'Rayuela', author_name: ['Julio Cortázar'], number_of_pages_median: 600 }],
+    items: [{ volumeInfo: { title: 'Rayuela', authors: ['Julio Cortázar'], pageCount: 600 } }],
+  };
+
+  const con = async (responder) => {
+    let llamadas = 0;
+    globalThis.fetch = async (url) => { llamadas += 1; return responder(String(url), llamadas); };
+    const r = await buscarPorTitulo('rayuela');
+    return { ...r, llamadas };
+  };
+
+  const cuota = { error: { code: 429, message: 'Quota exceeded' } };
+
+  let r = await con(() => respuesta(cuota, 429));
+  ok(r.sinCatalogos === true, 'los dos con 429 → se sabe que no se pudo preguntar');
+  ok(r.libros.length === 0, 'y no se inventa ningún resultado');
+  ok(r.caidas.length === 2, 'las dos fuentes constan como caídas', JSON.stringify(r.caidas));
+
+  r = await con(() => { throw new TypeError('Failed to fetch'); });
+  ok(r.sinCatalogos === true, 'sin red, lo mismo: no se pudo preguntar');
+
+  r = await con((url) => (url.includes('googleapis')
+    ? respuesta(cuota, 429)
+    : respuesta(UN_LIBRO)));
+  ok(r.sinCatalogos !== true, 'si UNA contesta, no está caído: para eso hay dos');
+  ok(r.libros.length === 1, 'y su resultado llega igual');
+  ok(r.caidas.length === 1, 'pero consta cuál faltó, para poder decirlo');
+
+  r = await con(() => respuesta({ docs: [], items: [] }));
+  ok(r.sinCatalogos !== true && r.libros.length === 0,
+    'las dos contestan y no hay nada: ESO sí es «sin resultados»');
+
+  /* El reintento: lo que arregla el 429 pasajero sin que nadie note
+     nada. Dos fuentes × dos intentos = cuatro llamadas como mucho. */
+  r = await con((url, n) => (n <= 2 ? respuesta(cuota, 429) : respuesta(UN_LIBRO)));
+  ok(r.libros.length === 1, 'un fallo pasajero se reintenta y acaba encontrando');
+  ok(r.llamadas === 4, 'con un intento de más por fuente, no más', `fueron ${r.llamadas}`);
+
+  /* Y lo que NO se reintenta: a quien ya dijo que la petición está mal
+     no se le pregunta dos veces, solo alarga la espera. */
+  r = await con(() => respuesta({ error: 'mal' }, 400));
+  ok(r.llamadas === 2, 'un 400 no se reintenta', `fueron ${r.llamadas}`);
+
+  globalThis.fetch = fetchDeVerdad;
+}
 
 console.log(`\n${pass} pruebas pasaron, ${fail} fallaron.`);
 process.exit(fail ? 1 : 0);
