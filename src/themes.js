@@ -33,18 +33,20 @@ export const FONT_SETS = {
       como referencia. O sea: caligráfica con rúbrica, no una serif con
       adornos.
 
-     Grand Hotel entre seis candidatas caligráficas (Berkshire Swash,
-     Playball, Great Vibes, Yesteryear, MonteCarlo), comparadas
-     renderizándolas sobre la tapa de verdad y en cuatro temas de los
-     extremos. Gana por dos cosas concretas y no por gusto: es la de
-     trazo más CÁLIDO Y REDONDO —las otras o son de invitación de boda
-     o van de rótulo antiguo—, y es la única en la que «Mi Biblioteca»
-     CABE EN UNA LÍNEA al tamaño de portada. Un título partido en dos
-     no se lee como un nombre, se lee como un párrafo corto.
+     Seis candidatas caligráficas comparadas sobre la tapa de verdad y
+     en cuatro temas de los extremos —Berkshire Swash, Grand Hotel,
+     Great Vibes, Yesteryear, MonteCarlo y esta—. Elegida por ella
+     viéndolas puestas, que es la única forma de elegir una letra.
+
+     Playball es una caligráfica ERGUIDA, no inclinada: tiene la
+     rúbrica que pedía la referencia pero se apoya en una vertical, así
+     que aguanta al lado de una serif de leer sin parecer que se ha
+     colado de otra app. Es también la que mejor sostiene un nombre
+     corto en grande, que es hacia donde va el nombre.
 
      Se descarga SOLO en la pantalla de acceso: dentro de la app no se
      usa en ningún sitio, así que quien ya entró no la paga. */
-  grandHotel: 'Grand+Hotel',
+  playball: 'Playball',
   shippori:   'Shippori+Mincho:wght@400;600',
   mono:       'JetBrains+Mono:wght@400;500;700',
   inter:      'Inter:wght@300;400;500',

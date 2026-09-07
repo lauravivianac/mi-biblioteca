@@ -70,7 +70,7 @@ export function renderAuth() {
   /* La letra de la tapa se pide AQUÍ y no en el index: es la única
      pantalla que la usa, así que quien ya tiene la sesión abierta no
      la descarga nunca. */
-  cargarFuentes(['grandHotel']);
+  cargarFuentes(['playball']);
   $('auth-screen').innerHTML = `
     <div class="auth-card">
       <!-- LA PORTADA. Es lo primero que ve alguien que llega, y hasta
