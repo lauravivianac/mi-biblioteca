@@ -91,14 +91,19 @@ que si estuviera mal dibujada.
 
 ### Las seis especies
 
-| | Descripción para el prompt |
-|---|---|
-| **Gatita** | `una gatita atigrada color miel con la panza crema y rayas suaves` |
-| **Coneja** | `una coneja gris claro de orejas largas caídas y panza blanca` |
-| **Búho** | `un búho pequeño y regordete, marrón cálido, plumas moteadas y ojos grandes de ámbar` |
-| **Zorrita** | `una zorrita naranja teja con la punta de la cola y la panza blancas` |
-| **Mapache** | `un mapache gris con antifaz negro y cola anillada` |
-| **Panda** | `un panda pequeño y regordete, blanco y negro` |
+**Y cada una tiene nombre**, puesto de fábrica y cambiable: Cleo, Nube, Ulises,
+Rita, Coco y Bambú. No es un adorno — una lista que dice «Gatita, Coneja, Búho»
+es un catálogo de animales; una que dice «Cleo, Nube, Ulises» son seis
+personajes esperando.
+
+| | Nombre | Descripción para el prompt |
+|---|---|---|
+| **Gatita** | Cleo | `una gatita atigrada color miel con la panza crema y rayas suaves` |
+| **Coneja** | Nube | `una coneja gris claro de orejas largas caídas y panza blanca` |
+| **Búho** | Ulises | `un búho pequeño y regordete, marrón cálido, plumas moteadas y ojos grandes de ámbar` |
+| **Zorrita** | Rita | `una zorrita naranja teja con la punta de la cola y la panza blancas` |
+| **Mapache** | Coco | `un mapache gris con antifaz negro y cola anillada` |
+| **Panda** | Bambú | `un panda pequeño y regordete, blanco y negro` |
 
 ### Los cinco ánimos
 
@@ -525,9 +530,9 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ## Estado
 
-**Puestas: la Gatita y la Coneja** — las cinco poses de cada una, con la
-respiración lenta que sustituye a la animación dibujada. Faltan el Búho, la
-Zorrita, el Mapache y el Panda.
+**LAS SEIS PUESTAS** — treinta ilustraciones, cinco poses por especie, con la
+respiración lenta que sustituye a la animación dibujada. La salida A está
+completa.
 
 Mientras una especie no tenga sus cinco poses **se sigue dibujando por
 código**: las dos formas conviven a propósito (`ILUSTRADAS` en

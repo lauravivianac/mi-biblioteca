@@ -26,7 +26,7 @@ import { achievementStatus, earnedCount } from './achievements.js';
 import {
   petConfig, petSvg, petState, availableFurs, availableAccessories, availableCorners,
   speciesIlustrada, petVista,
-  availableSpecies, currentScene, SCENES,
+  availableSpecies, currentScene, SCENES, nombreDeFabrica, esNombreDeFabrica,
 } from './pet.js';
 import {
   workerUrl, agentAvailable, agentOffered, agentDecided, setAgentConsent,
@@ -427,15 +427,25 @@ function renderPetShelf() {
 
     <label class="pet-group-label" for="pet-name">Cómo se llama</label>
     <input class="pet-name-input" id="pet-name" maxlength="18"
-           placeholder="Ponle un nombre" value="${esc(cfg.name)}"
-           onchange="setPetName(this.value)">
+           placeholder="${esc(nombreDeFabrica(cfg.species) || 'Ponle un nombre')}"
+           value="${esc(cfg.name)}" onchange="setPetName(this.value)">
+    <p class="planner-hint">Viene con nombre puesto, pero es tuya: cámbiaselo cuando quieras.</p>
 
+    ${/* El botón enseña el NOMBRE, no la especie: el emoji ya dice qué
+          animal es, y «Cleo, Nube, Ulises» son seis personajes donde
+          «Gatita, Coneja, Búho» era un catálogo. La especie queda en
+          el `title` y bajo el candado. */''}
     <div class="pet-group-label">Quién te acompaña</div>
     <div class="pet-options">
-      ${especies.map((sp) => opt('species', sp, `${sp.emoji} `)).join('')}
+      ${especies.map((sp) => `
+        <button class="pet-opt ${cfg.species === sp.id ? 'on' : ''} ${sp.locked ? 'locked' : ''}"
+                ${sp.locked ? 'aria-disabled="true"' : `onclick="setPetPart('species','${sp.id}')"`}
+                title="${esc(sp.locked ? (sp.hint || 'Se desbloquea leyendo') : sp.name)}">
+          ${sp.emoji} ${sp.locked ? '🔒 ' : ''}${esc(sp.nombre)}
+        </button>`).join('')}
     </div>
     ${porGanar.length ? `<ul class="pet-porganar">
-      ${porGanar.map((sp) => `<li><span class="pet-porganar-quien">${sp.emoji} ${esc(sp.name)}</span>
+      ${porGanar.map((sp) => `<li><span class="pet-porganar-quien">${sp.emoji} ${esc(sp.nombre)}</span>
         ${esc(sp.hint)}</li>`).join('')}
     </ul>` : ''}
 
@@ -517,7 +527,19 @@ export function applyPreviewedTheme() {
 }
 
 export function setPetPart(group, id) {
-  updateSettings({ pet: { ...petConfig(), [group]: id } });
+  const cfg = petConfig();
+  const nuevo = { ...cfg, [group]: id };
+
+  /* AL CAMBIAR DE ESPECIE, EL NOMBRE VIENE CON ELLA — pero solo si el
+     que había lo puso la app. Si lo escribió ella, es suyo y no se
+     toca: cambiar de compañera no es motivo para borrarle el nombre
+     que le puso. Y llamar «Cleo» a un panda porque antes tenías una
+     gata tampoco es lo que nadie espera. */
+  if (group === 'species' && (!cfg.name || esNombreDeFabrica(cfg.name))) {
+    nuevo.name = nombreDeFabrica(id);
+  }
+
+  updateSettings({ pet: nuevo });
   renderThemeStore();
   refreshAll();
 }
@@ -536,8 +558,16 @@ export function togglePet() {
   toast(hidden ? 'Mascota oculta. Sigues ganando logros igual.' : 'Aquí está de vuelta.');
 }
 
-/** Tocarla responde: si no reacciona, es un dibujo, no una compañera. */
+/**
+ * Tocarla abre la conversación (#44).
+ *
+ * Si el asistente no está configurado en este despliegue, no se abre
+ * una hoja que no puede contestar: se refresca, que es lo que hacía
+ * antes, y ella dice lo suyo. Un botón que promete algo que no hay es
+ * peor que un botón que hace poco.
+ */
 export function pokePet() {
+  if (agentOffered()) { openPetChat(); return; }
   refreshAll();
 }
 

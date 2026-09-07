@@ -19,6 +19,7 @@ import { allBooks, statusOf, entry, settings, progressPct } from './store.js';
 import { pageCount } from './seed.js';
 import { ACHIEVEMENTS } from './achievements.js';
 import { esc } from './ui.js';
+import { estadoMascota, fraseMascota } from './pet-core.js';
 
 /* ── PERSONALIZACIÓN ─────────────────────────────────────────
    Todo se desbloquea leyendo. Un accesorio que costó terminar un
@@ -109,14 +110,37 @@ const GENRE_SCENE = {
    lista: el búho con el tomo gordo, la zorra con el primer clásico
    —que es de donde viene—, el mapache con los cinco géneros porque
    junta de todo, y la panda con los diez libros, que es constancia. */
+/* Y CADA UNA CON SU NOMBRE. No es un adorno: una lista que dice
+   «Gatita, Coneja, Búho» es un catálogo de animales, y una que dice
+   «Cleo, Nube, Ulises» son seis personajes esperando. Es la misma
+   diferencia que hay entre un perro y tu perro.
+
+   El nombre viene puesto de fábrica y SE PUEDE CAMBIAR: el campo de
+   arriba sigue mandando. Lo que se gana es que desde el primer día
+   haya alguien, sin tener que inventárselo — antes el inicio decía
+   una frase y no decía quién la decía. */
 export const SPECIES = [
-  { id: 'gato',    name: 'Gatita',  emoji: '🐱', unlock: null },
-  { id: 'conejo',  name: 'Coneja',  emoji: '🐰', unlock: null },
-  { id: 'buho',    name: 'Búho',    emoji: '🦉', unlock: 'tomo-500' },
-  { id: 'zorro',   name: 'Zorrita', emoji: '🦊', unlock: 'primer-clasico' },
-  { id: 'mapache', name: 'Mapache', emoji: '🦝', unlock: 'cinco-generos' },
-  { id: 'panda',   name: 'Panda',   emoji: '🐼', unlock: 'diez-libros' },
+  { id: 'gato',    name: 'Gatita',  nombre: 'Cleo',   emoji: '🐱', unlock: null },
+  { id: 'conejo',  name: 'Coneja',  nombre: 'Nube',   emoji: '🐰', unlock: null },
+  { id: 'buho',    name: 'Búho',    nombre: 'Ulises', emoji: '🦉', unlock: 'tomo-500' },
+  { id: 'zorro',   name: 'Zorrita', nombre: 'Rita',   emoji: '🦊', unlock: 'primer-clasico' },
+  { id: 'mapache', name: 'Mapache', nombre: 'Coco',   emoji: '🦝', unlock: 'cinco-generos' },
+  { id: 'panda',   name: 'Panda',   nombre: 'Bambú',  emoji: '🐼', unlock: 'diez-libros' },
 ];
+
+/** El nombre de fábrica de una especie. */
+export const nombreDeFabrica = (id) => SPECIES.find((s) => s.id === id)?.nombre || '';
+
+/** ¿Este nombre lo puso la app, o lo escribió ella? */
+export const esNombreDeFabrica = (n) => SPECIES.some((s) => s.nombre === n);
+
+/**
+ * Cómo se llama la que te acompaña ahora.
+ * Si nunca se tocó el campo, el de fábrica de su especie.
+ */
+export function petNombre(cfg = petConfig()) {
+  return cfg.name || nombreDeFabrica(cfg.species) || 'Tu mascota';
+}
 
 export const DEFAULT_PET = {
   name: '',
@@ -183,111 +207,38 @@ export function currentScene(cfg = petConfig()) {
   return scene && unlocked(scene) ? wanted : 'estante';
 }
 
-/* ── ESTADO ──────────────────────────────────────────────────
-   Se calcula solo, del progreso y de las fechas. La usuaria no
-   tiene que hacer nada para mantenerla. */
+/* ── ESTADO Y VOZ ────────────────────────────────────────────
+   Las cuentas viven en `pet-core.js`, sin Firebase ni DOM, para que
+   se puedan comprobar: ahí es donde estaban los tres fallos que
+   hacían que dijera cosas que no venían a cuento. Aquí queda solo el
+   puente — sacar del almacén lo que esas cuentas necesitan. */
 
-const DAY = 86400000;
-
-export function petState() {
-  const books = allBooks();
-  /* Ordenado por lectura más reciente, igual que currentScene(): si no,
-     la frase hablaba de un libro y el escenario mostraba otro. */
-  const reading = books
-    .filter((b) => statusOf(b.id) === 'reading')
-    .sort((a, b) => (entry(b.id).lastReadAt || 0) - (entry(a.id).lastReadAt || 0));
-  const now = Date.now();
-
-  const lastRead = Math.max(0, ...books.map((b) => entry(b.id).lastReadAt || 0));
-  const daysQuiet = lastRead ? Math.floor((now - lastRead) / DAY) : null;
-
-  const justFinished = books.some((b) => {
-    const f = entry(b.id).finishedAt;
-    return f && now - f < 2 * DAY;
-  });
-
-  const nearlyDone = reading.find((b) => progressPct(b.id) >= 85);
-  const current = reading[0] || null;
-
-  if (justFinished) return { mood: 'celebrando', current, daysQuiet };
-  if (nearlyDone) return { mood: 'expectante', current: nearlyDone, daysQuiet };
-  if (daysQuiet === null || daysQuiet >= 4) return { mood: 'dormida', current, daysQuiet };
-  if (current) return { mood: 'leyendo', current, daysQuiet };
-  return { mood: 'contenta', current, daysQuiet };
-}
-
-/* ── SU VOZ  ·  historia #42 ─────────────────────────────────
-   Frases escritas a mano con huecos que se rellenan con tus datos.
-   NO las genera el agente: cuestan cero, responden al instante y
-   —lo que de verdad importa— una mascota con voz propia y constante
-   se siente un personaje; una que improvisa se siente un chatbot
-   con sombrero. */
-
-const PHRASES = {
-  contenta: [
-    'Hoy hay tiempo para un capítulo.',
-    'Tu biblioteca está tranquila.',
-    '¿Empezamos algo nuevo?',
-    'Me gusta este silencio de estantería.',
-  ],
-  leyendo: [
-    'Vas por la mitad de {libro}.',
-    'Te espero en la página {pagina} de {libro}.',
-    '{libro} avanza bien.',
-    'Quedan {faltan} páginas de {libro}.',
-  ],
-  estancada: [
-    'Llevas {dias} días en el mismo capítulo, ¿está pesado?',
-    '{libro} lleva un rato esperando.',
-    'Nadie corre. Ahí sigue {libro}.',
-  ],
-  dormida: [
-    'Aquí sigo cuando quieras.',
-    'Me eché una siesta entre los libros.',
-    'Los libros no se van a ninguna parte.',
-    'Cuando vuelvas, seguimos.',
-  ],
-  celebrando: [
-    '¡Terminaste {libro}! 🎉',
-    'Un libro menos en la pila.',
-    'Eso fue {paginas} páginas. Nada mal.',
-  ],
-  expectante: [
-    'Ya casi terminas {libro}.',
-    'Faltan {faltan} páginas. ¿Las hacemos hoy?',
-    'Estoy en la última parte de {libro} contigo.',
-  ],
-};
-
-let lastPhrase = '';
-
-/** Nunca repite la misma frase dos veces seguidas. */
-export function petPhrase(state = petState()) {
-  const { mood, current, daysQuiet } = state;
-  const cfg = petConfig();
-
-  let pool = PHRASES[mood] || PHRASES.contenta;
-  if (mood === 'leyendo' && daysQuiet >= 2) pool = PHRASES.estancada;
-
-  const book = current;
-  const total = book ? pageCount(book.pages) : null;
-  const page = book ? (entry(book.id).page || 0) : 0;
-
-  const slots = {
-    '{libro}': book ? book.title : 'tu libro',
-    '{pagina}': page || 1,
-    '{paginas}': total || '—',
-    '{faltan}': total ? Math.max(1, total - page) : 'algunas',
-    '{dias}': daysQuiet ?? 0,
-    '{nombre}': cfg.name || '',
+/** Los libros con lo justo que la mascota necesita saber. */
+const librosParaLaMascota = () => allBooks().map((b) => {
+  const e = entry(b.id);
+  return {
+    id: b.id,
+    title: b.title,
+    total: pageCount(b.pages),
+    page: e.page || 0,
+    status: statusOf(b.id),
+    pct: progressPct(b.id),
+    lastReadAt: e.lastReadAt || 0,
+    finishedAt: e.finishedAt || 0,
   };
+});
 
-  const usable = pool.filter((p) => (book || !p.includes('{libro}')) && p !== lastPhrase);
-  const pick = (usable.length ? usable : pool)[Math.floor(Math.random() * (usable.length || pool.length))];
-  lastPhrase = pick;
-
-  return pick.replace(/\{[a-z]+\}/g, (m) => slots[m] ?? '');
+/** El ánimo y de qué libro habla. `current` se conserva por compatibilidad. */
+export function petState() {
+  const e = estadoMascota(librosParaLaMascota());
+  return { mood: e.mood, current: e.libro, daysQuiet: e.diasCallada, libro: e.libro };
 }
+
+/** Lo que dice ahora mismo. */
+export const petPhrase = (state = petState()) => fraseMascota(
+  { mood: state.mood, libro: state.libro ?? state.current, diasCallada: state.daysQuiet },
+  { nombre: petConfig().name },
+);
 
 /* ── EL DIBUJO  ·  historia #38 ──────────────────────────────
    SVG y no imagen: pesa poco, escala a cualquier pantalla y —lo
@@ -656,7 +607,7 @@ export function petSvg(mood = 'contenta', cfg = petConfig()) {
    pintada. Quien elija una especie ilustrada no ve esos dos ajustes
    (ver `speciesIlustrada`), porque un mando que no hace nada es peor
    que no tenerlo. */
-export const ILUSTRADAS = ['gato', 'conejo'];
+export const ILUSTRADAS = ['gato', 'conejo', 'buho', 'zorro', 'panda', 'mapache'];
 
 export const speciesIlustrada = (id) => ILUSTRADAS.includes(id);
 
@@ -675,9 +626,29 @@ const moodLabel = (m) => ({
   celebrando: 'celebrando', expectante: 'expectante',
 }[m] || 'contenta');
 
+/* ── EL RINCÓN, TAMBIÉN PARA LAS ILUSTRADAS ──────────────────
+   Estaba dibujado DENTRO del SVG de la mascota, así que una especie
+   ilustrada —que es una imagen, no un SVG— no lo pintaba. Y la
+   Gatita, la de por defecto, lleva ilustrada desde el principio: o
+   sea que el selector «Su rincón» de Ajustes, con sus nueve escenas y
+   sus SEIS DESBLOQUEOS, no hacía nada para casi nadie. Es el mismo
+   mando muerto que ya costó el pelaje, y con las seis especies
+   ilustradas habría dejado de hacer nada para todo el mundo.
+
+   Ahora va fuera del dibujo y a su izquierda, en el mismo sitio que
+   ocupaba dentro (x 0..30 del lienzo de 128): la mascota sigue siendo
+   lo grande de la fila y el rincón lo que la acompaña. */
+function rinconSvg(cfg) {
+  const dibujo = CORNER_SVG[currentScene(cfg)];
+  return dibujo
+    ? `<svg class="pet-rincon" viewBox="0 52 32 50" aria-hidden="true">${dibujo}</svg>`
+    : '';
+}
+
 /** La mascota, dibujada o ilustrada según la especie. */
-export const petVista = (mood, cfg = petConfig()) =>
-  (speciesIlustrada(cfg.species) ? petImg(mood, cfg) : petSvg(mood, cfg));
+export const petVista = (mood, cfg = petConfig()) => (speciesIlustrada(cfg.species)
+  ? `<span class="pet-escena">${rinconSvg(cfg)}${petImg(mood, cfg)}</span>`
+  : petSvg(mood, cfg));
 
 /** El bloque completo que se pinta en el inicio. */
 export function renderPet() {
@@ -688,7 +659,10 @@ export function renderPet() {
     <div class="pet-shelf" data-mood="${state.mood}" onclick="pokePet()" role="button" tabindex="0">
       ${petVista(state.mood, cfg)}
       <div class="pet-talk">
-        ${cfg.name ? `<div class="pet-name">${esc(cfg.name)}</div>` : ''}
+        ${/* Siempre hay nombre: si no se lo pusiste tú, el de fábrica de
+              su especie. Antes el inicio decía una frase sin decir
+              quién la decía. */''}
+        <div class="pet-name">${esc(petNombre(cfg))}</div>
         <p class="pet-phrase">${esc(petPhrase(state))}</p>
       </div>
     </div>`;

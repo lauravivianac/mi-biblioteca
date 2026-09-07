@@ -35,6 +35,7 @@ Al crear la cuenta aceptas las [normas de uso](./eula.md), que son la parte que 
 - Usa DeepSeek, que procesa **en servidores en China**. Está detallado en la [política de privacidad](./privacidad.md).
 - **Se puede equivocar.** Lo que diga sobre un libro es una ayuda para decidir, no un hecho verificado.
 - Cuando ordena tus notas, **no escribe por ti**: agrupa lo que tú escribiste y propone títulos. El texto sigue siendo tuyo, palabra por palabra.
+- **Hablar con la mascota** también pasa por él: lo que le escribas se consulta con DeepSeek. Solo contesta de libros y de leer, sus respuestas pueden equivocarse igual que las demás, y la conversación no se guarda.
 - Tiene un límite de consultas por día y un techo de gasto mensual para toda la app. Si se agota, el asistente deja de responder y **el resto de la app sigue funcionando igual**.
 
 ## 6. Los datos de libros

@@ -99,11 +99,22 @@ async function call(intent, text) {
   if (!user) throw new Error('Necesitas iniciar sesión.');
   const token = await user.getIdToken();
 
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-    body: JSON.stringify({ intent, text }),
-  });
+  /* Un fallo de RED revienta aquí, antes de que el Worker conteste, así
+     que no pasa por el mapa de mensajes de arriba: lo que sale es el
+     texto del navegador —«Failed to fetch», «Load failed»—, en inglés
+     y sin sentido para quien lo lee. Antes no se veía porque los otros
+     encargos se lo tragaban en un console.warn; el chat de la mascota
+     lo pinta en la conversación, delante de una niña. */
+  let r;
+  try {
+    r = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify({ intent, text }),
+    });
+  } catch {
+    throw new Error('No hay conexión con el asistente. Inténtalo en un rato.');
+  }
 
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(MESSAGES[data.error] || data.message || 'No se pudo consultar.');
@@ -206,7 +217,41 @@ export const WHAT_WE_SEND = [
     manda: 'El texto que el móvil lee de la portada, y solo cuando ningún '
          + 'catálogo reconoce el libro. Nunca la foto.',
   },
+  {
+    que: 'Hablar con la mascota',
+    manda: 'Lo que le escribes, tal cual, y el título y el autor del libro que '
+         + 'estás leyendo. Nunca tu nombre, tu correo, tus notas ni tus reseñas — '
+         + 'ni el nombre que le hayas puesto a ella.',
+  },
 ];
+
+/* ── HABLAR CON LA MASCOTA  ·  historia #44 ──────────────────────
+   El único encargo donde el texto lo escribe la lectora con sus
+   palabras. Va con dos cuidados que los otros no necesitan:
+
+   · SE MANDA EL LIBRO, NO A QUIEN LO LEE. Ni su nombre, ni el que le
+     haya puesto a la mascota: un nombre propio en el texto es lo
+     primero que un modelo repite, y aquí quien pregunta puede ser una
+     niña. La mascota suena cercana por lo que sabe de tu lectura, no
+     por llamarte por tu nombre.
+
+   · Y AQUÍ EL FALLO SÍ SUBE. Los demás encargos devuelven null y
+     siguen —que el agente no conteste no puede romper añadir un
+     libro—. Este es una conversación: alguien acaba de escribir algo
+     y espera respuesta, así que un «no pude» tiene que poder decirse
+     en la propia conversación. Callarse sería lo peor de los dos
+     mundos. */
+export async function petChat(pregunta, { libro = null } = {}) {
+  const texto = String(pregunta || '').trim();
+  if (!texto) return null;
+
+  const contexto = libro
+    ? `LEYENDO: ${libro.title}${libro.author ? ` — ${libro.author}` : ''}`
+    : 'LEYENDO: nada ahora mismo';
+
+  const r = await call('pet_chat', `${contexto}\nPREGUNTA: ${texto}`);
+  return r?.dice || null;
+}
 
 /* ── ORDENAR MIS NOTAS  ·  historia #74 ──────────────────────────
    Se le mandan las notas NUMERADAS y vuelve el agrupamiento por

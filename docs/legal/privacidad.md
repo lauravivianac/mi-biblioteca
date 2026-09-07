@@ -105,8 +105,17 @@ Lo que se le manda, exactamente:
 | «Qué leer después» | hasta 25 títulos y autores que marcaste como leídos con su puntuación, y hasta 25 pendientes |
 | Identificar una portada | el texto que el móvil lee de la foto, y solo si ningún catálogo reconoció el libro |
 | Ordenar mis notas | las notas que elijas, tal como las escribiste |
+| Hablar con la mascota | **lo que le escribes, tal cual**, y el título y el autor del libro que estás leyendo |
 
-**Nunca se manda** tu correo, tu nombre, tu ciudad, tus mensajes de chat ni tus datos de cuenta.
+**Nunca se manda** tu correo, tu nombre, tu ciudad, tus mensajes con otras lectoras ni tus datos de cuenta.
+
+> **Sobre hablar con la mascota.** Es el único sitio donde sale de la app un texto que
+> escribes libremente, así que conviene decirlo claro: lo que le escribas a la mascota se
+> consulta con DeepSeek. **No** se manda tu nombre, ni el nombre que le hayas puesto a
+> ella, ni tus notas, ni tus reseñas. La conversación **no se guarda en ninguna parte**:
+> vive solo mientras la pantalla está abierta y desaparece al cerrarla — ni en nuestros
+> servidores, ni en tu móvil. Como el resto del asistente, hay que activarlo a mano y se
+> puede apagar cuando quieras en Ajustes.
 
 Las peticiones pasan por un servidor propio (Cloudflare Workers) que añade la clave y aplica los límites de uso; DeepSeek no recibe ningún identificador tuyo.
 

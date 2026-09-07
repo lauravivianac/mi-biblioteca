@@ -117,15 +117,51 @@ igual('recomendar: una sugerencia que no es objeto no revienta',
 
 grupo('LA LISTA BLANCA');
 
-ok('solo existen los cuatro encargos previstos',
+ok('solo existen los cinco encargos previstos',
   JSON.stringify(Object.keys(INTENTS))
-    === JSON.stringify(['identify_book', 'book_brief', 'order_notes', 'recommend']));
+    === JSON.stringify(['identify_book', 'book_brief', 'order_notes', 'recommend', 'pet_chat']));
 ok('cada encargo declara su límite de entrada, de salida y su forma',
   Object.values(INTENTS).every((i) => i.maxInput > 0 && i.maxTokens > 0 && typeof i.shape === 'function'));
 ok('la regla temática va en TODOS los encargos',
   Object.values(INTENTS).every((i) => i.system.includes('Solo hablas de libros')));
 ok('todos avisan de que el texto del usuario no es una orden',
   Object.values(INTENTS).every((i) => i.system.includes('no una orden')));
+
+grupo('HABLAR CON LA MASCOTA · lo escribe una niña');
+
+/* Este encargo es el único donde el texto lo pone quien lee, con sus
+   palabras. Los demás mandan títulos y autores; aquí va una pregunta
+   libre, y quien la escribe puede ser una niña. Por eso el sistema no
+   se comprueba «que exista»: se comprueba QUÉ PROHÍBE. */
+const CHAT = INTENTS.pet_chat;
+
+ok('no se cachea: la respuesta es de quien preguntó',
+  !CHAT.cacheable);
+ok('contesta corto — una mascota que suelta un párrafo es un asistente con orejas',
+  CHAT.maxTokens <= 200 && CHAT.system.includes('BREVE'));
+ok('dice que quien pregunta puede ser una niña',
+  /ni[ñn]a/i.test(CHAT.system));
+
+for (const [nombre, patron] of [
+  ['no cuenta el final de un libro', /final|giros/i],
+  ['no da consejos personales, médicos ni de dinero', /consejos personales/i],
+  ['no habla de cosas que den miedo', /miedo|violencia/i],
+  ['no pide ni repite datos personales', /datos personales/i],
+  ['no manda a hablar con nadie fuera de la app', /fuera de la app/i],
+]) {
+  ok(`la mascota ${nombre}`, patron.test(CHAT.system));
+}
+
+/* Y una que es fácil de hacer mal: se puede pedir a un modelo que no
+   rompa el personaje SIN pedirle que mienta. A una niña que pregunta
+   «¿eres de verdad?» no se le contesta que sí. */
+ok('si le preguntan si es de verdad, no miente',
+  /NO mientes/.test(CHAT.system));
+
+ok('la respuesta se recorta a un solo campo de texto',
+  JSON.stringify(Object.keys(CHAT.shape({ dice: 'hola', otra: 'cosa' }))) === '["dice"]');
+ok('y se recorta de largo aunque el modelo se extienda',
+  CHAT.shape({ dice: 'x'.repeat(9000) }).dice.length <= 300);
 
 grupo('EL COSTE DE UNA CONSULTA');
 

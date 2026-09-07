@@ -199,6 +199,7 @@ módulo de [`PLAN-MODULOS.md`](./PLAN-MODULOS.md). Cada historia es una tarjeta 
 | 11.4 | #41 ✅ | Desbloquear accesorios leyendo | M |
 | 11.5 | #42 ✅ | La mascota comenta mis lecturas | M |
 | 11.6 | #43 ✅ | Poder ocultar la mascota | S |
+| 11.7 | #44 ✅ | Hablar con la mascota al tocarla | M |
 
 ---
 
