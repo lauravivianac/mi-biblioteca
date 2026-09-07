@@ -193,6 +193,33 @@ console.log('\n─── EL LÍMITE QUE NO SE CRUZA ───');
      solo tiene una respuesta digna y deja de ser una pregunta. */
   comprobar('alguna frase de rescate ofrece dejarlo ir, no solo retomarlo',
     FRASES.rescatando.some((f) => /dejarlo ir|qué hacemos/i.test(f)));
+
+  /* ── Y CADA FRASE DE SUCESO NOMBRA SU LIBRO ─────────────────
+     «Aquí dice cualquier cosa», y la frase que lo provocó era «Un
+     libro menos en la pila»: no dice CUÁL, así que no se puede
+     contrastar con nada. Una frase que no nombra su sujeto se lee como
+     relleno cuando acierta y es indiagnosticable cuando falla.
+
+     Los ánimos de ambiente quedan fuera a propósito: «aquí sigo cuando
+     quieras» no cuenta ningún suceso y no afirma nada desmentible. */
+  const SUCESOS = ['leyendo', 'estancada', 'celebrando', 'celebrandoConPaginas',
+    'expectante', 'preguntando', 'rescatando'];
+  const sinNombrar = [];
+  for (const mood of SUCESOS) {
+    for (const f of FRASES[mood]) if (!f.includes('{libro}')) sinNombrar.push(`${mood}: ${f}`);
+  }
+  comprobar('toda frase que cuenta un suceso nombra su libro',
+    sinNombrar.length === 0, sinNombrar.join(' · '));
+
+  /* Y las de ambiente NO deben nombrarlo: sin libro en curso, una
+     frase con hueco saldría con relleno o se descartaría entera. */
+  const AMBIENTE = ['contenta', 'dormida'];
+  const conHueco = [];
+  for (const mood of AMBIENTE) {
+    for (const f of FRASES[mood]) if (/\{\w+\}/.test(f)) conHueco.push(`${mood}: ${f}`);
+  }
+  comprobar('y las de ambiente no llevan huecos que rellenar',
+    conHueco.length === 0, conHueco.join(' · '));
 }
 
 /* ── 5 bis · «EMPEZADO» NO ES «LEYENDO» ──────────────────────

@@ -6,8 +6,9 @@
    secreto del entorno, y nunca sale de este Worker.
 
    DESPLEGAR:
-     cd worker
-     npx wrangler secret put DEEPSEEK_API_KEY     ← pega la key aquí
+     git checkout main && git pull                ← wrangler sube lo que
+     cd worker                                       hay EN EL DISCO, no
+     npx wrangler secret put DEEPSEEK_API_KEY        lo que está en main
      npx wrangler deploy
 
    La key NO va en wrangler.toml ni en ningún archivo del repo.

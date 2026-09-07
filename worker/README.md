@@ -7,6 +7,17 @@ Una sola key, en un solo sitio, sirviendo a toda la app.
 
 ## Desplegar
 
+> **Baja los cambios ANTES de desplegar.** `wrangler` sube el `index.js` que
+> tienes **en el disco**, no el que está en `main`. Fusionar en GitHub y
+> desplegar sin haber hecho `pull` sube otra vez el código viejo — y como el
+> despliegue dice «Deploy complete!» igual, parece que sí se actualizó.
+>
+> Costó una hora de búsqueda el día que se escribió esto.
+
+```bash
+git checkout main && git pull
+```
+
 Cada línea por separado, sin nada detrás. Un comentario pegado al final
 `wrangler` lo lee como argumentos y falla.
 
@@ -215,3 +226,45 @@ Cubre lo que del agente sí es determinista: qué orígenes entran, qué sale de
 limpieza de entrada, y qué campos consiguen atravesar la validación de salida.
 Que el modelo conteste bien no se puede probar; que las capas de alrededor hagan
 su trabajo, sí.
+
+
+## Cuando la app dice que el asistente no contesta
+
+El Worker **nunca** debería caerse sin responder: todo el manejador va dentro
+de un `try/catch` que devuelve `{"error":"fallo-interno"}` con sus cabeceras
+CORS y escribe la traza en el log. Si eso funciona, la app enseña un mensaje
+concreto.
+
+**Y por eso el mensaje que sale te dice dónde mirar:**
+
+| Lo que dice la mascota | Qué significa |
+|---|---|
+| «Me atasqué por dentro» | el Worker está al día y algo falló dentro → `npx wrangler tail` |
+| «No conseguí contestarte, y tu conexión está bien» | `fetch` reventó **antes** de recibir respuesta: la respuesta llegó sin CORS, o sea que el Worker desplegado **no tiene el `try/catch`** → está viejo, despliega |
+| «Parece que te quedaste sin internet» | el navegador confirma que no hay red |
+| «Me quedé sin palabras un momento» | el Worker contestó, pero DeepSeek no |
+
+Un error del proveedor o un límite alcanzado llegan siempre con CORS y con su
+mensaje propio. Si en vez de eso `fetch` revienta, el problema está **entre el
+navegador y el Worker**: despliegue viejo, origen no permitido o el Worker
+caído.
+
+### Ver la excepción de verdad
+
+```bash
+npx wrangler tail
+```
+
+Déjalo corriendo y usa la app. La traza sale ahí.
+
+### Comprobar que el Worker está vivo
+
+`/stats` es público y no pide sesión — ábrelo en el navegador:
+
+```
+https://TU-WORKER.workers.dev/stats
+```
+
+Devuelve el gasto del mes, el techo y si hay KV. Si contesta, el Worker está
+arriba; si además quieres saber si es la versión nueva, compara el **Version
+ID** que imprimió el último `wrangler deploy`.
