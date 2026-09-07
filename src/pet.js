@@ -17,29 +17,38 @@
 
 import { allBooks, statusOf, entry, settings, progressPct } from './store.js';
 import { pageCount } from './seed.js';
+import { ACHIEVEMENTS } from './achievements.js';
 import { esc } from './ui.js';
 
 /* ── PERSONALIZACIÓN ─────────────────────────────────────────
    Todo se desbloquea leyendo. Un accesorio que costó terminar un
-   libro de 900 páginas significa algo; uno que costó dos dólares, no. */
+   libro de 900 páginas significa algo; uno que costó dos dólares, no.
+
+   EL PELAJE Y EL ACCESORIO YA NO SE GANAN, y no es que se hayan
+   abaratado: es que se van. Una especie ilustrada llega pintada, con
+   su color y sin postizos, así que el guardarropa solo existe
+   mientras queden especies dibujadas por código. Dejar los logros
+   colgando de algo que va a desaparecer era dejarlos sin premio el
+   día que desaparezca; se mudaron a las especies, que se quedan.
+   Mientras tanto el vestuario está entero y abierto. */
 
 export const FURS = [
   { id: 'atigrado', name: 'Atigrada', color: '#C89A5E', belly: '#E8D4B4', unlock: null },
   { id: 'nocturna', name: 'Nocturna', color: '#3E3A52', belly: '#6E6884', unlock: null },
   { id: 'nieve',    name: 'Nieve',    color: '#E4E0D8', belly: '#FFFFFF', unlock: null },
-  { id: 'canela',   name: 'Canela',   color: '#B4633A', belly: '#E0A87E', unlock: 'primer-libro' },
-  { id: 'ceniza',   name: 'Ceniza',   color: '#8A8E96', belly: '#C4C8D0', unlock: 'cinco-generos' },
-  { id: 'tinta',    name: 'Tinta',    color: '#2A3550', belly: '#5A6B8C', unlock: 'tomo-500' },
-  { id: 'trigo',    name: 'Trigo',    color: '#E0B65C', belly: '#F4E2AE', unlock: 'diez-libros' },
+  { id: 'canela',   name: 'Canela',   color: '#B4633A', belly: '#E0A87E', unlock: null },
+  { id: 'ceniza',   name: 'Ceniza',   color: '#8A8E96', belly: '#C4C8D0', unlock: null },
+  { id: 'tinta',    name: 'Tinta',    color: '#2A3550', belly: '#5A6B8C', unlock: null },
+  { id: 'trigo',    name: 'Trigo',    color: '#E0B65C', belly: '#F4E2AE', unlock: null },
 ];
 
 export const ACCESSORIES = [
   { id: 'ninguno', name: 'Nada',     unlock: null },
   { id: 'bufanda', name: 'Bufanda',  unlock: null },
-  { id: 'gafas',   name: 'Gafas',    unlock: 'primera-resena' },
-  { id: 'lazo',    name: 'Lazo',     unlock: 'primer-clasico' },
-  { id: 'gorro',   name: 'Gorrito',  unlock: 'octubre-terror' },
-  { id: 'flor',    name: 'Flor',     unlock: 'bloque-oriental' },
+  { id: 'gafas',   name: 'Gafas',    unlock: null },
+  { id: 'lazo',    name: 'Lazo',     unlock: null },
+  { id: 'gorro',   name: 'Gorrito',  unlock: null },
+  { id: 'flor',    name: 'Flor',     unlock: null },
 ];
 
 /* ── ESCENAS ─────────────────────────────────────────────────
@@ -89,18 +98,24 @@ const GENRE_SCENE = {
    atención y diluirían lo único que hace funcionar esto: que haya
    alguien esperándote. */
 
-/* Ninguna se desbloquea. Los accesorios y los rincones sí se ganan
-   leyendo —eso premia el hábito—, pero elegir CON QUIÉN te sientas a
-   leer es lo primero que hace alguien al abrir la app, y esconderlo
-   detrás de un logro solo hacía que pareciera que no había más que
-   una gata. Lo que se gana es el guardarropa, no la compañía. */
+/* DOS ABIERTAS Y CUATRO QUE SE GANAN. El miedo de antes —que
+   esconderlas hiciera parecer que solo había una gata— se resuelve
+   con que se VEAN las seis desde el primer día, con su candado y su
+   pista. Un armario cerrado que se ve es un motivo; uno que no se ve
+   es una carencia. Y dos abiertas bastan para que elegir compañía
+   siga siendo lo primero que se hace al abrir la app.
+
+   Cada una va con el logro que le pega, no con el siguiente de la
+   lista: el búho con el tomo gordo, la zorra con el primer clásico
+   —que es de donde viene—, el mapache con los cinco géneros porque
+   junta de todo, y la panda con los diez libros, que es constancia. */
 export const SPECIES = [
   { id: 'gato',    name: 'Gatita',  emoji: '🐱', unlock: null },
   { id: 'conejo',  name: 'Coneja',  emoji: '🐰', unlock: null },
-  { id: 'buho',    name: 'Búho',    emoji: '🦉', unlock: null },
-  { id: 'zorro',   name: 'Zorrita', emoji: '🦊', unlock: null },
-  { id: 'mapache', name: 'Mapache', emoji: '🦝', unlock: null },
-  { id: 'panda',   name: 'Panda',   emoji: '🐼', unlock: null },
+  { id: 'buho',    name: 'Búho',    emoji: '🦉', unlock: 'tomo-500' },
+  { id: 'zorro',   name: 'Zorrita', emoji: '🦊', unlock: 'primer-clasico' },
+  { id: 'mapache', name: 'Mapache', emoji: '🦝', unlock: 'cinco-generos' },
+  { id: 'panda',   name: 'Panda',   emoji: '🐼', unlock: 'diez-libros' },
 ];
 
 export const DEFAULT_PET = {
@@ -112,16 +127,36 @@ export const DEFAULT_PET = {
   hidden: false,
 };
 
-export const petConfig = () => ({ ...DEFAULT_PET, ...(settings().pet || {}) });
-
 const unlocked = (item) => {
   if (!item.unlock) return true;
   return (settings().achievements || []).includes(item.unlock);
 };
-export const availableFurs = () => FURS.map((f) => ({ ...f, locked: !unlocked(f) }));
-export const availableAccessories = () => ACCESSORIES.map((a) => ({ ...a, locked: !unlocked(a) }));
-export const availableCorners = () => SCENES.map((c) => ({ ...c, locked: !unlocked(c) }));
-export const availableSpecies = () => SPECIES.map((sp) => ({ ...sp, locked: !unlocked(sp) }));
+
+/* Qué hay que hacer para que se abra, con las palabras del propio
+   logro. Un candado sin pista se lee como una carencia; con la pista
+   es un motivo, y es la diferencia entera entre las dos cosas. */
+const pistaDe = (item) => (item.unlock
+  ? ACHIEVEMENTS.find((a) => a.id === item.unlock)?.hint || null
+  : null);
+
+const conCandado = (item) => ({ ...item, locked: !unlocked(item), hint: pistaDe(item) });
+
+export const availableFurs = () => FURS.map(conCandado);
+export const availableAccessories = () => ACCESSORIES.map(conCandado);
+export const availableCorners = () => SCENES.map(conCandado);
+export const availableSpecies = () => SPECIES.map(conCandado);
+
+/* La especie guardada puede haber dejado de estar abierta: se elige
+   una vez y las reglas de desbloqueo cambian con la app. Si pasa, se
+   cae a la de por defecto en vez de pintar una mascota que ya no se
+   puede elegir —el mismo cuidado que `currentScene` tiene con los
+   rincones—, y sin tocar lo guardado: el día que se gane, vuelve. */
+export function petConfig() {
+  const cfg = { ...DEFAULT_PET, ...(settings().pet || {}) };
+  const sp = SPECIES.find((x) => x.id === cfg.species);
+  if (!sp || !unlocked(sp)) cfg.species = DEFAULT_PET.species;
+  return cfg;
+}
 
 /**
  * La escena que toca ahora mismo.

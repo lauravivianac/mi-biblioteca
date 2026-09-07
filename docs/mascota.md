@@ -534,6 +534,28 @@ código**: las dos formas conviven a propósito (`ILUSTRADAS` en
 [`src/pet.js`](../src/pet.js)), para que las tandas puedan llegar de una en
 una sin dejar nada a medias.
 
+### Los desbloqueables ya se mudaron
+
+Estaban colgados del pelaje y de los accesorios, que es justo lo que la salida
+A se lleva por delante. Ahora **la recompensa es la compañía**:
+
+| | Se abre con |
+|---|---|
+| 🐱 Gatita · 🐰 Coneja | abiertas desde el primer día |
+| 🦉 Búho | *El ladrillo* · un libro de más de 500 páginas |
+| 🦊 Zorrita | *Un clásico* · el primer clásico universal |
+| 🦝 Mapache | *De todo un poco* · cinco géneros distintos |
+| 🐼 Panda | *Diez* · diez libros terminados |
+
+Las seis **se ven desde el primer día**, con su candado y con la frase de lo
+que falta escrita debajo, no solo en el `title`: esto es una app de teléfono y
+en un teléfono no hay ratón que se pose encima. Un armario cerrado que se ve es
+un motivo; uno que no se ve es una carencia.
+
+Las nueve escenas conservan las suyas. El pelaje y el accesorio quedan
+**abiertos del todo** mientras duren: son de las cuatro especies que aún se
+dibujan por código, y se van con ellas.
+
 El conversor está en `npm run mascotas <carpeta>`: toma los PNG tal cual
 llegan y deja los WebP en `img/mascota/`. Unos 8 MB por tanda → unos 120 KB.
 
@@ -565,8 +587,8 @@ leyendo, dormida) por especie. *Expectante* y *celebrando* reutilizan
 *contenta* — se pierde matiz, pero no se rompe nada.
 
 De la integración me encargo yo: recortar, pasar a WebP con presupuesto de peso
-—esta app no tiene empaquetador y cada kilobyte se descarga tal cual—, colocar
-la respiración lenta, y mover los desbloqueables del pelaje a las especies.
+—esta app no tiene empaquetador y cada kilobyte se descarga tal cual— y colocar
+la respiración lenta. Los desbloqueables ya están mudados.
 
 **Empieza por una sola especie y sus cinco poses.** Si esa tanda queda bien, el
 resto es repetir; si no, cambiamos el prompt habiendo gastado cinco imágenes y

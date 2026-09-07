@@ -157,6 +157,29 @@
   border: 1px solid rgb(255 255 255 / .2);
   flex-shrink: 0;
 }
+
+/* Las que aún no están. Se escriben, no se insinúan con un candado:
+   es la lista de lo que hay por delante, y por eso va con el filete
+   dorado del margen en vez de en gris de nota al pie. */
+/* La pista del planificador nace con el margen de arriba en negativo,
+   para pegarse al campo que explica. Aquí no explica un campo: viene
+   detrás de una fila de botones, y ese negativo la metía dentro. */
+.pet-options + .planner-hint,
+.pet-porganar + .planner-hint { margin-top: 10px; }
+
+.pet-porganar {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 8px 0 8px 12px;
+  border-left: 2px solid var(--gold);
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.pet-porganar-quien { color: var(--text); }
+.pet-porganar-quien::after { content: ' · '; color: var(--muted); }
 .pet-name-input {
   width: 100%;
   padding: 10px 12px;
