@@ -156,6 +156,37 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
   return { mood: 'contenta', libro: enCurso, diasCallada };
 }
 
+/**
+ * LOS LIBROS QUE DE VERDAD ESTÁS LEYENDO, del más reciente al más
+ * antiguo.
+ *
+ *   «Estoy leyendo más de dos libros, ¿entonces cómo sabe cuál poner?
+ *    No me pregunta. Creo que es equivocado e impreciso.»
+ *
+ * Y tenía razón, aunque el fallo no era el que parecía. La regla —el
+ * que tocaste más recientemente— es defendible y no cambia. Lo que
+ * estaba mal es que la app la presentaba como un HECHO: «está leyendo
+ * Canción de Navidad contigo», en singular y sin margen, cuando en
+ * realidad era una SUPOSICIÓN entre tres.
+ *
+ * Y aquí eso pesa el doble, porque ese libro es el que se le manda al
+ * asistente como contexto: si la suposición falla, las sugerencias
+ * hablan de un libro que no tienes en la cabeza.
+ *
+ * Así que la lista sale entera y la pantalla enseña cuál eligió y deja
+ * cambiarlo de un toque. Preguntar cada vez sería peor: convierte en
+ * un formulario lo que tiene que ser abrir y escribir.
+ *
+ * Misma prueba de vida que en `estadoMascota`: un libro marcado y sin
+ * abrir no está «en curso» y no entra en la lista.
+ */
+export function librosEnCurso(libros = []) {
+  return libros
+    .filter((b) => b.status === 'reading'
+      && (Boolean(b.lastReadAt) || (b.page || 0) > 0))
+    .sort((a, b) => (b.lastReadAt || 0) - (a.lastReadAt || 0));
+}
+
 /* ── SU VOZ ──────────────────────────────────────────────────
    Frases escritas a mano con huecos que se rellenan con tus datos.
    NO las genera el agente: cuestan cero, responden al instante y

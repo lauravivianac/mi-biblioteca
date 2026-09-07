@@ -1260,3 +1260,40 @@ body:not(.signed-in) .fab { display: none; }
 /* Las filas de ajustes que son enlaces de verdad se ven igual que las
    que abren una hoja: para quien las toca son la misma cosa. */
 a.set-row { text-decoration: none; color: inherit; display: flex; }
+
+/* ── DE QUÉ LIBRO SE HABLA  ·  cuando llevas varios a la vez ──
+   Con un libro abierto la app afirma; con tres supone, y una
+   suposición tiene que verse y poder corregirse. Solo aparece cuando
+   hay más de uno: con uno sería una fila de un solo botón que no
+   decide nada. */
+.petchat-cuales {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.petchat-cuales-que {
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: 2px;
+}
+.petchat-cual {
+  padding: 5px 11px;
+  border: var(--hairline);
+  border-radius: var(--pill-radius);
+  background: var(--card-bg);
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .18s, border-color .18s;
+  /* Un título largo no puede empujar la fila fuera de la pantalla. */
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.petchat-cual:hover { border-color: var(--border-strong); }
+/* El elegido, con el oro del tema: es el que se está mandando. */
+.petchat-cual.on { border-color: var(--gold); color: var(--gold); }

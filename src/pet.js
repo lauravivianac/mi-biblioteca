@@ -19,7 +19,7 @@ import { allBooks, statusOf, entry, settings, progressPct } from './store.js';
 import { pageCount } from './seed.js';
 import { ACHIEVEMENTS } from './achievements.js';
 import { esc } from './ui.js';
-import { estadoMascota, fraseMascota } from './pet-core.js';
+import { estadoMascota, fraseMascota, librosEnCurso } from './pet-core.js';
 import { stalledBooks } from './planner.js';
 
 /* ── PERSONALIZACIÓN ─────────────────────────────────────────
@@ -272,6 +272,9 @@ export function petState() {
 }
 
 /** Lo que dice ahora mismo. */
+/** Los libros que de verdad estás leyendo, del más reciente al último. */
+export const petLibrosEnCurso = () => librosEnCurso(librosParaLaMascota());
+
 export const petPhrase = (state = petState()) => fraseMascota(
   { mood: state.mood, libro: state.libro ?? state.current, diasCallada: state.daysQuiet },
   { nombre: petConfig().name },
