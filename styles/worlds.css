@@ -279,8 +279,125 @@
 }
 
 
+
+
+/* ═════════════════════════════════════════════════════════════
+   LOS ADORNOS
+
+   En un libro impreso cada capítulo termina con una viñeta del
+   impresor: una hoja, un rombo, una rama. Aquí cada tema tiene la
+   suya y cierra la lista cuando terminas de bajar — el premio por
+   haber llegado al final, que es justo donde no molesta.
+
+   Los diez dibujos están en el pliego del index.html y se eligen
+   SOLO CON CSS: nada de repintar al cambiar de tema, y ninguna
+   posibilidad de que la viñeta se quede en la del tema anterior.
+   ═════════════════════════════════════════════════════════════ */
+
+.vineta {
+  display: flex;
+  justify-content: center;
+  padding: 34px 0 14px;
+  color: var(--gold);
+  opacity: .48;
+}
+.vineta svg {
+  width: 92px; height: 50px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+/* Una lista vacía no se remata: no ha terminado nada. */
+.view:has(#plan-body:empty) .vineta,
+.view:has(#lib-body:empty) .vineta,
+.view:has(#tracker-body:empty) .vineta { display: none; }
+
+.vineta use { display: none; }
+[data-theme="exlibris"] .vineta use[data-tema="exlibris"],
+[data-theme="grimorio"] .vineta use[data-tema="grimorio"],
+[data-theme="obsidiana"] .vineta use[data-tema="obsidiana"],
+[data-theme="pergamino"] .vineta use[data-tema="pergamino"],
+[data-theme="herbario"] .vineta use[data-tema="herbario"],
+[data-theme="marea"] .vineta use[data-tema="marea"],
+[data-theme="gotico"] .vineta use[data-tema="gotico"],
+[data-theme="sakura"] .vineta use[data-tema="sakura"],
+[data-theme="principito"] .vineta use[data-tema="principito"],
+[data-theme="maquina"] .vineta use[data-tema="maquina"] { display: block; }
+/* Antes de que el módulo aplique el tema, el de casa. */
+html:not([data-theme]) .vineta use[data-tema="exlibris"] { display: block; }
+
+/* ── LO QUE VIVE EN EL FONDO ────────────────────────────────── */
+.mundo {
+  position: fixed;
+  inset: auto 0 0 0;
+  /* Bajo y pequeño: es el horizonte, no la escena principal. Con
+     `slice` se ampliaba hasta pisar la lista de libros. */
+  height: 30vh;
+  max-height: 210px;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.mundo-svg {
+  display: none;
+  width: 100%; height: 100%;
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .2;
+}
+[data-theme="exlibris"] .mundo-svg[data-tema="exlibris"],
+[data-theme="grimorio"] .mundo-svg[data-tema="grimorio"],
+[data-theme="obsidiana"] .mundo-svg[data-tema="obsidiana"],
+[data-theme="pergamino"] .mundo-svg[data-tema="pergamino"],
+[data-theme="herbario"] .mundo-svg[data-tema="herbario"],
+[data-theme="marea"] .mundo-svg[data-tema="marea"],
+[data-theme="gotico"] .mundo-svg[data-tema="gotico"],
+[data-theme="sakura"] .mundo-svg[data-tema="sakura"],
+[data-theme="principito"] .mundo-svg[data-tema="principito"],
+[data-theme="maquina"] .mundo-svg[data-tema="maquina"] { display: block; }
+
+/* ── LA ESTRELLA FUGAZ · Grimorio ───────────────────────────── */
+.fugaz {
+  position: fixed;
+  top: 0; left: 0;
+  width: 2px; height: 2px;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: #fff;
+  box-shadow: 0 0 6px 1px rgb(var(--gold-rgb) / .9);
+}
+.fugaz::before {
+  content: '';
+  position: absolute;
+  right: 1px; top: 50%;
+  width: 84px; height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(270deg, rgb(255 255 255 / .85), transparent);
+}
+[data-theme="grimorio"] .fugaz {
+  animation: fugaz 11s cubic-bezier(.2, .5, .4, 1) infinite;
+}
+/* Cruza una vez y desaparece: los otros nueve segundos no está. */
+@keyframes fugaz {
+  0%      { opacity: 0; transform: translate(78vw, -6vh) rotate(28deg); }
+  2%      { opacity: 1; }
+  11%     { opacity: 1; }
+  14%     { opacity: 0; transform: translate(14vw, 40vh) rotate(28deg); }
+  100%    { opacity: 0; transform: translate(14vw, 40vh) rotate(28deg); }
+}
+
+
 /* ── Nadie debería marearse por un tema. ── */
 @media (prefers-reduced-motion: reduce) {
+  .fugaz { animation: none !important; }
   [data-theme="marea"] .bg-canvas::after,
   [data-theme="principito"] .bg-canvas::after { animation: none; }
 }

@@ -186,6 +186,54 @@ sí es texto: el estampado.
 
 ---
 
+## Los adornos
+
+En un libro impreso cada capítulo termina con una **viñeta del impresor**: una
+hoja, un rombo, una rama. No sirve para nada y por eso está — es lo que hace
+que un libro se sienta hecho por alguien.
+
+Cada tema tiene la suya, y cierra la lista cuando terminas de bajar: el sitio
+exacto donde un adorno no molesta, porque ya has leído todo lo demás.
+
+| | |
+|---|---|
+| **Ex Libris** | el florón del impresor |
+| **Grimorio** | una estrella fugaz |
+| **Obsidiana** | un rombo, y nada más |
+| **Pergamino** | la hoja de Aldo, el adorno de imprenta más viejo que existe |
+| **Herbario** | una ramita prensada |
+| **Marea** | el mar, alejándose |
+| **Gótico** | la vela que alumbra el capítulo |
+| **Sakura** | la rama en flor |
+| **El Principito** | la boa que se tragó a un elefante |
+| **Máquina** | una marca de arrastre de papel |
+
+Están dibujadas **con el mismo trazo que los iconos** —un solo grosor, sin
+relleno—, porque un adorno de otra mano se nota más que no tener ninguno.
+
+Los diez dibujos viven en el pliego `<svg>` del `index.html` y **se eligen solo
+con CSS**: nada que repintar al cambiar de tema, y ninguna posibilidad de que
+la viñeta se quede en la del tema anterior.
+
+### Y El Principito tiene una escena
+
+Los colores solos no hacen un tema de *El Principito*. En el fondo, muy tenue y
+pegada al borde inferior, está la escena: **el asteroide B-612**, él con la
+bufanda al viento, **el zorro** sentado a su lado, **la rosa bajo su fanal** —de
+lo único de lo que se siente responsable— y **un baobab** pequeño al otro lado,
+que hay que arrancar todos los días.
+
+Por eso su viñeta de remate no es la rosa: ya está en la escena, y repetirla
+sería decir lo mismo dos veces. Es el primer dibujo del libro, el que las
+personas mayores ven como un sombrero.
+
+### La estrella fugaz de Grimorio
+
+Cruza el cielo cada once segundos y se va. Es el único movimiento que se ha
+añadido, y **quien pida menos movimiento no la ve nunca**.
+
+---
+
 ## Qué NO se tocó, a propósito
 
 - **Los diez temas siguen ahí**, Grimorio incluido: sigue descrito como «el
