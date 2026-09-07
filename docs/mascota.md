@@ -6,7 +6,7 @@ La mascota **no es un dibujo**. Es esto:
 
 | | |
 |---|---|
-| Especies | 8 — Gatita, Coneja, Búho, Zorrita, Mapache, Panda, **Oso** y **Lobo** |
+| Especies | 9 — seis crías (Gatita, Coneja, Búho, Zorrita, Mapache, Panda) y tres adultos (**Oso**, **Lobo**, **Cuervo**) |
 | Pelajes | 7 — Atigrada, Nocturna, Nieve, Canela, Ceniza, Tinta, Trigo |
 | Accesorios | 6 — Nada, Bufanda, Gafas, Lazo, Gorrito, Flor |
 | Escenas | 9 — Estantería, Planta, Lámpara, Taza, Rama en flor, Velas… |
@@ -154,12 +154,12 @@ pide *«el mismo ilustrador, la misma técnica y la misma paleta que esta imagen
 pero el personaje es…»*. Una imagen dice de una vez lo que veinte líneas de
 prompt no consiguen.
 
-### Las ocho especies
+### Las nueve especies
 
 **Y cada una tiene nombre**, puesto de fábrica y cambiable: Cleo, Nube, Ulises,
-Rita, Coco, Bambú, Tomás y Rico. No es un adorno — una lista que dice «Gatita,
-Coneja, Búho» es un catálogo de animales; una que dice «Cleo, Nube, Ulises» son
-ocho personajes esperando.
+Rita, Coco, Bambú, Tomás, Rico y Tinta. No es un adorno — una lista que dice
+«Gatita, Coneja, Búho» es un catálogo de animales; una que dice «Cleo, Nube,
+Ulises» son nueve personajes esperando.
 
 | | Nombre | Descripción para el prompt |
 |---|---|---|
@@ -171,6 +171,7 @@ ocho personajes esperando.
 | **Panda** | Bambú | `un panda pequeño y regordete, blanco y negro` |
 | **Oso** | Tomás | `un oso pardo ADULTO, de pelaje castaño cálido y hocico color miel` |
 | **Lobo** | Rico | `un LOBO ADULTO de pelaje gris ceniza con el pecho claro, orejas erguidas y mirada serena` |
+| **Cuervo** | Tinta | `un CUERVO ADULTO de plumaje negro azulado con brillo suave, posado y con la cabeza ligeramente ladeada` |
 
 ### Los cinco ánimos
 
@@ -595,7 +596,7 @@ cambia solo la pose. Si te resulta más cómodo, cópialos una vez y reutilízal
 
 ---
 
-## Los adultos: el Oso y el Lobo, y el Cuervo que falta
+## Los tres adultos ✅
 
 ### El diagnóstico, después de fallar tres veces con el dinosaurio
 
@@ -628,7 +629,7 @@ faltaba.
 |---|---|---|---|
 | **Un oso** · Tomás | grande y templado | Ancho, cálido, pardo. Nadie le tiene manía a un oso con bufanda | ✅ **hecho** |
 | **Un lobo** · Rico | alerta y noble | Es el que elige un niño de diez. Sin enseñar los dientes no da miedo | ✅ **hecho** |
-| **Un cuervo** · Tinta | listo y libresco | Negro tinta, silueta afilada. Es el que elige alguien de cincuenta | pendiente |
+| **Un cuervo** · Tinta | listo y libresco | Negro tinta, silueta afilada. Es el que elige alguien de cincuenta | ✅ **hecho** |
 
 **El Oso salió a la primera** con la referencia adjunta, después de cuatro
 intentos fallidos con el dinosaurio sin ella. Esa es toda la diferencia que hay
@@ -907,9 +908,10 @@ diciendo «que ocupe el mismo alto de cuadro que las anteriores».
 
 ## Estado
 
-**OCHO PUESTAS** — cuarenta ilustraciones, cinco poses por especie, con la
-respiración lenta que sustituye a la animación dibujada. Las seis del reparto
-original más el **Oso** y el **Lobo**, los dos adultos. Falta el Cuervo.
+**LAS NUEVE PUESTAS** — cuarenta y cinco ilustraciones, cinco poses por especie,
+con la respiración lenta que sustituye a la animación dibujada. Las seis crías
+del reparto original y los tres adultos: **Tomás**, **Rico** y **Tinta**. El
+armario está completo.
 
 Mientras una especie no tenga sus cinco poses **se sigue dibujando por
 código**: las dos formas conviven a propósito (`ILUSTRADAS` en
@@ -928,8 +930,7 @@ A se lleva por delante. Ahora **la recompensa es la compañía**:
 | 🦊 Zorrita | *Un clásico* · el primer clásico universal |
 | 🦝 Mapache | *De todo un poco* · cinco géneros distintos |
 | 🐼 Panda | *Diez* · diez libros terminados |
-| 🐻 Oso · Tomás · 🐺 Lobo · Rico | ✅ abiertos desde el primer día, como las dos primeras |
-| 🐦‍⬛ Cuervo · Tinta | *pendiente* — también irá abierto |
+| 🐻 Oso · Tomás · 🐺 Lobo · Rico · 🐦‍⬛ Cuervo · Tinta | ✅ abiertos desde el primer día, como las dos primeras |
 
 Las seis **se ven desde el primer día**, con su candado y con la frase de lo
 que falta escrita debajo, no solo en el `title`: esto es una app de teléfono y
@@ -968,17 +969,40 @@ zorro-*.png           mapache-*.png          panda-*.png
 
 **Y las cinco de cada una de las tres que faltan**, cuando lleguen:
 
-```
-cuervo-contenta.png   cuervo-leyendo.png   cuervo-expectante.png
-cuervo-dormida.png    cuervo-celebrando.png
-```
+**Ya no falta ninguna.** Cuarenta y cinco ilustraciones, 1,0 MB en total, y cada
+lectora se baja solo la pose de su mascota en el ánimo que toca.
 
-El Oso (89 KB) y el Lobo (106 KB) ya están. Falta solo el Cuervo.
+| | Peso | ¿Traía el fondo pegado? |
+|---|---|---|
+| 🐻 Oso · Tomás | 89 KB | sí, las cinco — recortadas por inundación |
+| 🐺 Lobo · Rico | 106 KB | no, ya venían recortadas |
+| 🐦‍⬛ Cuervo · Tinta | 98 KB | no, ya venían recortadas |
 
-**Y el Lobo llegó YA RECORTADO** —60–65 % de lienzo transparente—, así que el
-conversor no le tocó el fondo. Es la primera tanda que no lo necesita, y menos
-mal: el lobo tiene el pecho y las patas casi blancos, que es exactamente el
-pelaje que un recorte mal hecho se come.
+**Que el Lobo y el Cuervo llegaran ya recortados fue una suerte**, y conviene
+saber por qué: el lobo tiene el pecho y las patas casi blancos —el pelaje que
+un recorte mal hecho se come, como estuvo a punto de pasarle a la Coneja— y el
+cuervo es casi negro de punta a punta.
+
+### Y el Cuervo obligó a medir algo que no se había medido nunca
+
+No si el recorte dejaba orla, sino **si el animal se ve sobre el tema más
+oscuro**. Contra el negro de Ex Libris (`#12100E`):
+
+| | contraste | cuerpo indistinguible del fondo |
+|---|---:|---:|
+| Gatita | 8,98:1 | 0,0 % |
+| Lobo | 6,37:1 | 0,1 % |
+| Panda | 4,63:1 | 3,1 % |
+| Oso | 2,67:1 | 0,0 % |
+| **Cuervo** | **1,62:1** | **9,8 %** |
+
+Es con diferencia el más justo de los nueve, y aun así **se lee**: lo salva el
+tornasol azul y violeta de las plumas y el filo claro de las alas, que es
+justo lo que no tendría un cuervo pintado de negro plano. Comprobado a 92 px y
+a 200 px sobre los dos fondos.
+
+Si alguna vez entra un personaje muy oscuro y **sin** tornasol, esta es la
+medida que hay que hacerle antes de meterlo.
 
 Lo que sí hace falta es que estén **las cinco de una**. Media especie en el
 selector es un botón que enseña una gata cuando le das: un mando muerto, que es
