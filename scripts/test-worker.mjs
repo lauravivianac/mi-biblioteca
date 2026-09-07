@@ -302,5 +302,54 @@ ok('el encargo dice que no reescribe ninguna nota',
 
 ok('ordenar notas NO se cachea: son de quien las escribió', ordenar.cacheable !== true);
 
+/* ── LAS CLAVES DE GOOGLE, DE VERDAD  ·  el fallo que mentía ──
+
+   Esta prueba SALE A INTERNET, que es lo que ninguna otra hace aquí, y
+   está justificado: el fallo que arregla no se veía de ninguna otra
+   forma.
+
+   El Worker sacaba la clave pública de dentro del certificado X.509
+   escaneando bytes hacia atrás. Cuando no la encontraba devolvía el
+   certificado entero, `importKey` lanzaba `DataError`, y como esa
+   excepción no la cogía nadie el Worker se caía SIN cabeceras CORS —
+   que en la app se lee como «parece que te quedaste sin internet».
+
+   O sea: un fallo del servidor disfrazado de problema de conexión de
+   quien lee. Indepurable desde la app, e invisible desde aquí, porque
+   con claves de mentira el escaneo funcionaba.
+
+   El día que se escribió esto, los CUATRO certificados publicados
+   reventaban. Ahora se importan como JWKS, tal cual los publica
+   Google, sin interpretar un solo byte. Y esto lo comprueba con las
+   claves de hoy, no con unas inventadas.
+
+   Si no hay red, se salta: una prueba que falla por estar en un tren
+   se acaba ignorando, y entonces deja de guardar nada. */
+
+const JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
+
+try {
+  const r = await fetch(JWKS, { signal: AbortSignal.timeout(8000) });
+  const { keys = [] } = await r.json();
+  ok('Google publica sus claves de firma como JWKS', keys.length > 0, `${keys.length}`);
+
+  let importadas = 0;
+  for (const jwk of keys) {
+    try {
+      await crypto.subtle.importKey('jwk', jwk,
+        { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+      importadas++;
+    } catch { /* cuenta como fallo abajo */ }
+  }
+  ok('Web Crypto importa TODAS las claves de hoy tal cual vienen',
+    importadas === keys.length, `${importadas} de ${keys.length}`);
+
+  /* Y que siguen teniendo la forma que el Worker espera. */
+  ok('cada clave trae su kid, que es por donde la busca el Worker',
+    keys.every((k) => typeof k.kid === 'string' && k.kid.length > 8));
+} catch (e) {
+  console.log(`  · sin red, me salto la prueba de las claves de Google (${e.name})`);
+}
+
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.`);
 process.exit(fallaron ? 1 : 0);
