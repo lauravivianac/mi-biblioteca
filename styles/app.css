@@ -298,6 +298,48 @@ body {
 .lomo-mini::before { top: 16%; }
 .lomo-mini::after { bottom: 16%; }
 
+/* ── LEYENDO AHORA ──
+   Lo de hoy, encima del plan del año. No es una tarjeta con marco:
+   sería una caja compitiendo con la mascota justo encima y con los
+   meses justo debajo. Es una balda más —el mismo filete y la misma
+   letra que los meses—, así que se lee como parte de la misma
+   estantería y no como un cartel pegado.
+
+   La portada es alta y estrecha como en el resto de la app: un libro
+   se reconoce por el lomo antes que por el título. */
+.ahora { margin-bottom: 22px; }
+.ahora-titulo {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: var(--display-weight);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.ahora-libro { display: flex; gap: 12px; align-items: flex-start; }
+.ahora-libro + .ahora-libro { margin-top: 16px; }
+.ahora-cover {
+  width: 34px; height: 52px; flex-shrink: 0;
+  border-radius: 1px; overflow: hidden; cursor: pointer;
+  box-shadow: 0 2px 8px rgb(0 0 0 / .5);
+}
+.ahora-cover img { width: 100%; height: 100%; object-fit: cover; }
+.ahora-txt { flex: 1; min-width: 0; }
+.ahora-book-title {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: 15px; line-height: 1.3;
+  cursor: pointer;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ahora-book-author { font-size: 12px; color: var(--muted); margin-top: 1px; }
+/* La fila de progreso ya trae su margen de arriba; aquí sobra la
+   mitad porque el autor va justo encima. */
+.ahora-txt .progress-row { margin-top: 6px; }
+
 /* ── EL AÑO ──
    Los tres años son tres pestañas de un archivador, no tres botones
    con degradado. El activo se marca abajo, en latón, igual que la

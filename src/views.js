@@ -13,7 +13,7 @@ import {
 import { fetchCover } from './covers.js';
 import { $, esc, toast, confirmAction, openSheet } from './ui.js';
 import { refreshAchievements } from './achievements.js';
-import { renderPet } from './pet.js';
+import { renderPet, petLibrosEnCurso } from './pet.js';
 import { agentOffered, bookBrief, isDenied } from './agent.js';
 import { allShelves, shelvesOfBook, shelfCounts, toggleBookShelf } from './shelves.js';
 import { renderQuotes } from './quotesui.js';
@@ -100,9 +100,72 @@ export function setYear(y, el) {
   renderPlan();
 }
 
+/* ── LEYENDO AHORA  ·  en el inicio ──────────────────────────
+   «Me gustaría que en el inicio me muestre qué estoy leyendo ahora y
+    mi progreso.»
+
+   Lo que había en el inicio era el plan del AÑO: doce meses y sus
+   libros, con lo de hoy escondido en el mes que le tocara. Para saber
+   por dónde ibas había que acordarse de en qué mes lo pusiste, o irse
+   a otra pantalla.
+
+   TRES DECISIONES:
+
+   1. LA MISMA LISTA QUE USA LA MASCOTA (`librosEnCurso`), no una
+      nueva. Si el inicio enseñara unos libros y ella preguntara por
+      otros, la app se contradiría a sí misma en la misma pantalla —y
+      esa lista ya trae la prueba de vida: un libro MARCADO como
+      empezado y nunca abierto no está «leyendo ahora».
+
+   2. LA PÁGINA SE CAMBIA AQUÍ. «Mi progreso» de solo mirar es media
+      promesa: la barra no se mueve sola. Y anotar la página es además
+      la única señal de lectura real que tiene la app —de ahí salen la
+      racha, las preguntas de la mascota y las páginas que cuenta— así
+      que ponerla en la primera pantalla es ponerla donde se usa.
+
+   3. VACÍO NO SE PINTA. Sin nada empezado no hay bloque, ni título ni
+      hueco: quien acaba de entrar no necesita un cajón que le diga
+      que no ha leído nada. */
+function renderLeyendoAhora() {
+  const slot = $('leyendo-slot');
+  if (!slot) return;
+
+  const abiertos = petLibrosEnCurso();
+  if (!abiertos.length) { slot.innerHTML = ''; return; }
+
+  slot.innerHTML = `
+    <div class="ahora">
+      <div class="ahora-titulo">Leyendo ahora</div>
+      ${abiertos.map((l) => {
+    const book = findBook(l.id);
+    if (!book) return '';
+    const pct = progressPct(l.id);
+    return `
+        <div class="ahora-libro">
+          <div class="ahora-cover" onclick="openDetail('${l.id}')">${coverMarkup(book, { mini: true })}</div>
+          <div class="ahora-txt">
+            <div class="ahora-book-title" onclick="openDetail('${l.id}')">${esc(book.title)}</div>
+            <div class="ahora-book-author">${esc(book.author)}</div>
+            <div class="progress-row">
+              <input class="page-input" type="number" min="0" ${l.total ? `max="${l.total}"` : ''}
+                     placeholder="pág." value="${l.page || ''}"
+                     onchange="setPage('${l.id}',this.value);refreshAll()">
+              <span class="progress-of">${l.total ? 'de ' + l.total : 'sin total'}</span>
+              <div class="mini-bar grow"><div class="mini-bar-fill" style="width:${pct}%"></div></div>
+              <span class="progress-pct">${pct}%</span>
+            </div>
+          </div>
+        </div>`;
+  }).join('')}
+    </div>`;
+
+  hydrateCovers(abiertos.map((l) => findBook(l.id)).filter(Boolean), renderPlan);
+}
+
 export function renderPlan() {
   const shelf = $('pet-slot');
   if (shelf) shelf.innerHTML = renderPet();
+  renderLeyendoAhora();
 
   const body = $('plan-body');
   if (!body) return;

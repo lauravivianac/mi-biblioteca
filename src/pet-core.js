@@ -68,8 +68,13 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
      Es la misma prueba de vida que separa «empezado» de «leyendo», que
      apliqué al libro en curso y no aquí — el mismo descuido, en el otro
      extremo del recorrido. */
-  const constaLectura = Boolean(terminado
-    && (terminado.page > 0 || terminado.lastReadAt));
+  /* SOLO `lastReadAt`, y el porqué importa: `setStatus(id,'read')`
+     escribe `page = total` al marcar el libro. Así que la página NO es
+     prueba de que lo leyeras — la pone el propio marcado, y una prueba
+     de vida que el marcado satisface por su cuenta no prueba nada.
+     `lastReadAt` se escribe en un solo sitio de toda la app: cuando
+     apuntas por qué página vas. */
+  const constaLectura = Boolean(terminado && terminado.lastReadAt);
 
   const casiTermina = leyendo.find((b) => (b.pct ?? 0) >= 85);
 
@@ -156,6 +161,38 @@ export function estadoMascota(libros = [], ahora = Date.now()) {
   return { mood: 'contenta', libro: enCurso, diasCallada };
 }
 
+/* ── QUÉ POSE LLEVA CADA ÁNIMO ────────────────────────────────
+   Un ánimo NO es una pose. Hay siete ánimos y cinco ilustraciones por
+   especie, y cada ilustración cuesta un encargo — así que los ánimos
+   nuevos no traen dibujo, se ponen uno de los que hay.
+
+   Esto no es un detalle de estilo, es lo que se rompió: `petImg`
+   armaba el nombre del fichero pegando el ánimo tal cual
+   (`gato-preguntando.webp`), y al añadir «preguntando» y «rescatando»
+   —que no tienen dibujo— la etiqueta apuntaba a un fichero que no
+   existe. En pantalla eso es el cuadrito roto que salió en Ajustes,
+   justo donde se elige la mascota.
+
+   Vive aquí, en el módulo que DECIDE los ánimos, porque es el mismo
+   sitio donde se añadirá el próximo: quien invente un ánimo se
+   encuentra esta tabla en la misma pantalla y le da una pose. Y como
+   es un módulo puro, la prueba puede comprobar contra el disco que
+   cada pose existe de verdad.
+
+   Las dos que faltaban van a «expectante» a propósito: las dos están
+   esperando que le contestes algo. */
+export const POSES = ['contenta', 'leyendo', 'dormida', 'celebrando', 'expectante'];
+
+const POSE_DE = {
+  preguntando: 'expectante',
+  rescatando: 'expectante',
+  estancada: 'dormida',
+};
+
+/** La pose dibujada que le toca a un ánimo. Nunca devuelve una que no exista. */
+export const posePara = (mood) =>
+  (POSES.includes(mood) ? mood : (POSE_DE[mood] || 'contenta'));
+
 /**
  * LOS LIBROS QUE DE VERDAD ESTÁS LEYENDO, del más reciente al más
  * antiguo.
@@ -201,6 +238,24 @@ export const FRASES = {
     '¿Empezamos algo nuevo?',
     'Me gusta este silencio de estantería.',
   ],
+  /* ── LAS FRASES DE SUCESO NOMBRAN SU LIBRO. SIEMPRE. ────────
+     «Aquí dice cualquier cosa.» Y la frase que lo provocó era «Un
+     libro menos en la pila»: cierta o falsa, no se puede comprobar,
+     porque no dice CUÁL. Una frase que no nombra su sujeto se lee como
+     relleno cuando acierta y es indiagnosticable cuando falla — ni
+     quien lee sabe de qué le hablan, ni nosotros de dónde salió.
+
+     «¡Terminaste Canción de Navidad!» se contrasta en un segundo: si
+     no lo terminaste, ves QUÉ cree la app que pasó y puedes
+     arreglarlo. Ese es el trabajo que hace nombrar.
+
+     Vale para los ánimos que cuentan algo que PASÓ —leyendo,
+     estancada, celebrando, expectante, preguntando, rescatando—. Los
+     de ambiente (contenta, dormida) no cuentan ningún suceso y por eso
+     sí pueden ser generales: «aquí sigo cuando quieras» no afirma
+     nada que se pueda desmentir.
+
+     `test:mascota` lo comprueba cesta por cesta. */
   leyendo: [
     'Vas por la mitad de {libro}.',
     'Te espero en la página {pagina} de {libro}.',
@@ -208,7 +263,7 @@ export const FRASES = {
     'Quedan {faltan} páginas de {libro}.',
   ],
   estancada: [
-    'Llevas {dias} días en el mismo capítulo, ¿está pesado?',
+    'Llevas {dias} días en el mismo capítulo de {libro}, ¿está pesado?',
     '{libro} lleva un rato esperando.',
     'Nadie corre. Ahí sigue {libro}.',
   ],
@@ -223,14 +278,14 @@ export const FRASES = {
      atribuirte nada, así que valen siempre. Ver `constaLectura`. */
   celebrando: [
     '¡Terminaste {libro}! 🎉',
-    'Un libro menos en la pila.',
+    '{libro}, terminado. Uno menos en la pila.',
   ],
   celebrandoConPaginas: [
-    'Eso fue {paginas} páginas. Nada mal.',
+    '{libro}: {paginas} páginas. Nada mal.',
   ],
   expectante: [
     'Ya casi terminas {libro}.',
-    'Faltan {faltan} páginas. ¿Las hacemos hoy?',
+    'Te faltan {faltan} páginas de {libro}. ¿Las hacemos hoy?',
     'Estoy en la última parte de {libro} contigo.',
   ],
 

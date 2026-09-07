@@ -24,6 +24,41 @@
 
 import { clavesParaBuscar } from './search-core.js';
 
+/* ── LO QUE SE ENSEÑA Y LO QUE SE ENTREGA  ·  el arreglo ──────
+   «Cuando alguien me agrega como amiga se lleva toda mi biblioteca a
+    esa persona, eso está mal.»
+
+   Tenía razón, y por un camino peor del que ella creía: no hacía falta
+   ser amiga. `sugerible` venía ENCENDIDA de fábrica, y lo que publica
+   no es un resumen — es el identificador de CADA libro que has leído y
+   la nota que le pusiste a cada uno, dentro de `profiles/{uid}`, que
+   es un documento que lee cualquiera SIN SIQUIERA TENER CUENTA.
+   Medido con una biblioteca de 30 leídos: 30 identificadores y 30
+   puntuaciones. Eso es la biblioteca entera, no una señal de gusto.
+
+   Y el fallo no está en publicar eso —hace falta para cruzar lecturas
+   (#47, #67) y quien lo quiera puede quererlo—: está en el POR
+   DEFECTO. «Apagar es una decisión, encender no» es una buena regla
+   para lo que se ENSEÑA en una tarjeta; es la regla equivocada para lo
+   que se ENTREGA en una lista, porque nadie lee ocho interruptores
+   antes de estrenar una app.
+
+   Así que las secciones son de dos clases, y la clase la lleva escrita
+   cada una:
+
+   - las de la tarjeta (`opt` ausente) se ven salvo que las apagues —
+     un perfil recién hecho tiene que enseñar algo;
+   - las que ENTREGAN UNA LISTA de tus datos (`opt: true`) están
+     apagadas hasta que las enciendas a mano. Sin excepciones y sin
+     «pero es que la función queda coja»: una función que necesita
+     publicar tu biblioteca sin preguntar no está coja, está mal.
+
+   Nota sobre `actividad`: no es de esta clase —publica un suceso cada
+   vez, no una lista—, pero su pista prometía «el feed de quien te
+   sigue» y la colección `activity` la lee cualquiera CON cuenta. La
+   pista dice ahora lo que de verdad pasa; apretarlo en las reglas es
+   otro trabajo y no se disimula aquí. */
+
 /** Las secciones que se pueden encender y apagar. */
 export const SECCIONES = [
   { id: 'leyendo', label: 'Qué estoy leyendo', hint: 'Los libros que tienes empezados' },
@@ -31,15 +66,22 @@ export const SECCIONES = [
   { id: 'generos', label: 'Mis géneros', hint: 'Lo que más lees' },
   { id: 'estanterias', label: 'Mis estanterías', hint: 'Solo las que marques como públicas' },
   { id: 'resenas', label: 'Mis reseñas', hint: 'Solo las que ya publicaste' },
-  { id: 'mascota', label: 'Mi mascota', hint: 'Tu bicho, tal y como lo tienes' },
-  { id: 'actividad', label: 'Lo que voy leyendo', hint: 'Aparece en el feed de quien te sigue' },
-  { id: 'sugerible', label: 'Que me encuentren por mis libros', hint: 'Publica qué has leído y con cuántas estrellas, para que te sugieran a quien lee parecido' },
+  { id: 'mascota', label: 'Quien lee conmigo', hint: 'Tu bicho, tal y como lo tienes' },
+  { id: 'actividad', label: 'Lo que voy leyendo', hint: 'Cada libro que empiezas y terminas sale en el feed. Lo ve quien te sigue, y puede verlo cualquiera con cuenta' },
+  {
+    id: 'sugerible',
+    label: 'Que me encuentren por mis libros',
+    hint: 'Publica la LISTA COMPLETA de lo que has leído y con cuántas estrellas, para que te sugieran a quien lee parecido. La puede leer cualquiera, tenga cuenta o no',
+    opt: true,
+  },
 ];
 
 export const IDS_SECCION = SECCIONES.map((s) => s.id);
 
-/* Por defecto se ve todo menos nada: quien abre un perfil recién hecho
-   tiene que ver algo. Apagar es una decisión, encender no. */
+/** Las que están apagadas hasta que se encienden a mano. */
+export const SECCIONES_OPT = SECCIONES.filter((s) => s.opt).map((s) => s.id);
+
+export const esOpt = (id) => SECCIONES_OPT.includes(id);
 /* ── CUENTA PRIVADA  ·  historia #52 ──────────────────────────
    Con la cuenta privada, quien no te sigue ve SOLO tu avatar, tu
    nombre y tu bio. Y como las reglas de Firestore conceden documentos
@@ -57,14 +99,40 @@ export const IDS_SECCION = SECCIONES.map((s) => s.id);
 export const esPrivada = (settings = {}) => settings.privada === true;
 
 export function seccionVisible(settings = {}, id) {
+  /* Las de entregar lista viven en la lista de ENCENDIDAS, no en la de
+     apagadas, y esa vuelta del revés es todo el arreglo: un ajuste que
+     no está guardado significa «no», no «sí». Un fichero de ajustes
+     vacío —una cuenta nueva, o la de alguien que nunca abrió esta
+     pantalla— ya no publica nada de esto. */
+  if (esOpt(id)) {
+    const on = settings.profileShown;
+    return Array.isArray(on) && on.includes(id);
+  }
   const off = settings.profileHidden;
   if (!Array.isArray(off)) return true;
   return !off.includes(id);
 }
 
+/**
+ * Le da la vuelta a una sección.
+ *
+ * Devuelve el PARCHE de ajustes, no un array: las dos clases de
+ * sección se guardan en campos distintos, y que quien llama tenga que
+ * saber en cuál es justo la forma de equivocarse —escribir
+ * `profileHidden` con el id de una `opt` la dejaría encendida para
+ * siempre, en silencio.
+ */
 export function toggleSeccion(settings = {}, id) {
+  if (esOpt(id)) {
+    const on = Array.isArray(settings.profileShown) ? settings.profileShown : [];
+    return {
+      profileShown: on.includes(id) ? on.filter((x) => x !== id) : [...on, id],
+    };
+  }
   const off = Array.isArray(settings.profileHidden) ? settings.profileHidden : [];
-  return off.includes(id) ? off.filter((x) => x !== id) : [...off, id];
+  return {
+    profileHidden: off.includes(id) ? off.filter((x) => x !== id) : [...off, id],
+  };
 }
 
 const texto = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);

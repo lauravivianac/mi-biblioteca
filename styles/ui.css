@@ -12,27 +12,148 @@
 
 /* ── ACCESO ──────────────────────────────────────────────────── */
 .auth-card { width: 100%; max-width: 380px; margin: auto; }
-.auth-portada { text-align: center; margin-bottom: 34px; }
+
+/* ── LA PORTADA  ·  una tapa, no un encabezado ────────────────
+   «Vamos a rediseñar la portada para que no se vea tan simplona.
+    Debería coincidir con el tema, tener a la mascota que seleccione
+    afuera, y Mi Biblioteca en letras más lindas o mágicas, más de
+    cuento de hadas. La portada, algo más como un libro.»
+
+   Lo que había era texto centrado sobre el fondo de la app: un título,
+   un filete y una frase. Todo correcto y nada que mirar — «simplona»
+   es la palabra exacta, porque no había ningún OBJETO, solo tipografía
+   flotando.
+
+   Ahora es una TAPA, y está hecha con lo que el sistema de temas ya
+   tenía y no se estaba usando aquí:
+
+     · la tela   `--tela-5`, una de las ocho telas de encuadernar que
+                 cada tema define; cambia sola con el tema y no hay que
+                 elegir un color para once temas.
+     · la tinta  `--tela-5-tinta`, que el tema calcula por CONTRASTE
+                 contra esa tela (oro en las oscuras, tinta en las
+                 claras). Por eso el título se lee en los once sin
+                 comprobar ninguno a mano.
+     · el grano  `--texture`, el mismo papel del resto de la app.
+     · el adorno el florón del tema, el mismo que remata las listas.
+
+   EL LOMO ES LO QUE LA CONVIERTE EN LIBRO. Sin la banda de la
+   izquierda con sus dos filetes esto sería una tarjeta de color; con
+   ella se lee como una tapa vista de frente. Es el detalle más barato
+   y el que más trabaja.
+
+   Y LA MASCOTA VA FUERA, sentada sobre el canto inferior y pisando la
+   tapa. Dentro del marco sería un dibujo más de la portada; delante y
+   asomada, es alguien que te está esperando con el libro detrás. */
+.portada {
+  position: relative;
+  border-radius: var(--card-radius);
+  background: var(--tela-5, var(--deep));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / .07),
+    0 18px 40px rgb(0 0 0 / .45);
+  /* Sitio abajo para que la mascota se apoye sin tapar la frase. */
+  margin-bottom: 64px;
+  isolation: isolate;
+}
+/* El grano del papel, encima de la tela. */
+.portada::before {
+  content: ''; position: absolute; inset: 0;
+  border-radius: inherit;
+  background-image: var(--texture);
+  opacity: var(--texture-opacity, .05);
+  mix-blend-mode: var(--texture-blend, soft-light);
+  pointer-events: none;
+}
+/* El lomo: la banda de la encuadernación y sus dos filetes. */
+.portada::after {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 26px;
+  border-radius: var(--card-radius) 0 0 var(--card-radius);
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / .30), rgb(0 0 0 / .10) 55%, transparent),
+    linear-gradient(90deg, transparent 21px, currentColor 21px 21.7px, transparent 21.7px),
+    linear-gradient(90deg, transparent 23.4px, currentColor 23.4px 24.1px, transparent 24.1px);
+  color: var(--tela-5-tinta, var(--gold));
+  opacity: .55;
+  pointer-events: none;
+}
+
+/* El marco de la tapa: doble filete, como un grabado. */
+/* El doble filete se saca de la MISMA tinta del tema rebajada, y no de
+   un color nuevo: así el marco acompaña al título en los once temas
+   sin declarar nada por tema. */
+.portada-marco {
+  position: relative; z-index: 1;
+  margin: 12px 12px 12px 34px;
+  /* El hueco de abajo no es aire: es el sitio donde se sienta la
+     mascota. Con 28 px se comía la última línea de la frase — se veía
+     al mirarlo, no al leerlo. */
+  padding: 26px 20px 62px;
+  text-align: center;
+  color: var(--tela-5-tinta, var(--text));
+  border: 1px solid color-mix(in srgb, currentColor 38%, transparent);
+  border-radius: calc(var(--card-radius) - 2px);
+  box-shadow: inset 0 0 0 3.5px color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.portada-vineta { display: flex; justify-content: center; margin-bottom: 10px; opacity: .7; }
+.portada-vineta svg {
+  width: 74px; height: 40px;
+  fill: none; stroke: currentColor; stroke-width: 1.15;
+  stroke-linecap: round; stroke-linejoin: round; overflow: visible;
+}
+.portada-vineta use { display: none; }
+
 .auth-exlibris {
   font-size: 9px; letter-spacing: 4px; text-transform: uppercase;
-  color: var(--gold); margin-bottom: 10px;
+  opacity: .72; margin-bottom: 8px;
 }
+/* La letra del título es SUYA, no la del cuerpo de la app: es lo único
+   de toda la interfaz que puede permitirse ser bonito antes que
+   práctico, porque se lee una vez y no se usa para nada. Por defecto
+   es la del tema; `--font-portada` deja que un tema pida otra. */
 .auth-brand {
-  font-family: var(--font-display);
-  font-size: 34px;
-  font-weight: var(--display-weight);
-  line-height: 1.05;
-  color: var(--text);
-  letter-spacing: var(--display-spacing);
+  font-family: var(--font-portada, var(--font-display));
+  /* 46 y no 34: una caligráfica tiene la altura de x mucho menor que
+     una serif, así que al mismo cuerpo se lee la mitad. Al tamaño de
+     la tapa, «Mi Biblioteca» entra en una línea en un móvil de 390. */
+  font-size: 46px;
+  font-weight: var(--portada-weight, var(--display-weight));
+  line-height: 1.08;
+  letter-spacing: var(--portada-spacing, var(--display-spacing));
 }
 .auth-filete {
-  width: 54px; height: 1px; margin: 16px auto;
-  background: rgb(var(--gold-rgb) / .6);
+  width: 64px; height: 1px; margin: 14px auto;
+  background: currentColor; opacity: .45;
 }
 .auth-lede {
-  font-size: 13.5px; font-style: italic; line-height: 1.55;
-  color: var(--muted); max-width: 30ch; margin: 0 auto;
+  font-family: var(--font-body);
+  font-size: 13px; font-style: italic; line-height: 1.55;
+  opacity: .78; max-width: 28ch; margin: 0 auto;
 }
+
+/* La mascota, sentada en el canto de abajo y pisando la tapa. */
+.portada-companera {
+  position: absolute; z-index: 2;
+  /* MEDIO FUERA DE LA TAPA, y el número sale de una cuenta, no del
+     ojo: con 104 px de alto y 56 de caída, asoma 48 px por encima del
+     canto — menos que los 62 de hueco que deja el marco, así que no
+     puede pisar la última línea de la frase por mucho que crezca el
+     texto. Al ras de la tapa sí la pisaba, y se veía en cuatro temas
+     de once. */
+  left: 50%; bottom: -56px; transform: translateX(-50%);
+  width: 104px; height: 104px;
+  display: flex; align-items: flex-end; justify-content: center;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / .45));
+}
+.portada-companera .pet-img,
+.portada-companera svg { width: 100%; height: 100%; }
+/* El rincón de la mascota no viene a esta pantalla: aquí el escenario
+   es la tapa, y dos escenarios superpuestos es uno de más. */
+.portada-companera .pet-rincon { display: none; }
+
+.auth-card > .auth-tabs { margin-top: 4px; }
 .auth-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
 .auth-tab {
   flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
@@ -455,6 +576,27 @@ body:not(.signed-in) .fab { display: none; }
 }
 .scan-frame::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
 .scan-frame::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+/* EL LATIDO DICE QUE ESTÁ MIRANDO.
+   «No se sabe si está viendo, tomando una foto o qué.» El marco era
+   idéntico mirando y sin mirar, y la cámara encendida no significa
+   nada: cualquier app enseña la cámara. Lo que hacía falta era una
+   señal de que ESTÁ BUSCANDO ahora mismo, y que se vea sin leer.
+
+   Es el borde el que late, no todo el marco: las cuatro esquinas se
+   quedan quietas para que siga sirviendo de guía de encuadre
+   mientras. */
+@keyframes scan-latido {
+  0%, 100% { border-color: rgb(var(--gold-rgb) / .35); }
+  50%      { border-color: rgb(var(--gold-rgb) / .95); }
+}
+.scan-frame.buscando { animation: scan-latido 1.6s ease-in-out infinite; }
+
+/* Quien tiene el movimiento reducido no necesita un latido para saber
+   que pasa algo: el texto de debajo ya lo dice. */
+@media (prefers-reduced-motion: reduce) {
+  .scan-frame.buscando { animation: none; border-color: rgb(var(--gold-rgb) / .95); }
+}
 
 /* ── LA FICHA ENCONTRADA ──────────────────────────────────────
    La portada al lado de los campos: se ve de inmediato si el

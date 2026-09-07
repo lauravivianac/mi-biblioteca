@@ -315,7 +315,24 @@
 .view:has(#lib-body:empty) .vineta,
 .view:has(#tracker-body:empty) .vineta { display: none; }
 
-.vineta use { display: none; }
+/* El mismo mecanismo sirve para el florón de la portada de acceso: se
+   listan los once y manda el atributo del `html`. Los selectores van
+   juntos para que añadir un tema nuevo sea una línea y no dos sitios
+   que se olvidan por separado. */
+.vineta use, .portada-vineta use { display: none; }
+[data-theme="exlibris"] .portada-vineta use[data-tema="exlibris"],
+[data-theme="grimorio"] .portada-vineta use[data-tema="grimorio"],
+[data-theme="obsidiana"] .portada-vineta use[data-tema="obsidiana"],
+[data-theme="pergamino"] .portada-vineta use[data-tema="pergamino"],
+[data-theme="herbario"] .portada-vineta use[data-tema="herbario"],
+[data-theme="marea"] .portada-vineta use[data-tema="marea"],
+[data-theme="gotico"] .portada-vineta use[data-tema="gotico"],
+[data-theme="sakura"] .portada-vineta use[data-tema="sakura"],
+[data-theme="principito"] .portada-vineta use[data-tema="principito"],
+[data-theme="maquina"] .portada-vineta use[data-tema="maquina"],
+[data-theme="manta"] .portada-vineta use[data-tema="manta"] { display: block; }
+html:not([data-theme]) .portada-vineta use[data-tema="exlibris"] { display: block; }
+
 [data-theme="exlibris"] .vineta use[data-tema="exlibris"],
 [data-theme="grimorio"] .vineta use[data-tema="grimorio"],
 [data-theme="obsidiana"] .vineta use[data-tema="obsidiana"],

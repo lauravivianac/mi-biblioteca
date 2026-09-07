@@ -114,12 +114,81 @@ function AbortController_(ms) {
   return c.signal;
 }
 
+/* ── CUANDO EL CATÁLOGO NO CONTESTA ──────────────────────────
+   «Abrí una cuenta nueva de prueba y no está buscando los libros de
+    ninguna forma. Me ha tocado incluirlos todos a mano.»
+
+   No era la cuenta, y no era «de ninguna forma» por casualidad: los
+   tres caminos —título, código de barras y foto de portada— acaban en
+   estas dos consultas, así que cuando las dos fallan fallan los tres a
+   la vez. Probados desde aquí el mismo día:
+
+     Google Books   → HTTP 429, «Quota exceeded ... books.googleapis.com»
+     OpenLibrary    → sin respuesta
+
+   Google Books sin clave se atribuye a un proyecto anónimo compartido
+   y esa cuota se agota sola; OpenLibrary pasa temporadas lenta y ocho
+   segundos se le quedan cortos desde un móvil.
+
+   Y AQUÍ ESTÁ EL FALLO DE VERDAD, que es nuestro y no suyo: un 429
+   trae un cuerpo JSON de error, así que `d.items || []` daba LISTA
+   VACÍA. Un servicio caído entraba por la misma puerta que «ese libro
+   no existe», y la pantalla decía «Sin resultados. Puedes añadirlo a
+   mano». Le estábamos diciendo que su libro no está en ningún
+   catálogo del mundo cuando lo que pasaba es que no habíamos podido
+   preguntar. Por eso los metió todos a mano: le dijimos que lo
+   hiciera.
+
+   Tres cosas cambian, y las tres son la misma: no mentir.
+     1. Una respuesta que no es 200 LANZA. No se disfraza de vacío.
+     2. Un fallo pasajero se reintenta una vez — lo que arregla la
+        mitad de los 429 y de los tiempos agotados sin que nadie note
+        nada.
+     3. Quien llama recibe QUÉ fuentes fallaron, para poder decir la
+        verdad en pantalla. */
+
+/* Doce y no ocho: desde un móvil con mala cobertura, ocho segundos
+   cortan consultas que habrían llegado. El precio es esperar cuatro
+   segundos más en el peor caso; el que se pagaba era no encontrar el
+   libro. */
+const ESPERA = 12000;
+
+async function pedir(url) {
+  const r = await fetch(url, { signal: timeout(ESPERA) });
+  /* `fetch` solo rechaza si no hay red: un 429 o un 503 llegan como
+     respuesta buena con un cuerpo de error dentro. Sin esta línea, ese
+     cuerpo se leía como «no hay libros». */
+  if (!r.ok) {
+    const e = new Error(`HTTP ${r.status}`);
+    e.status = r.status;
+    throw e;
+  }
+  return r.json();
+}
+
+/**
+ * Una consulta, con un segundo intento si el primero se cayó por algo
+ * pasajero.
+ *
+ * Un 4xx que no sea 429 no se reintenta: pedir dos veces lo mismo a
+ * quien ya ha dicho que la petición está mal solo alarga la espera.
+ */
+async function conReintento(hacer) {
+  try {
+    return await hacer();
+  } catch (e) {
+    const pasajero = !e.status || e.status === 429 || e.status >= 500;
+    if (!pasajero) throw e;
+    await new Promise((r) => setTimeout(r, 600));
+    return hacer();
+  }
+}
+
 async function openLibrary(query, { isbn = false, limit = 6 } = {}) {
   const url = isbn
     ? `https://openlibrary.org/search.json?q=isbn:${encodeURIComponent(query)}&limit=1&fields=title,author_name,number_of_pages_median,first_publish_year,publisher,cover_i,isbn,subject`
     : `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&fields=title,author_name,number_of_pages_median,first_publish_year,publisher,cover_i,isbn,subject`;
-  const r = await fetch(url, { signal: timeout(8000) });
-  const d = await r.json();
+  const d = await conReintento(() => pedir(url));
   return (d.docs || []).map((x) => candidate({
     title: x.title,
     author: x.author_name?.[0],
@@ -136,8 +205,7 @@ async function openLibrary(query, { isbn = false, limit = 6 } = {}) {
 async function googleBooks(query, { isbn = false, limit = 6 } = {}) {
   const q = isbn ? `isbn:${query}` : query;
   const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=${limit}`;
-  const r = await fetch(url, { signal: timeout(8000) });
-  const d = await r.json();
+  const d = await conReintento(() => pedir(url));
   return (d.items || []).map((x) => {
     const v = x.volumeInfo || {};
     const ids = v.industryIdentifiers || [];
@@ -192,30 +260,71 @@ export function mergeCandidates(lists, query = '') {
 
 /* ── LOS TRES CAMINOS ────────────────────────────────────────── */
 
-const settle = (p) => p.then((v) => v).catch(() => []);
+/**
+ * Las dos fuentes a la vez, contando cuál contestó.
+ *
+ * Devuelve `{ libros, caidas }`. `caidas` es la lista de fuentes que
+ * no pudieron contestar, y es lo que permite distinguir «este libro no
+ * está en los catálogos» de «los catálogos no están». Que una sola de
+ * las dos conteste ya vale: se busca en dos sitios precisamente para
+ * que uno pueda faltar.
+ */
+async function preguntarALosCatalogos(query, opciones = {}) {
+  const fuentes = [
+    ['OpenLibrary', () => openLibrary(query, opciones)],
+    ['Google Books', () => googleBooks(query, opciones)],
+  ];
+  const salidas = await Promise.all(fuentes.map(async ([nombre, hacer]) => {
+    try {
+      return { nombre, libros: await hacer() };
+    } catch (e) {
+      /* A la consola el motivo de verdad; a la pantalla, nunca. Lo que
+         hace falta arriba es SI falló, no por qué. */
+      console.warn(`El catálogo ${nombre} no pudo contestar:`, e?.message || e);
+      return { nombre, libros: null };
+    }
+  }));
+
+  return {
+    libros: mergeCandidates(salidas.map((s) => s.libros || []), typeof query === 'string' ? query : ''),
+    caidas: salidas.filter((s) => s.libros === null).map((s) => s.nombre),
+  };
+}
+
+/** ¿Se quedó sin poder preguntar? Solo si NINGUNA de las dos contestó. */
+const sinCatalogos = (r) => r.caidas.length === 2;
 
 /** Por código de barras. Un ISBN inválido se rechaza antes de consultar. */
 export async function lookupByIsbn(raw) {
   const isbn = cleanIsbn(raw);
   if (!isValidIsbn(isbn)) return { ok: false, reason: 'isbn-invalido', isbn };
-  const [a, b] = await Promise.all([
-    settle(openLibrary(isbn, { isbn: true })),
-    settle(googleBooks(isbn, { isbn: true })),
-  ]);
-  const found = mergeCandidates([a, b]);
-  if (!found.length) return { ok: false, reason: 'no-encontrado', isbn };
-  return { ok: true, book: { ...found[0], isbn }, candidates: found };
+  const r = await preguntarALosCatalogos(isbn, { isbn: true });
+  /* Un código bien leído que no encuentra nada porque los catálogos
+     están caídos NO es «este libro no está»: reintentar en un rato
+     funciona, y volver a escanear no. La pantalla dice cosas
+     distintas para cada uno. */
+  if (sinCatalogos(r)) return { ok: false, reason: 'catalogos-caidos', isbn, caidas: r.caidas };
+  if (!r.libros.length) return { ok: false, reason: 'no-encontrado', isbn };
+  return { ok: true, book: { ...r.libros[0], isbn }, candidates: r.libros };
+}
+
+/**
+ * Escribiendo el título, con el parte de qué fuentes contestaron.
+ *
+ * Es la que usa la caja de búsqueda, que es donde importa poder decir
+ * la verdad. `lookupByTitle` sigue existiendo para quien solo quiere
+ * la lista.
+ */
+export async function buscarPorTitulo(text) {
+  const query = clean(text);
+  if (query.length < 3) return { libros: [], caidas: [], corto: true };
+  const r = await preguntarALosCatalogos(query);
+  return { libros: r.libros.slice(0, 8), caidas: r.caidas, sinCatalogos: sinCatalogos(r) };
 }
 
 /** Escribiendo el título. Devuelve varios para poder distinguir ediciones. */
 export async function lookupByTitle(text) {
-  const query = clean(text);
-  if (query.length < 3) return [];
-  const [a, b] = await Promise.all([
-    settle(openLibrary(query)),
-    settle(googleBooks(query)),
-  ]);
-  return mergeCandidates([a, b], query).slice(0, 8);
+  return (await buscarPorTitulo(text)).libros;
 }
 
 /**
@@ -230,11 +339,17 @@ export async function lookupByCoverText(ocrText) {
     .filter((l) => l.length > 2 && !/^\d+$/.test(l))
     .sort((a, b) => b.length - a.length);
 
+  let mudos = false;
   for (const attempt of [lines.slice(0, 2).join(' '), lines[0], lines.slice(0, 3).join(' ')]) {
     if (!attempt) continue;
-    const found = await lookupByTitle(attempt);
-    if (found.length) return { ok: true, candidates: found, usedQuery: attempt };
+    const r = await buscarPorTitulo(attempt);
+    if (r.libros.length) return { ok: true, candidates: r.libros, usedQuery: attempt };
+    /* Si los catálogos están caídos, los tres intentos van a dar lo
+       mismo y ninguno significa «no lo reconocemos». Se recuerda para
+       no acabar diciendo que la foto salió mal. */
+    if (r.sinCatalogos) mudos = true;
   }
+  if (mudos) return { ok: false, reason: 'catalogos-caidos', lines };
   return { ok: false, reason: 'sin-coincidencia', lines };
 }
 

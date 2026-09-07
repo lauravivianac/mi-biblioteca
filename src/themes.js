@@ -27,6 +27,24 @@ export const FONT_SETS = {
   frauncesWonk: 'Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,40,1',
   literata:   'Literata:ital,opsz,wght@0,7..72,300..600;1,7..72,400',
   cinzelDeco: 'Cinzel+Decorative:wght@400;700',
+  /* ── LA LETRA DE LA PORTADA ──────────────────────────────
+     «Mi Biblioteca debería estar en letras más lindas o mágicas, más
+      de cuento de hadas», con el rótulo de una película de dibujos
+      como referencia. O sea: caligráfica con rúbrica, no una serif con
+      adornos.
+
+     Grand Hotel entre seis candidatas caligráficas (Berkshire Swash,
+     Playball, Great Vibes, Yesteryear, MonteCarlo), comparadas
+     renderizándolas sobre la tapa de verdad y en cuatro temas de los
+     extremos. Gana por dos cosas concretas y no por gusto: es la de
+     trazo más CÁLIDO Y REDONDO —las otras o son de invitación de boda
+     o van de rótulo antiguo—, y es la única en la que «Mi Biblioteca»
+     CABE EN UNA LÍNEA al tamaño de portada. Un título partido en dos
+     no se lee como un nombre, se lee como un párrafo corto.
+
+     Se descarga SOLO en la pantalla de acceso: dentro de la app no se
+     usa en ningún sitio, así que quien ya entró no la paga. */
+  grandHotel: 'Grand+Hotel',
   shippori:   'Shippori+Mincho:wght@400;600',
   mono:       'JetBrains+Mono:wght@400;500;700',
   inter:      'Inter:wght@300;400;500',

@@ -293,6 +293,11 @@
     <div class="view active" id="view-plan">
       <div style="height:4px"></div>
       <div id="pet-slot"></div>
+      <!-- «Que en el inicio me muestre qué estoy leyendo ahora y mi
+           progreso.» Va aquí, entre la mascota y el plan del año, que
+           es el orden de lo que se mira: lo de hoy antes que lo de
+           diciembre. Vacío no ocupa nada. -->
+      <div id="leyendo-slot"></div>
       <div class="year-row">
         <div class="year-btn active" onclick="setYear(2026,this)">2026</div>
         <div class="year-btn" onclick="setYear(2027,this)">2027</div>
@@ -520,7 +525,7 @@
 <div class="overlay" id="petchat-overlay" onclick="closePetChat(event)">
   <div class="sheet sheet-alta">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">Tu mascota</div>
+    <div class="sheet-title">Quien lee contigo</div>
     <button class="sheet-close" onclick="closePetChat()" aria-label="Cerrar">✕</button>
     <div id="petchat-body"></div>
   </div>

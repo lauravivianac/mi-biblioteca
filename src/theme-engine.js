@@ -10,9 +10,16 @@ import { THEMES, FONT_SETS, DEFAULT_THEME, BASE_THEME, byId } from './themes.js'
 const LS_KEY = 'bib_theme';
 const loadedFonts = new Set();
 
-/** Carga las tipografías de un tema, y solo cuando ese tema se usa. */
-function ensureFonts(theme) {
-  const pending = theme.fonts.filter((f) => !loadedFonts.has(f));
+/**
+ * Carga familias por su nombre en FONT_SETS, una sola vez cada una.
+ *
+ * Está separada de los temas porque no todas las letras pertenecen a
+ * uno: la de la portada de acceso (`grandHotel`) la pide esa pantalla
+ * y nadie más, y así quien ya entró no descarga una tipografía que no
+ * va a ver en ningún sitio.
+ */
+export function cargarFuentes(nombres = []) {
+  const pending = nombres.filter((f) => FONT_SETS[f] && !loadedFonts.has(f));
   if (!pending.length) return;
   pending.forEach((f) => loadedFonts.add(f));
   const families = pending.map((f) => `family=${FONT_SETS[f]}`).join('&');
@@ -21,6 +28,9 @@ function ensureFonts(theme) {
   link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
   document.head.appendChild(link);
 }
+
+/** Carga las tipografías de un tema, y solo cuando ese tema se usa. */
+const ensureFonts = (theme) => cargarFuentes(theme.fonts);
 
 /**
  * Escribe los tokens en :root.
