@@ -264,3 +264,36 @@ E10 (plan lector) y E11 (mascota).
   de iPhone y ahí ese camino estaba muerto
 - Géneros más anchos que el plan: romance, aventura, ciencia ficción, novela histórica…
 - Pruebas de los guardrails del Worker (34) y del lector de códigos (28)
+
+### Nueva · Franja de edad lectora — *sin abrir, y hay que decidirla antes de la tienda*
+
+> «¿Deberíamos pedir la edad, un rango, para que la biblioteca recomiende de acuerdo a la
+> edad? No algo de terror a un niño de nueve años.»
+
+Tiene razón, y **hoy no hay nada que lo impida**: el plan lector reparte «Terror /
+Misterio» como un género más, `recommend` propone lo que le parece, el tema Gótico se
+gana terminando un mes de terror y el chat de la mascota contesta sobre lo que sea que
+esté leyendo. Ninguna de las cuatro cosas sabe quién está al otro lado.
+
+**Pero pedir la edad de una niña no es una casilla más.** Es el dato que convierte la app
+en «tratamiento de datos de menores» — consentimiento paterno del artículo 8 del RGPD,
+COPPA en EE. UU., y la categoría de familias en ambas tiendas —, y esta app manda texto a
+un proveedor en China. Cuanto más fina la edad, más caro sale.
+
+La forma que sale barata y sirve igual:
+
+1. **Franja, no fecha.** Cuatro tramos (`hasta-9`, `10-12`, `13-15`, `adulto`). Una fecha
+   de nacimiento identifica; un tramo es una preferencia.
+2. **Preguntar «¿para quién es esta biblioteca?», no «¿cuántos años tienes?»** — la misma
+   información para filtrar, y no es un dato personal de nadie.
+3. **Que filtre en los cuatro sitios**, no solo en las recomendaciones: el reparto de
+   géneros del plan, `recommend`, el desbloqueo del tema Gótico y lo que se ve en
+   Explorar. Filtrar solo en uno da una falsa sensación de que está resuelto.
+4. **Es opcional y se puede quitar.** Sin franja, la app se comporta como hoy.
+5. **Y cambia el aviso de privacidad con ella**, porque el tramo viajaría dentro de
+   `recommend`. La regla está escrita en `agent.js`: si cambia lo que se manda, cambia
+   `WHAT_WE_SEND` — un aviso desactualizado es peor que no tenerlo, porque promete.
+
+Lo que **no** debe hacer: bloquear libros. Una biblioteca que esconde títulos es censura y
+además no funciona —se sortea en un minuto—. Lo que se filtra es **lo que la app propone
+por su cuenta**; lo que la lectora busca y añade a mano es suyo.
