@@ -164,17 +164,19 @@ function pintar() {
         <div class="prof-handle">@${esc(p.username)}</div>
         ${p.city ? `<div class="prof-city">${ico('sitio', 'ico-sm')} ${esc(p.city)}</div>` : ''}
       </div>
-      <!-- `petVista` y no `petSvg`: nueve de las especies son
-           ILUSTRACIÓN desde hace tiempo, y el dibujo por código era el
-           bicho genérico de antes. Quien tuviera el oso veía aquí otra
-           cosa. -->
+      <!-- petVista y no petSvg: nueve de las especies son ILUSTRACIÓN
+           desde hace tiempo, y el dibujo por código era el bicho
+           genérico de antes. Quien tuviera el oso veía aquí otra cosa.
+           (Sin acentos graves ahí: dentro de una plantilla de texto un
+           acento grave la CIERRA, y este comentario tumbó el módulo
+           entero.) -->
       ${p.mascota ? `<div class="prof-pet">${petVista('contenta', p.mascota)}</div>` : ''}
     </div>
 
     ${p.bio ? `<p class="prof-bio">${esc(p.bio)}</p>` : ''}
     <p class="prof-resumen">${esc(resumenCorto(p))}</p>
 
-    ${relationSlot()}
+    ${relationSlot(visto.uid)}
 
     ${p.privada && !p.secciones?.length && !visto.mio ? `
       <p class="planner-hint" style="margin-top:6px">${ico('candado', 'ico-sm')} ${esc(AVISO_PRIVADA)}</p>` : ''}
