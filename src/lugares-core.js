@@ -51,10 +51,31 @@ import { sinTildes, unSoloEspacio } from './text-core.js';
    recomienda la hoja de seguridad para un primer encuentro. Públicas,
    con gente dentro, y con una excusa evidente para estar ahí con un
    libro en la mano. Ordenadas como se enseñan. */
+/* CADA UNA CON SU RADIO, Y NO ES UN CAPRICHO.
+
+   De bibliotecas hay tres en una ciudad; de cafeterías, seiscientas. Si
+   se le pide al mapa el mismo círculo para las tres, la parte de los
+   cafés se lleva prácticamente todo el trabajo: en 4 km del centro de
+   Bogotá son miles de locales que hay que encontrar, ordenar y devolver
+   para quedarse con seis.
+
+   Y eso no es una lentitud teórica: es lo que se leyó en el detalle
+   técnico de la pantalla. `overpass-api.de: Load failed` es que la
+   conexión se cayó, y los otros dos `Fetch is aborted` son nuestra
+   propia espera agotándose. Dos minutos para no decir nada.
+
+   Así que el círculo se ajusta a lo que se busca. Para un café, 1,5 km
+   —hay uno en cada esquina, no hace falta mirar más lejos—; para una
+   librería o una biblioteca, los 4 km, porque puede que solo haya una y
+   esté al otro lado. Es a la vez la respuesta más útil y, con mucho, la
+   consulta más barata. */
+export const RADIO_RARO = 4000;    // bibliotecas y librerías: puede haber una sola
+export const RADIO_CAFE = 1500;    // cafeterías: hay una en cada esquina
+
 export const TIPOS = [
-  { id: 'biblioteca', icono: 'fichas', label: 'Bibliotecas', consulta: ['"amenity"="library"'] },
-  { id: 'libreria', icono: 'tienda', label: 'Librerías', consulta: ['"shop"="books"'] },
-  { id: 'cafe', icono: 'taza', label: 'Cafeterías', consulta: ['"amenity"="cafe"'] },
+  { id: 'biblioteca', icono: 'fichas', label: 'Bibliotecas', consulta: ['"amenity"="library"'], radio: RADIO_RARO },
+  { id: 'libreria', icono: 'tienda', label: 'Librerías', consulta: ['"shop"="books"'], radio: RADIO_RARO },
+  { id: 'cafe', icono: 'taza', label: 'Cafeterías', consulta: ['"amenity"="cafe"'], radio: RADIO_CAFE },
 ];
 
 /* ── A QUÉ SE ENTRA ──────────────────────────────────────────
@@ -89,6 +110,51 @@ export function enFoco(tipo, foco = 'todo') {
   return !f.tipos || f.tipos.includes(tipo);
 }
 
+/**
+ * Las clases que hay que pedirle al mapa para este foco.
+ *
+ * Se preguntaba SIEMPRE por las tres y luego se tiraban dos tercios.
+ * Cómodo para la caché —una lista servía para las tres pestañas— y
+ * carísimo donde importa: al tocar «dónde comprar libros», que son
+ * cuatro librerías, se le estaba pidiendo al mapa todas las cafeterías
+ * de la ciudad para no enseñar ninguna.
+ *
+ * Ahora se pide lo que se va a enseñar y se guarda por separado. Son
+ * tres consultas pequeñas en vez de una enorme, y si una falla las
+ * otras dos siguen funcionando.
+ */
+export const tiposDe = (foco = 'todo') => TIPOS.filter((t) => enFoco(t.id, foco));
+
+/**
+ * Cómo se llama, en una frase, lo que se está buscando.
+ *
+ *   «Le pregunto por cafetería, me dice buscando tiendas.»
+ *
+ * Y era eso exactamente: EL FOCO FILTRABA LOS RESULTADOS PERO NO LAS
+ * PALABRAS. Al entrar por la taza, la lista traía solo cafeterías —eso
+ * sí estaba bien— pero el texto de debajo del título seguía siendo el
+ * de siempre, «cafeterías, librerías y bibliotecas de Bogotá», y el
+ * aviso de que no había nada nombraba las tres. O sea que la pantalla
+ * te hablaba de tiendas cuando le habías preguntado por un café.
+ *
+ * Da igual que la lista luego saliera bien: mientras carga y cuando
+ * falla, el texto es TODO lo que hay en pantalla, y si dice otra cosa
+ * es que la app está buscando otra cosa. Es lo único que se puede
+ * concluir desde fuera, y encima era la conclusión razonable.
+ *
+ * Se saca de TIPOS al revés, que es como se lee mejor: «cafeterías,
+ * librerías y bibliotecas» y no al contrario.
+ */
+export function nombresDe(foco = 'todo') {
+  const nombres = tiposDe(foco).map((t) => t.label.toLowerCase()).reverse();
+  if (!nombres.length) return 'sitios';
+  if (nombres.length === 1) return nombres[0];
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}`;
+}
+
+/** Para empezar una frase con ello. */
+export const conMayuscula = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);
+
 const POR_ETIQUETA = {
   library: 'biblioteca',
   books: 'libreria',
@@ -101,8 +167,24 @@ const POR_ETIQUETA = {
    encontrar un sitio para verse y no un listado de hostelería. */
 export const TOPE_POR_TIPO = 6;
 
-/** El radio de búsqueda alrededor del centro, en metros. */
+/* EL RADIO NO PUEDE SER EL MISMO EN LOS DOS CASOS.
+
+   Alrededor del CENTRO de la ciudad hacen falta 4 km: el centro es un
+   punto convenido, no donde estás, y a 500 m de la Plaza de Bolívar no
+   hay por qué encontrar nada que te sirva.
+
+   Alrededor de TI, 4 km es absurdo por los dos lados. Por el de quien
+   lee, porque «un café a 4 km» no es un café al que se va andando, que
+   es lo único que se pregunta al tocar la taza. Y por el del mapa,
+   porque pedir todas las cafeterías en 50 km² del centro de Bogotá
+   —una de las zonas más cartografiadas que hay— es la consulta que se
+   queda pensando hasta que se acaba la espera. Los dos síntomas que se
+   contaron, «se queda cargando» y «me da todas las cafeterías de
+   Bogotá», eran esta misma línea.
+
+   1,2 km es un paseo de quince minutos. */
 export const RADIO = 4000;
+export const RADIO_CERCA = 1200;
 
 /* ── LA CONSULTA ─────────────────────────────────────────────── */
 
@@ -113,13 +195,19 @@ export const RADIO = 4000;
  * contorno del edificio y no como un punto, y sin `center` esos vuelven
  * sin coordenadas y no se pueden poner en un mapa.
  */
-export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS, espera = 25 } = {}) {
+export function consultaOverpass(centro, { radio = null, tipos = TIPOS, espera = 25 } = {}) {
   if (!centro || !Number.isFinite(centro.lat) || !Number.isFinite(centro.lon)) return null;
   const lat = centro.lat.toFixed(5);
   const lon = centro.lon.toFixed(5);
+  /* Un `radio` de fuera MANDA sobre el de cada clase: es lo que pasa
+     buscando cerca de ti, donde el círculo lo decide el paseo y no la
+     rareza de lo que se busca. Sin él, cada clase usa el suyo. */
   const cuerpo = tipos
-    .flatMap((t) => t.consulta)
-    .flatMap((filtro) => ['node', 'way'].map((q) => `  ${q}[${filtro}](around:${radio},${lat},${lon});`))
+    .flatMap((t) => {
+      const r = radio ?? t.radio ?? RADIO;
+      return t.consulta.flatMap((filtro) => ['node', 'way']
+        .map((q) => `  ${q}[${filtro}](around:${r},${lat},${lon});`));
+    })
     .join('\n');
   return `[out:json][timeout:${espera}];\n(\n${cuerpo}\n);\nout center 300;`;
 }
@@ -268,7 +356,9 @@ export const PROPOSITOS = {
   },
   leer: {
     titulo: 'Dónde leer y comprar libros',
-    lede: (ciudad) => `Cafeterías, librerías y bibliotecas de ${ciudad}.`,
+    /* El foco decide de qué habla la frase. Sin esto, entrar por la taza
+       te presentaba una pantalla que hablaba de librerías. */
+    lede: (ciudad, foco = 'todo') => `${conMayuscula(nombresDe(foco))} de ${ciudad}.`,
     pie: 'Toca uno para verlo en el mapa.',
     cercaDeMi: true,
   },
@@ -319,11 +409,48 @@ export const MOTIVOS = {
   'ciudad-caida': 'No hemos podido situar tu ciudad en el mapa ahora mismo. '
     + 'Si estás fuera de casa, prueba a buscar cerca de donde estás: '
     + 'ese camino no necesita este paso.',
-  'mapa-caido': 'El mapa no contesta ahora mismo. Vuelve a intentarlo en un rato: '
-    + 'no es que no haya sitios, es que no hemos podido preguntar.',
-  'sin-resultados': 'No encontramos cafeterías, librerías ni bibliotecas por el centro '
-    + 'de tu ciudad. El mapa lo mantiene gente voluntaria y a veces falta.',
+  /* AQUÍ SE PROMETÍA UNA SALIDA QUE DABA AL MISMO MURO.
+
+       «Esa opción está apareciendo, pero cuando no encuentra nada a la
+        primera igual no funciona.»
+
+     Y tenía toda la razón. Debajo de este aviso se ofrecía «buscar cerca
+     de donde estoy» como si fuera otro camino, y no lo es: buscar cerca
+     de ti se salta a Nominatim —el que sitúa la ciudad— pero le pregunta
+     al MISMO Overpass que acaba de no contestar. Ofrecerlo aquí era
+     mandar a la gente contra la misma pared, con un botón bonito.
+
+     No es inútil del todo: la búsqueda de cerca es mucho más pequeña
+     —1,2 km alrededor de ti contra 4 km del centro— y una consulta
+     pequeña sí puede pasar donde la grande se atragantó. Pero eso hay
+     que DECIRLO, no dejar que se entienda que es otro servicio. */
+  'mapa-caido': 'El mapa no contesta ahora mismo. No es que no haya sitios: '
+    + 'es que no hemos podido preguntar. Buscar cerca de donde estás le pregunta '
+    + 'a lo mismo, pero mucho menos, y a veces por ahí sí pasa.',
+  'sin-resultados': 'No encontramos {sitios} por el centro de tu ciudad. '
+    + 'El mapa lo mantiene gente voluntaria y a veces falta.',
+  /* «Aquí no hay nada» y «en esta ciudad no hay nada» no son lo mismo, y
+     confundirlos deja a quien lee en un callejón: buscando a un paseo de
+     donde está es normalísimo que no salga nada —un barrio de casas a
+     las diez de la noche— y decirle que su ciudad no tiene cafeterías es
+     mentira y además no le deja ningún sitio a donde ir. Así que este
+     aviso dice que se ha mirado cerca, y la pantalla ofrece el centro. */
+  'sin-resultados-cerca': 'No hay {sitios} a un paseo de donde estás, '
+    + 'o el mapa no las tiene todavía.',
 };
+
+/**
+ * El aviso, hablando de lo que se estaba buscando de verdad.
+ *
+ * `MOTIVOS` sigue siendo texto plano —se lee de un vistazo y se puede
+ * comprobar— y el hueco `{sitios}` se rellena aquí. Un aviso que nombra
+ * tres clases de sitio cuando solo se pidió una es lo que hacía pensar
+ * que la app estaba buscando otra cosa.
+ */
+export function textoMotivo(motivo, foco = 'todo') {
+  const base = MOTIVOS[motivo] || MOTIVOS['sin-resultados'];
+  return base.replaceAll('{sitios}', nombresDe(foco));
+}
 
 /** ¿Este fracaso se arregla volviendo a intentarlo? */
 export const sePuedeReintentar = (motivo) => motivo === 'mapa-caido' || motivo === 'ciudad-caida';

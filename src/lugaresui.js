@@ -26,10 +26,12 @@
    añadir la hora, el día, o pensárselo otra vez.
    ───────────────────────────────────────────────────────────── */
 
-import { buscarSitios, olvidarSitios, dondeEstoy } from './lugares.js';
 import {
-  distanciaTexto, enlaceMapa, propuesta, MOTIVOS, CREDITO, PROPOSITOS,
-  sePuedeReintentar, FOCOS, PESTANAS,
+  buscarSitios, olvidarSitios, dondeEstoy, permisoDeUbicacion, olvidarDondeEstoy,
+} from './lugares.js';
+import {
+  distanciaTexto, enlaceMapa, propuesta, textoMotivo, CREDITO, PROPOSITOS,
+  sePuedeReintentar, FOCOS, PESTANAS, nombresDe, conMayuscula,
 } from './lugares-core.js';
 import { tieneCiudad } from './place-core.js';
 import { MAX_MENSAJE } from './chat-core.js';
@@ -53,6 +55,11 @@ let detalle = '';
    lo suyo — un atajo que te deja delante de una lista donde todavía hay
    que buscar no es un atajo. */
 let foco = 'todo';
+/* Mientras el navegador tiene la ventana del permiso en pantalla. Es
+   una espera distinta de la del mapa y tiene que decirlo: si mientras
+   se pregunta «¿permites saber dónde estás?» debajo pone «buscando
+   sitios por Bogotá», la ventana parece de otra cosa y se cierra. */
+let situando = false;
 
 /** Para quedar con alguien: se abre desde la conversación. */
 export const openLugares = () => abrir('quedar');
@@ -86,17 +93,69 @@ async function abrir(cual, cualFoco = 'todo') {
   }
   openSheet('lugares-overlay');
   pintar();
-  if (!tieneCiudad(ciudad)) { pintar('sin-ciudad'); return; }
+
+  /* PRIMERO DÓNDE ESTÁS, Y DESPUÉS LA CIUDAD.
+     ─────────────────────────────────────────
+
+       «No me está pidiendo acceso a mi ubicación para buscar las
+        cafeterías ni las tiendas. Debería funcionar de esa forma, así
+        no me da todas las cafeterías de Bogotá.»
+
+     Y tenía razón en las dos mitades de la frase. El permiso estaba
+     detrás de un botón dentro de la hoja, o sea que el primer resultado
+     —el único que mucha gente va a ver— eran siempre los sitios del
+     centro. En un pueblo eso da igual. En Bogotá el centro está a hora
+     y media de casi todo el mundo, y una lista de cafés del centro no
+     es una respuesta a «dónde me tomo un café»: es una lista de sitios
+     a los que no vas a ir.
+
+     Buscar cerca de ti es LO NORMAL cuando se busca dónde leer, así que
+     se pide al abrir. Se sigue pidiendo solo aquí y nunca al arrancar
+     la app, y quedando con alguien no se pide nunca —eso lo decide
+     `cercaDeMi` en `PROPOSITOS`, y el porqué está en lugares-core.js.
+
+     Si dice que no, o si el teléfono no sabe situarse, se cae a los del
+     centro sin ruido y sin bloquear nada: era lo único que había antes,
+     así que perder el permiso no puede dejar la hoja peor que estaba. */
+  if (PROPOSITOS[proposito].cercaDeMi && await mereceLaPenaPreguntar()) {
+    situando = true;
+    pintar();
+    try { aqui = await dondeEstoy(); } catch { aqui = null; }
+    situando = false;
+  }
+
+  /* La ciudad solo hace falta si NO sabemos dónde estás. Antes se
+     miraba antes de nada, y eso dejaba fuera de los cafés a quien no
+     había puesto su ciudad aunque el teléfono supiera perfectamente
+     dónde estaba. */
+  if (!aqui && !tieneCiudad(ciudad)) { pintar('sin-ciudad'); return; }
   await cargar();
 }
 
+/* No preguntar cuando ya sabemos la respuesta: con el permiso denegado,
+   `getCurrentPosition` no enseña ninguna ventana —el navegador contesta
+   que no por su cuenta— y lo único que se consigue es esperar. */
+async function mereceLaPenaPreguntar() {
+  return (await permisoDeUbicacion()) !== 'denied';
+}
+
 export const closeLugares = (e) => {
-  if (!e || e.target === $('lugares-overlay')) closeSheet('lugares-overlay');
+  if (e && e.target !== $('lugares-overlay')) return;
+  closeSheet('lugares-overlay');
+  /* Al cerrar, tu posición se va con la hoja: la variable de aquí y la
+     lista que se recordó en lugares.js. Es la promesa que hace el pie
+     de la pantalla mientras se pide el permiso, y una promesa así se
+     cumple borrando, no diciéndolo. */
+  aqui = null;
+  olvidarDondeEstoy();
 };
 
 /** Volver a preguntar cuando el mapa estaba caído. */
 export async function reintentarLugares() {
-  if (!aqui && ciudad?.city) olvidarSitios(ciudad.city);
+  /* Reintentar tiene que tirar lo cacheado, o «volver a intentarlo»
+     vuelve a enseñar exactamente lo mismo sin preguntar nada. */
+  if (aqui) olvidarDondeEstoy();
+  else if (ciudad?.city) olvidarSitios(ciudad.city);
   await cargar();
 }
 
@@ -149,15 +208,14 @@ function pintar(motivo = null) {
   const cuerpo = $('lugares-body');
   if (!cuerpo) return;
 
-  if (cargando) {
+  if (situando || cargando) {
     cuerpo.innerHTML = `
       <div class="trabajo">
         <span class="trabajo-giro" aria-hidden="true"></span>
-        <span class="trabajo-txt">${esc(aqui
-    ? 'Buscando sitios cerca de ti…'
-    : `Buscando sitios por ${ciudad?.city || 'tu ciudad'}…`)}</span>
+        <span class="trabajo-txt">${esc(esperando())}</span>
       </div>
-      <div class="trabajo-bar sin-fin"><i></i></div>`;
+      <div class="trabajo-bar sin-fin"><i></i></div>
+      ${situando ? '<p class="set-fineprint lugares-intro">Solo mientras esta hoja está abierta. No se guarda en ningún sitio.</p>' : ''}`;
     return;
   }
 
@@ -174,13 +232,17 @@ function pintar(motivo = null) {
        peor que ninguno. */
     const modoError = PROPOSITOS[proposito];
     cuerpo.innerHTML = `
-      <p class="planner-hint">${esc(MOTIVOS[motivo] || MOTIVOS['sin-resultados'])}</p>
+      <p class="planner-hint">${esc(textoMotivo(motivo, foco))}</p>
       ${sePuedeReintentar(motivo)
     ? '<button class="btn-ghost full" onclick="reintentarLugares()">Volver a intentarlo</button>'
     : ''}
       ${modoError.cercaDeMi && !aqui && motivo !== 'sin-ciudad'
     ? `<button class="btn-magic full" style="margin-top:8px" onclick="buscarCercaDeMi()">
          📍 Buscar cerca de donde estoy
+       </button>` : ''}
+      ${aqui && tieneCiudad(ciudad)
+    ? `<button class="btn-magic full" style="margin-top:8px" onclick="volverAlCentro()">
+         Ver los del centro de ${esc(ciudad.city)}
        </button>` : ''}
       ${motivo === 'sin-ciudad'
     ? '<button class="btn-magic full" style="margin-top:8px" onclick="openPlace()">Decir en qué ciudad estoy</button>'
@@ -192,8 +254,8 @@ function pintar(motivo = null) {
   const modo = PROPOSITOS[proposito];
   cuerpo.innerHTML = `
     <p class="planner-lede">${esc(aqui
-    ? 'Cafeterías, librerías y bibliotecas cerca de donde estás.'
-    : modo.lede(ciudad?.city || 'tu ciudad'))}</p>
+    ? `${conMayuscula(nombresDe(foco))} a un paseo de donde estás.`
+    : modo.lede(ciudad?.city || 'tu ciudad', foco))}</p>
     <p class="set-fineprint lugares-intro">${esc(modo.pie)}</p>
     ${modo.cercaDeMi ? pestanas() : ''}
     ${modo.cercaDeMi ? cambiarDeCentro() : ''}
@@ -204,6 +266,20 @@ function pintar(motivo = null) {
       </div>`).join('')}
     <p class="set-fineprint">${esc(CREDITO)}</p>`;
 }
+
+/* Tres esperas y no una, porque son tres cosas y la de en medio es la
+   única en la que hay que hacer algo: contestar a la ventana del
+   navegador. Un «cargando…» genérico ahí deja la ventana del permiso
+   pareciendo un aviso de otra cosa. */
+const esperando = () => {
+  if (situando) return 'Mirando dónde estás…';
+  /* «Buscando sitios» era demasiado vago para el único momento en que
+     el texto es lo ÚNICO que hay en pantalla. Si se entró por la taza,
+     que diga cafeterías. */
+  const que = proposito === 'quedar' ? 'sitios' : nombresDe(foco);
+  if (aqui) return `Buscando ${que} cerca de ti…`;
+  return `Buscando ${que} por ${ciudad?.city || 'tu ciudad'}…`;
+};
 
 /* Entrar por el atajo del café no puede dejarte encerrada en los cafés:
    aquí se cambia de idea sin volver a salir. */

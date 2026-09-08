@@ -31,7 +31,9 @@
    enseñar exactamente lo mismo.
    ───────────────────────────────────────────────────────────── */
 
-import { consultaOverpass, leerRespuesta, agrupar, RADIO } from './lugares-core.js';
+import {
+  consultaOverpass, leerRespuesta, agrupar, tiposDe, FOCOS, RADIO_CERCA,
+} from './lugares-core.js';
 import { normalizarLugar } from './place-core.js';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
@@ -57,8 +59,20 @@ const OVERPASS = [
    nosotros cortábamos antes de que pudiera contestar, siempre. Cortar
    a la vez que el otro termina es cortar siempre. */
 const ESPERA_CONSULTA = 25;        // segundos, dentro de la consulta
-const ESPERA_RED = 45000;          // milisegundos, del lado de aquí
+const ESPERA_RED = 45000;          // milisegundos, lo que se le da a UN servidor
 const ESPERA_CIUDAD = 15000;       // situar una ciudad es una consulta pequeña
+
+/* Y UN TECHO PARA LA ESPERA ENTERA.
+
+   Tres servidores a 45 segundos cada uno son dos minutos y cuarto de
+   ruedecita girando antes de decir la primera palabra. Nadie espera dos
+   minutos: se cierra la app y se cuenta que «se queda cargando», que es
+   exactamente lo que pasó.
+
+   Así que el reloj se pone UNA vez, al principio, y los tres servidores
+   se reparten lo que haya. Cuando se acaba, se acabó, y se dice. Es
+   mejor un «no hemos podido» al minuto que un acierto a los dos. */
+const ESPERA_TOTAL = 60000;
 const MES = 30 * 24 * 3600 * 1000;
 const SEMANA = 7 * 24 * 3600 * 1000;
 
@@ -82,6 +96,37 @@ function guardar(clave, dato) {
     localStorage.setItem(clave, JSON.stringify({ cuando: Date.now(), dato }));
   } catch { /* sin sitio en el almacén: se vuelve a preguntar y ya */ }
 }
+
+/* ── Y LA DE CERCA DE TI, QUE NO ES UNA DESPENSA ─────────────
+
+   Los sitios de alrededor de tu posición NO PUEDEN IR A `localStorage`:
+   una lista guardada en el disco del teléfono bajo «cerca de mí» es tu
+   posición escrita con otro nombre, y la regla de place-core.js es que
+   eso no se guarda.
+
+   Pero tampoco se puede preguntar tres veces seguidas por lo mismo. Con
+   las pestañas de arriba —Todo · Cafés · Librerías— tocar las tres eran
+   tres consultas idénticas al mapa para enseñar tres recortes de la
+   misma respuesta. Así que se recuerda UNA, en una variable, sin fecha
+   y sin disco: se va al recargar la página, como tiene que irse. */
+const ultimas = new Map();   // foco → { lat, lon, lugares }
+
+/* Redondeado a tres decimales, unos 100 metros: moverse un poco por la
+   calle no vuelve a preguntar, y cruzar el barrio sí. */
+const cerca = (a, b) => a && b
+  && a.lat.toFixed(3) === b.lat.toFixed(3)
+  && a.lon.toFixed(3) === b.lon.toFixed(3);
+
+const enMemoria = (punto, foco) => {
+  const ya = ultimas.get(foco);
+  return cerca(ya, punto) ? ya.lugares : null;
+};
+const recordar = (punto, foco, lugares) => {
+  if (punto) ultimas.set(foco, { lat: punto.lat, lon: punto.lon, lugares });
+};
+
+/** Al cerrar la hoja: lo que no se recuerda no se puede filtrar. */
+export function olvidarDondeEstoy() { ultimas.clear(); }
 
 /* ── DÓNDE ESTÁ ESA CIUDAD ───────────────────────────────────── */
 
@@ -116,17 +161,25 @@ export async function centroDe(city, country = '') {
 
 /* ── QUÉ HAY ALREDEDOR ───────────────────────────────────────── */
 
-async function preguntarAOverpass(centro) {
-  const consulta = consultaOverpass(centro, { radio: RADIO, espera: ESPERA_CONSULTA });
+async function preguntarAOverpass(centro, { radio = null, foco = 'todo' } = {}) {
+  const consulta = consultaOverpass(centro, {
+    radio, tipos: tiposDe(foco), espera: ESPERA_CONSULTA,
+  });
   const fallos = [];
+  const limite = Date.now() + ESPERA_TOTAL;
 
   for (const servidor of OVERPASS) {
+    /* Menos de tres segundos no le da tiempo a nadie: intentarlo sería
+       gastar la última espera en un fallo seguro. */
+    const queda = limite - Date.now();
+    if (queda < 3000) { fallos.push('se agotó la espera'); break; }
+
     try {
       const r = await fetch(servidor, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
         body: consulta,
-        signal: timeout(ESPERA_RED),
+        signal: timeout(Math.min(ESPERA_RED, queda)),
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       /* Overpass contesta 200 con un texto de error cuando la consulta
@@ -157,14 +210,20 @@ async function preguntarAOverpass(centro) {
  * y «no hemos podido preguntar» son cosas distintas y la pantalla tiene
  * que poder decir cuál de las dos pasó.
  */
-export async function buscarSitios(place = {}, { desdeAqui = null, foco = 'todo' } = {}) {
-  const city = String(place.city ?? '').trim();
+export async function buscarSitios(place, { desdeAqui = null, foco = 'todo' } = {}) {
+  /* `?? {}` y no un valor por defecto en la firma: `myPlace()` devuelve
+     NULL cuando no has dicho tu ciudad, y un valor por defecto solo
+     cubre `undefined`. Ahora ese caso llega hasta aquí de verdad —quien
+     da el permiso de ubicación no necesita haber puesto su ciudad— y
+     antes no llegaba porque se cortaba antes de entrar. */
+  const sitio = place ?? {};
+  const city = String(sitio.city ?? '').trim();
   if (!city && !desdeAqui) return { grupos: [], centro: null, motivo: 'sin-ciudad', detalle: '' };
 
   let centro = desdeAqui;
   if (!centro) {
     try {
-      centro = await centroDe(city, String(place.country ?? '').trim());
+      centro = await centroDe(city, String(sitio.country ?? '').trim());
     } catch (e) {
       console.warn('No se pudo situar la ciudad:', e?.message || e);
       /* «Situar la ciudad» y «preguntar qué hay» son dos servicios
@@ -181,11 +240,16 @@ export async function buscarSitios(place = {}, { desdeAqui = null, foco = 'todo'
      sitios de alrededor también. Y NO SE GUARDA, que es lo importante:
      una lista guardada bajo «cerca de mí» sería tu posición escrita en
      el disco del teléfono con otro nombre. */
-  const clave = desdeAqui ? null : `lugares.sitios.${normalizarLugar(city)}`;
-  let lugares = clave ? guardado(clave, SEMANA) : null;
+  /* La clave lleva el foco: cada pestaña pide lo suyo y guarda lo suyo.
+     Antes había UNA lista por ciudad con las tres clases dentro, que es
+     lo que obligaba a pedirlas siempre las tres. */
+  const clave = desdeAqui ? null : `lugares.sitios.${normalizarLugar(city)}.${foco}`;
+  let lugares = clave ? guardado(clave, SEMANA) : enMemoria(desdeAqui, foco);
   if (!lugares) {
     try {
-      lugares = await preguntarAOverpass(centro);
+      lugares = await preguntarAOverpass(centro, {
+        radio: desdeAqui ? RADIO_CERCA : null, foco,
+      });
     } catch (e) {
       console.warn('El mapa no pudo contestar:', e?.message || e);
       return {
@@ -196,16 +260,23 @@ export async function buscarSitios(place = {}, { desdeAqui = null, foco = 'todo'
        ciudades sin nada cartografiado— y volver a preguntar cada vez no
        la va a cambiar en una semana. */
     if (clave) guardar(clave, lugares);
+    else recordar(desdeAqui, foco, lugares);
   }
 
   const grupos = agrupar(lugares, centro, { foco });
-  return { grupos, centro, motivo: grupos.length ? null : 'sin-resultados', detalle: '' };
+  const vacio = desdeAqui ? 'sin-resultados-cerca' : 'sin-resultados';
+  return { grupos, centro, motivo: grupos.length ? null : vacio, detalle: '' };
 }
 
 /** Para las pruebas y para «volver a buscar» cuando el mapa estaba caído. */
 export function olvidarSitios(city) {
   try {
-    localStorage.removeItem(`lugares.sitios.${normalizarLugar(city)}`);
+    /* Las tres, no una: ahora hay una lista guardada por pestaña, y
+       «volver a intentarlo» tiene que tirarlas todas o la siguiente
+       pestaña seguiría enseñando lo de antes. */
+    const base = `lugares.sitios.${normalizarLugar(city)}`;
+    for (const foco of Object.keys(FOCOS)) localStorage.removeItem(`${base}.${foco}`);
+    localStorage.removeItem(base);   // las guardadas por la versión anterior
   } catch { /* da igual: es una caché */ }
 }
 
@@ -223,6 +294,29 @@ export function olvidarSitios(city) {
 
    `enableHighAccuracy` a false a propósito: para elegir un café da
    igual el metro exacto, tarda menos y gasta menos batería. */
+/**
+ * ¿Tiene sentido preguntar por la ubicación?
+ *
+ * Devuelve 'granted', 'denied', 'prompt' o 'desconocido'.
+ *
+ * Sirve para NO llamar a `getCurrentPosition` cuando ya sabemos que va
+ * a fallar. Quien dijo que no una vez tiene el permiso bloqueado a
+ * nivel de navegador: volver a pedirlo no enseña ninguna ventana, se
+ * queda pensando hasta que expira y luego cae al centro igual. O sea,
+ * doce segundos de ruedecita a cambio de nada.
+ *
+ * Se pregunta con `permissions`, que NO enseña ninguna ventana ni
+ * cuenta como pedir la ubicación. Donde no exista —o donde no sepa de
+ * geolocalización— se contesta 'desconocido' y se intenta, que es lo
+ * que se hacía antes de existir esta función.
+ */
+export async function permisoDeUbicacion() {
+  try {
+    const p = await navigator.permissions?.query({ name: 'geolocation' });
+    return p?.state || 'desconocido';
+  } catch { return 'desconocido'; }
+}
+
 export function dondeEstoy({ espera = 12000 } = {}) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) { reject(new Error('sin-geolocalizacion')); return; }
