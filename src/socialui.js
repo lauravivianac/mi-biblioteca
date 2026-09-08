@@ -55,14 +55,43 @@ export async function loadRelation(otherUid, privada = false) {
   pintarRelacion();
 }
 
-export function relationSlot() {
-  return '<div id="rel-slot"></div>';
+/* ── EL HUECO SE PINTA SOLO, Y ESO ERA EL FALLO ──────────────
+   «Lo encuentra pero no lo agrega; si cierro la pantalla no aparece en
+    mis amigos luego.»
+
+   Y no era que no lo agregara: es que MUCHAS VECES NO HABÍA BOTÓN QUE
+   TOCAR. `relationSlot()` devolvía un div VACÍO, y quien lo llenaba era
+   `pintarRelacion()` cuando volvían las tres consultas de la relación.
+   Pero abrir un perfil repinta el cuerpo entero MÁS DE UNA VEZ:
+
+     1. pintar()                      ← el hueco nace vacío
+     2. loadRelation() … llena el hueco
+     3. llegan las reseñas → pintar() ← EL CUERPO SE REESCRIBE ENTERO
+                                        y el botón desaparece
+
+   Quien ganara la carrera decidía si había botón. Y las reseñas son UNA
+   lectura mientras la relación son TRES —dos de ellas consultas
+   enteras a `follows`—, así que casi siempre ganaban las reseñas: el
+   perfil se quedaba sin «Seguir» y sin contadores. Es exactamente lo
+   que se veía en su captura.
+
+   El arreglo es que el hueco YA VENGA PINTADO: `relationSlot()`
+   devuelve el marcado de la relación que hay ahora mismo, con el mismo
+   constructor que usa `pintarRelacion()`. Así un repintado no puede
+   perder nada — vuelve a producir lo mismo — y `pintarRelacion()` solo
+   hace falta para el momento en que los datos llegan.
+
+   Lleva el uid a propósito: si el cuerpo se repinta para OTRA persona
+   mientras la relación de la anterior sigue en memoria, pintar sus
+   contadores en el perfil equivocado sería peor que no pintar nada. */
+export function relationSlot(uid = null) {
+  return `<div id="rel-slot">${marcaRelacion(uid)}</div>`;
 }
 
-function pintarRelacion() {
-  const slot = $('rel-slot');
-  if (!slot) return;
+function marcaRelacion(paraUid = null) {
   const { uid, sigo, meSigue, cuentas, privada, pedido } = relacion;
+  if (!uid) return '';
+  if (paraUid && paraUid !== uid) return '';
   /* Sin sesión no se pinta el botón. Quien llega por una invitación
      (#48) puede ver el perfil, pero «Seguir» no tendría a quién
      apuntar: un botón que solo puede fallar es peor que no estar, y la
@@ -72,7 +101,7 @@ function pintarRelacion() {
   const b = privada ? followButtonPrivado({ sigo, pedido }) : followButton({ sigo });
   const insignia = followBadge({ sigo, meSigue });
 
-  slot.innerHTML = `
+  return `
     ${cuentas ? `
       <div class="rel-counts">
         <button class="rel-count" onclick="openFollowList('seguidoras','${esc(uid)}')">
@@ -88,6 +117,11 @@ function pintarRelacion() {
                 onclick="toggleFollow('${esc(uid)}')">${b.texto}</button>
         ${insignia ? `<span class="rel-badge">${insignia}</span>` : ''}
       </div>`}`;
+}
+
+function pintarRelacion() {
+  const slot = $('rel-slot');
+  if (slot) slot.innerHTML = marcaRelacion();
 }
 
 /**
@@ -139,14 +173,32 @@ export async function openFollowList(cual, userUid) {
   const perfiles = await profilesOf(uids);
 
   const misSeguidoras = cual === 'seguidoras' && userUid === myUid();
+
+  /* ── LA LISTA Y EL NÚMERO TIENEN QUE CUADRAR ──────────────
+     El contador cuenta FLECHAS y la lista pinta PERFILES, y no son lo
+     mismo: `profilesOf` descarta a quien todavía no ha publicado
+     perfil —quien aún no ha elegido @usuario no tiene documento— así
+     que el contador podía decir 3 y la lista enseñar 2, sin explicar
+     el que falta. Un número que no cuadra con lo que hay debajo hace
+     dudar de los dos.
+
+     No se inventa una fila para quien no tiene nada que enseñar: se
+     dice cuántos son y por qué. */
+  const sinPerfil = uids.length - perfiles.length;
+  const nota = sinPerfil > 0
+    ? `<p class="set-fineprint">${sinPerfil === 1
+      ? 'Alguien más, que todavía no ha elegido su @usuario y por eso aún no tiene perfil.'
+      : `${sinPerfil} personas más, que todavía no han elegido su @usuario y por eso aún no tienen perfil.`}</p>`
+    : '';
+
   $('follows-body').innerHTML = perfiles.length
-    ? perfiles.map((p) => fila(p, '', misSeguidoras)).join('')
+    ? perfiles.map((p) => fila(p, '', misSeguidoras)).join('') + nota
     : `<div class="empty">
          <div class="empty-rune">${ico('fichas', 'ico-lg')}</div>
          <div class="empty-text">${cual === 'seguidoras'
            ? 'Todavía no la sigue nadie'
            : 'Todavía no sigue a nadie'}</div>
-       </div>`;
+       </div>${nota}`;
 }
 
 export const closeFollows = (e) => {

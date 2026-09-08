@@ -92,6 +92,23 @@ export async function follow(otherUid) {
     await batch.commit();
     return { ok: true };
   } catch (e) {
+    /* ── SEGUIR A QUIEN YA SIGUES NO ES UN ERROR ──────────────
+       La flecha se escribe con `set`, y sobre un documento que YA
+       existe eso es un `update` para el motor de reglas. Y la regla de
+       `follows` dice `allow update: if false` — a propósito: una
+       flecha no se edita, se crea o se borra.
+
+       Consecuencia: volver a seguir a alguien a quien ya sigues da
+       PERMISSION_DENIED. Y la pantalla pinta el botón antes de
+       preguntar al servidor, así que basta con que el estado del botón
+       esté un momento desfasado —dos toques seguidos, o una lectura
+       que se perdió— para que salga «No se pudo» sobre algo que en
+       realidad ya estaba hecho. Reproducido contra el emulador.
+
+       Así que antes de dar el fallo por bueno se mira si la flecha
+       está: si está, el resultado que quería quien tocó el botón ya se
+       cumplió. La lectura de más solo se paga cuando algo falló. */
+    if (await isFollowing(otherUid)) return { ok: true, yaEstaba: true };
     console.warn('No se pudo seguir:', e);
     return { ok: false, error: 'No se pudo. ¿Están desplegadas las reglas?' };
   }
