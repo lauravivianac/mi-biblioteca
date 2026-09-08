@@ -12,6 +12,7 @@ import {
   settings, updateSettings, exportData, exportCsv, updateEntry, findBook,
   allBooks, statusOf, ratingOf, addBook, coverOf,
   myUsername, isUsernameFree, claimUsername,
+  miRecordatorio, horasDeLectura,
 } from './store.js';
 import { findLegacyData, importLegacy, backupBeforeMigrating, dropLegacy } from './migrate.js';
 import { applyTheme, previewTheme, themeAvailability, cargarFuentes } from './theme-engine.js';
@@ -19,6 +20,7 @@ import { THEMES } from './themes.js';
 
 const THEME_BASE = THEMES[0].tokens;
 import { readingPace, goalFeasibility, goalProgress, stalledBooks, generatePlan, planPatches, estimateDays } from './planner.js';
+import { resumenRecordatorio } from './habito-core.js';
 import { $, esc, toast, confirmAction, download, closeSheet, openSheet } from './ui.js';
 import { refreshAll } from './views.js';
 import { pintarEstanterias } from './shelvesui.js';
@@ -666,6 +668,11 @@ export function openSettings() {
       ${progress ? datoAjuste('Avance del año',
         `${progress.done} de ${progress.goal} · ${progress.ahead
           ? `${progress.diffUnits} por delante 🎉` : `${progress.diffUnits} por detrás`}`) : ''}
+      ${/* Va aquí, con el tiempo y el ritmo, y no en una sección de
+            avisos: lo que se configura es CUÁNDO LEES, y eso es de este
+            grupo. Además ya está al lado del dato del que sale. */''}
+      ${filaAjuste('openRecordatorio()', 'Recordarme leer',
+        resumenRecordatorio(miRecordatorio(), horasDeLectura()))}
     </div>
 
     <div class="section-heading"><span class="section-heading-text">Tu perfil</span></div>

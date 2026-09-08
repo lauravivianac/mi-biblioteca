@@ -1686,3 +1686,63 @@ a.set-row { text-decoration: none; color: inherit; display: flex; }
 .petchat-cual:hover { border-color: var(--border-strong); }
 /* El elegido, con el oro del tema: es el que se está mandando. */
 .petchat-cual.on { border-color: var(--gold); color: var(--gold); }
+
+
+/* ── EL RECORDATORIO DE LECTURA  ·  historia #69 ──────────────
+   Tres formas de elegir en la misma hoja —una opción ancha, una
+   cuadrícula de horas y una fila de días— y las tres tienen que
+   distinguirse de un vistazo sin leer nada. Lo elegido lleva el mismo
+   realce dorado en las tres, que es lo que hace que se lean como una
+   familia y no como tres controles distintos. */
+
+.hab-opcion {
+  display: block; width: 100%; text-align: left;
+  padding: 12px 14px; margin-bottom: 10px;
+  border: var(--card-border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text);
+  font: inherit; cursor: pointer;
+}
+.hab-opcion.elegida {
+  border-color: rgb(var(--gold-rgb) / .75);
+  background: var(--gold-wash);
+}
+.hab-opcion-nombre { display: block; font-weight: 600; }
+.hab-opcion-sub {
+  display: block; margin-top: 3px;
+  font-size: 12px; line-height: 1.45; color: var(--muted);
+}
+
+/* Las horas: una cuadrícula que se adapta, no una lista de 21 filas. */
+.hab-horas {
+  display: grid; gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+}
+.hab-hora, .hab-dia {
+  padding: 9px 0; text-align: center;
+  border: var(--card-border); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--muted);
+  font: inherit; font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.hab-hora.elegida, .hab-dia.elegida {
+  border-color: rgb(var(--gold-rgb) / .75);
+  background: var(--gold-wash);
+  color: var(--text); font-weight: 600;
+}
+
+/* «Prefiero otra hora»: un enlace, no un botón. Es la salida del caso
+   raro y no puede pesar lo mismo que la opción de fábrica. */
+.hab-otra {
+  display: block; width: 100%; padding: 4px 0;
+  border: 0; background: none; color: var(--muted);
+  font: inherit; font-size: 13px; text-align: left;
+  text-decoration: underline; text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* Los días: siete, siempre en una fila, de lunes a domingo. */
+.hab-dias { display: grid; gap: 6px; grid-template-columns: repeat(7, 1fr); }
+
+/* Lo que pasaría ahora mismo. En cursiva y apagado: es una observación
+   sobre el estado, no una instrucción ni un error. */
+.hab-ahora { margin-top: 14px; font-style: italic; }
