@@ -101,8 +101,24 @@ const POR_ETIQUETA = {
    encontrar un sitio para verse y no un listado de hostelería. */
 export const TOPE_POR_TIPO = 6;
 
-/** El radio de búsqueda alrededor del centro, en metros. */
+/* EL RADIO NO PUEDE SER EL MISMO EN LOS DOS CASOS.
+
+   Alrededor del CENTRO de la ciudad hacen falta 4 km: el centro es un
+   punto convenido, no donde estás, y a 500 m de la Plaza de Bolívar no
+   hay por qué encontrar nada que te sirva.
+
+   Alrededor de TI, 4 km es absurdo por los dos lados. Por el de quien
+   lee, porque «un café a 4 km» no es un café al que se va andando, que
+   es lo único que se pregunta al tocar la taza. Y por el del mapa,
+   porque pedir todas las cafeterías en 50 km² del centro de Bogotá
+   —una de las zonas más cartografiadas que hay— es la consulta que se
+   queda pensando hasta que se acaba la espera. Los dos síntomas que se
+   contaron, «se queda cargando» y «me da todas las cafeterías de
+   Bogotá», eran esta misma línea.
+
+   1,2 km es un paseo de quince minutos. */
 export const RADIO = 4000;
+export const RADIO_CERCA = 1200;
 
 /* ── LA CONSULTA ─────────────────────────────────────────────── */
 
@@ -323,6 +339,14 @@ export const MOTIVOS = {
     + 'no es que no haya sitios, es que no hemos podido preguntar.',
   'sin-resultados': 'No encontramos cafeterías, librerías ni bibliotecas por el centro '
     + 'de tu ciudad. El mapa lo mantiene gente voluntaria y a veces falta.',
+  /* «Aquí no hay nada» y «en esta ciudad no hay nada» no son lo mismo, y
+     confundirlos deja a quien lee en un callejón: buscando a un paseo de
+     donde está es normalísimo que no salga nada —un barrio de casas a
+     las diez de la noche— y decirle que su ciudad no tiene cafeterías es
+     mentira y además no le deja ningún sitio a donde ir. Así que este
+     aviso dice que se ha mirado cerca, y la pantalla ofrece el centro. */
+  'sin-resultados-cerca': 'No hay cafeterías, librerías ni bibliotecas '
+    + 'a un paseo de donde estás, o el mapa no las tiene todavía.',
 };
 
 /** ¿Este fracaso se arregla volviendo a intentarlo? */
