@@ -170,6 +170,13 @@ export const frameToDataUrl = (canvas) => canvas.toDataURL('image/jpeg', 0.82);
 
 let tesseract = null;
 
+/* Cuánto se espera al motor antes de dar la descarga por perdida. No
+   es capricho: sin esto, una red que ni contesta ni falla —el wifi de
+   un café, unos datos con un solo palo— deja la pantalla diciendo
+   «leyendo la portada…» PARA SIEMPRE, y quien mira concluye,
+   razonablemente, que la foto no se tomó. */
+const ESPERA_MOTOR = 25000;
+
 /**
  * Carga el motor de OCR solo cuando de verdad se usa: pesa varios
  * megas y la mayoría de libros se resuelven por código de barras.
@@ -179,15 +186,39 @@ async function loadOcr() {
   if (!window.Tesseract) {
     await new Promise((resolve, reject) => {
       const s = document.createElement('script');
+      const tarde = setTimeout(() => {
+        s.remove();
+        reject(new Error('El lector de texto tarda demasiado en llegar.'));
+      }, ESPERA_MOTOR);
       s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('No se pudo cargar el lector de texto.'));
+      s.onload = () => { clearTimeout(tarde); resolve(); };
+      s.onerror = () => {
+        clearTimeout(tarde);
+        reject(new Error('No se pudo cargar el lector de texto.'));
+      };
       document.head.appendChild(s);
     });
   }
   tesseract = window.Tesseract;
   return tesseract;
 }
+
+/* LAS FASES, EN CASTELLANO Y DICIENDO LA VERDAD.
+
+   Antes solo se avisaba de la última —«recognizing text»— y resulta
+   que es la más rápida. Lo que tarda de verdad es traer el motor y,
+   sobre todo, el diccionario del idioma: son varios megas y en datos
+   móviles puede ser medio minuto. Todo eso pasaba en silencio absoluto
+   detrás de un «Leyendo la portada…» que no se movía, y un texto que
+   no se mueve durante treinta segundos no parece que esté trabajando:
+   parece que no pasó nada. */
+const FASES = {
+  'loading tesseract core': 'Preparando el lector…',
+  'initializing tesseract': 'Preparando el lector…',
+  'loading language traineddata': 'Descargando el idioma (solo la primera vez)…',
+  'initializing api': 'Casi listo…',
+  'recognizing text': 'Leyendo la portada…',
+};
 
 /**
  * Extrae el texto de una imagen, en el dispositivo.
@@ -196,11 +227,18 @@ async function loadOcr() {
  * de barras, y capturar una cita de una página. En los dos, hacerlo
  * aquí y no en un servidor significa que las fotos de los libros de
  * nadie salen del teléfono.
+ *
+ * `alAvanzar` recibe `(fracción, frase)` en CADA fase, no solo en la
+ * última.
  */
-export async function readText(canvas, onProgress = () => {}) {
+export async function readText(canvas, alAvanzar = () => {}) {
+  alAvanzar(0, 'Preparando el lector…');
   const T = await loadOcr();
   const { data } = await T.recognize(canvas, 'spa+eng', {
-    logger: (m) => { if (m.status === 'recognizing text') onProgress(m.progress); },
+    logger: (m) => {
+      const frase = FASES[m.status];
+      if (frase) alAvanzar(Number(m.progress) || 0, frase);
+    },
   });
   return (data?.text || '').trim();
 }

@@ -78,48 +78,145 @@ export function decodeModules(bits) {
   return checksumOk(codigo) ? codigo : null;
 }
 
+/* ── DE UNA LÍNEA A LOS 95 MÓDULOS ───────────────────────────
+   AQUÍ ESTABA EL FALLO QUE HACÍA QUE LA CÁMARA NO SIRVIERA.
+
+     «Agregar libro por código de barras sigue sin funcionar.»
+
+   La versión anterior suponía que el código iba «de la primera a la
+   última marca oscura de la línea»: buscaba el primer píxel oscuro,
+   el último, y repartía 95 módulos entre los dos. Eso funciona con un
+   código dibujado solo sobre blanco —que es como estaba probado— y NO
+   FUNCIONA NUNCA con una foto, porque en una foto siempre hay algo
+   más oscuro en esa misma línea: el borde del libro, la mesa, la
+   sombra, el texto de la contraportada. Con cualquiera de esas cosas,
+   los 95 módulos se reparten a lo ancho de medio cuadro y se leen
+   noventa y cinco sitios donde no hay nada.
+
+   Medido con fotogramas realistas: 2 de 7. Y los 2 eran los de
+   laboratorio.
+
+   Peor todavía porque en el Safari del iPhone NO existe
+   `BarcodeDetector`, así que este es el ÚNICO lector que hay. En ese
+   teléfono el camino del código de barras no funcionó nunca.
+
+   ── LO QUE HACE AHORA ───────────────────────────────────────
+
+   No busca el código: busca SU GUARDA. Todo EAN-13 empieza y acaba
+   con barra-espacio-barra de un módulo cada uno. Así que la línea se
+   parte en tramos claros y oscuros, y cada vez que aparecen tres
+   tramos seguidos de ancho parecido se prueba a leer un código desde
+   ahí. El ancho de la guarda da el ancho del módulo, y la guarda del
+   final —que tiene que caer a 95 módulos— lo afina y de paso confirma
+   que aquello era un código y no tres rayas cualesquiera.
+
+   Que se prueben muchos sitios no lo hace adivinar: el dígito de
+   control tiene que cuadrar, y eso deja la probabilidad de acertar por
+   casualidad en una entre diez. Con la estructura además obligada
+   —guarda, paridad, guarda central, guarda final— es despreciable. */
+
+/** La línea partida en tramos claros y oscuros. */
+function tramosDe(lum, umbral) {
+  const fuera = [];
+  let x = 0;
+  while (x < lum.length) {
+    const oscuro = lum[x] < umbral;
+    let hasta = x;
+    while (hasta < lum.length && (lum[hasta] < umbral) === oscuro) hasta += 1;
+    fuera.push({ x, ancho: hasta - x, oscuro });
+    x = hasta;
+  }
+  return fuera;
+}
+
+/** ¿Los tres tramos de la guarda miden más o menos lo mismo? */
+function guardaPlausible(a, b, c) {
+  const m = (a + b + c) / 3;
+  if (m < 0.7) return 0;
+  /* Tolerancia ancha a propósito: con desenfoque una barra se come
+     parte del espacio de al lado, y aun así el conjunto sigue siendo
+     reconocible. Lo que no se tolera es que uno sea el doble que otro. */
+  const cabe = (w) => w >= m * 0.45 && w <= m * 1.75;
+  return cabe(a) && cabe(b) && cabe(c) ? m : 0;
+}
+
+/** Lee 95 módulos desde `inicio`, con `modulo` píxeles cada uno. */
+function leerDesde(lum, umbral, inicio, modulo) {
+  const fin = inicio + 95 * modulo;
+  if (fin > lum.length + modulo) return null;
+  let bits = '';
+  for (let m = 0; m < 95; m++) {
+    /* `floor` y no `round`: con módulos de un píxel, redondear el
+       centro (x + 0,5) lo empuja AL MÓDULO SIGUIENTE y se lee todo
+       corrido una columna. Lo cazó la prueba del módulo de 1 px. */
+    const centro = Math.floor(inicio + (m + 0.5) * modulo);
+    bits += lum[Math.min(lum.length - 1, Math.max(0, centro))] < umbral ? '1' : '0';
+  }
+  // Al derecho, y del revés por si el libro está boca abajo
+  return decodeModules(bits) || decodeModules([...bits].reverse().join(''));
+}
+
+/** Un barrido completo con un umbral dado. */
+function conUmbral(lum, umbral) {
+  const tramos = tramosDe(lum, umbral);
+
+  for (let i = 0; i + 2 < tramos.length; i++) {
+    if (!tramos[i].oscuro) continue;
+    const modulo = guardaPlausible(tramos[i].ancho, tramos[i + 1].ancho, tramos[i + 2].ancho);
+    if (!modulo) continue;
+
+    const inicio = tramos[i].x;
+    if (inicio + 95 * modulo > lum.length + modulo) continue;
+
+    /* AFINAR CON LA GUARDA DEL FINAL. Estimar el módulo con tres
+       barras y estirarlo a noventa y cinco acumula error: un 3 % de
+       más en la guarda son casi tres módulos de desvío al llegar al
+       otro extremo, y ahí ya se lee la columna equivocada. Si hay un
+       tramo oscuro que acabe cerca de donde debería acabar el código,
+       ese es el borde de verdad y el módulo se recalcula con él. */
+    const candidatos = [modulo];
+    const finEsperado = inicio + 95 * modulo;
+    for (let j = i + 3; j < tramos.length; j++) {
+      const acaba = tramos[j].x + tramos[j].ancho;
+      if (acaba < finEsperado - 4 * modulo) continue;
+      if (acaba > finEsperado + 4 * modulo) break;
+      if (tramos[j].oscuro) candidatos.push((acaba - inicio) / 95);
+    }
+
+    for (const m of candidatos) {
+      const codigo = leerDesde(lum, umbral, inicio, m);
+      if (codigo) return codigo;
+    }
+  }
+  return null;
+}
+
 /**
- * Convierte una línea de luminancias en los 95 módulos.
- *
- * El barrido se apoya en que el código ocupa de la primera a la
- * última marca oscura de la línea: se mide ese ancho, se divide entre
- * 95 y se lee el centro de cada módulo. Es sencillo y se rompe si hay
- * otra cosa oscura en la misma línea — por eso se prueban muchas
- * líneas y se exige el dígito de control, que hace que un acierto por
- * casualidad sea prácticamente imposible.
+ * Convierte una línea de luminancias en un EAN-13, o null.
  */
 export function decodeLine(lum) {
-  const ancho = lum.length;
-  if (ancho < 95) return null;
+  if (lum.length < 95) return null;
 
   let min = 255;
   let max = 0;
-  for (let i = 0; i < ancho; i++) {
+  for (let i = 0; i < lum.length; i++) {
     if (lum[i] < min) min = lum[i];
     if (lum[i] > max) max = lum[i];
   }
   // Una línea sin contraste no lleva ningún código
   if (max - min < 40) return null;
-  const umbral = (min + max) / 2;
 
-  let inicio = -1;
-  let fin = -1;
-  for (let i = 0; i < ancho; i++) if (lum[i] < umbral) { inicio = i; break; }
-  for (let i = ancho - 1; i >= 0; i--) if (lum[i] < umbral) { fin = i; break; }
-  // El código ocupa 95 módulos, así que hacen falta 95 píxeles como
-  // mínimo: `fin` es un índice, no un ancho.
-  if (inicio < 0 || fin - inicio + 1 < 95) return null;
-
-  const modulo = (fin - inicio + 1) / 95;
-  let bits = '';
-  for (let m = 0; m < 95; m++) {
-    const centro = Math.floor(inicio + (m + 0.5) * modulo);
-    bits += lum[Math.min(ancho - 1, centro)] < umbral ? '1' : '0';
+  /* Tres umbrales y no uno. Una foto rara vez está iluminada igual de
+     un lado que del otro, y el punto medio entre el píxel más claro y
+     el más oscuro de TODA la línea se desplaza en cuanto entra en el
+     cuadro algo muy negro o un reflejo blanco. Probar también un poco
+     por encima y por debajo cuesta dos barridos más y rescata las
+     fotos con sombra en un lado. */
+  for (const f of [0.5, 0.38, 0.62]) {
+    const codigo = conUmbral(lum, min + (max - min) * f);
+    if (codigo) return codigo;
   }
-
-  // Al derecho, y del revés por si el libro está boca abajo
-  return decodeModules(bits)
-      || decodeModules([...bits].reverse().join(''));
+  return null;
 }
 
 /** Luminancia de un píxel RGBA, ponderada como la ve el ojo. */

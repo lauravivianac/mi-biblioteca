@@ -685,6 +685,47 @@ body:not(.signed-in) .fab { display: none; }
 }
 .scan-frame.buscando { animation: scan-latido 1.6s ease-in-out infinite; }
 
+/* ── «ESTÁ HACIENDO ALGO» ────────────────────────────────────
+   «No hay alguna barra o círculo de carga para ver que el código está
+    haciendo algo.»
+
+   Y no lo había. Un texto quieto durante treinta segundos —lo que
+   tarda en bajar el diccionario del lector de texto— no parece que
+   trabaje: parece que no pasó nada. El círculo gira siempre, aunque no
+   se sepa cuánto queda, porque su trabajo no es medir sino demostrar
+   que la app sigue viva. */
+.trabajo { display: flex; align-items: center; gap: 9px; margin: 12px 0 6px; }
+.trabajo-giro {
+  width: 15px; height: 15px; flex-shrink: 0; border-radius: 50%;
+  border: 2px solid rgb(var(--lilac-rgb) / .25);
+  border-top-color: var(--gold);
+  animation: girar .8s linear infinite;
+}
+.trabajo-txt { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+.trabajo-bar {
+  height: 3px; border-radius: 2px; overflow: hidden;
+  background: rgb(var(--lilac-rgb) / .18);
+}
+.trabajo-bar i { display: block; height: 100%; background: var(--gold); transition: width .25s ease; }
+/* Sin porcentaje que enseñar, la barra recorre en vez de llenarse: no
+   promete un final que no se puede calcular. */
+.trabajo-bar.sin-fin i { width: 40% !important; animation: slide 1.2s ease-in-out infinite; transition: none; }
+
+/* La foto recién tomada, que es la prueba de que salió. */
+.foto-tomada {
+  border-radius: var(--radius-sm); overflow: hidden;
+  border: var(--card-border); background: var(--fog);
+  max-height: 260px; display: grid; place-items: center;
+}
+.foto-tomada img { width: 100%; max-height: 260px; object-fit: contain; display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  .trabajo-giro { animation: none; border-top-color: var(--gold); }
+  .trabajo-bar.sin-fin i { animation: none; width: 100% !important; }
+}
+
 /* Quien tiene el movimiento reducido no necesita un latido para saber
    que pasa algo: el texto de debajo ya lo dice. */
 @media (prefers-reduced-motion: reduce) {

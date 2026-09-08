@@ -137,8 +137,13 @@ export async function shootQuote() {
   try {
     const canvas = grabFrame(v, 1400);   // más resolución que una portada: aquí hay letra pequeña
     if (hint) hint.textContent = 'Leyendo la página…';
-    const texto = await readText(canvas, (p) => {
-      if (hint) hint.textContent = `Leyendo la página… ${Math.round(p * 100)}%`;
+    /* La frase la pone el lector, que es quien sabe en qué fase va:
+       bajar el motor y el diccionario tarda mucho más que leer, y antes
+       todo eso pasaba detrás de un «Leyendo la página…» inmóvil. */
+    const texto = await readText(canvas, (parte, frase) => {
+      if (!hint) return;
+      const suya = frase.replace('la portada', 'la página');
+      hint.textContent = parte > 0 ? `${suya} ${Math.round(parte * 100)}%` : suya;
     });
     closeCamera();
     textoCapturado = cleanQuote(texto);
