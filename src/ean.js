@@ -129,62 +129,144 @@ function tramosDe(lum, umbral) {
   return fuera;
 }
 
-/** ¿Los tres tramos de la guarda miden más o menos lo mismo? */
-function guardaPlausible(a, b, c) {
-  const m = (a + b + c) / 3;
-  if (m < 0.7) return 0;
-  /* Tolerancia ancha a propósito: con desenfoque una barra se come
-     parte del espacio de al lado, y aun así el conjunto sigue siendo
-     reconocible. Lo que no se tolera es que uno sea el doble que otro. */
-  const cabe = (w) => w >= m * 0.45 && w <= m * 1.75;
-  return cabe(a) && cabe(b) && cabe(c) ? m : 0;
+/* ── LEER POR ANCHOS DE TRAMO, NO POR PÍXELES SUELTOS ────────
+
+   La foto que lo destapó: un código de barras nítido, grande y
+   centrado, y el lector no lo leía. Ni una sola de 57 filas.
+
+   Se muestreaba UN PÍXEL en el centro de cada módulo y se comparaba
+   con el umbral. Medido contra esa foto: aun encontrando la geometría
+   PERFECTA a base de fuerza bruta —probando todos los inicios y todos
+   los anchos de módulo— salían 12 módulos mal de 95. O sea que no era
+   que no encontrara dónde empezar: es que con una foto de verdad ese
+   método no puede leer, se ponga donde se ponga.
+
+   El motivo es el desenfoque. En una foto una barra no acaba de golpe:
+   se degrada hacia el blanco a lo largo de un par de píxeles. El centro
+   de un módulo estrecho cae en esa pendiente, y de qué lado del umbral
+   queda es una moneda al aire. Noventa y cinco monedas al aire.
+
+   Los lectores de verdad no hacen eso. Miden ANCHOS: cada dígito son
+   siete módulos repartidos en exactamente cuatro tramos, y se compara
+   la proporción entre esos cuatro anchos con las diez posibles. Es
+   robusto por dos motivos:
+
+     · el desenfoque ensancha la barra tanto como estrecha el espacio
+       de al lado, así que la SUMA de los cuatro se conserva;
+     · y cada dígito se mide con sus propios tramos, así que un error
+       de escala no se acumula a lo largo del código — que es lo que
+       hacía que los errores crecieran hacia la derecha. */
+
+/** Un patrón de bits a los anchos de sus cuatro tramos: '0001101' → [3,2,1,1] */
+function anchosDe(bits) {
+  const fuera = [];
+  let n = 1;
+  for (let i = 1; i <= bits.length; i++) {
+    if (bits[i] === bits[i - 1]) { n += 1; continue; }
+    fuera.push(n);
+    n = 1;
+  }
+  return fuera;
 }
 
-/** Lee 95 módulos desde `inicio`, con `modulo` píxeles cada uno. */
-function leerDesde(lum, umbral, inicio, modulo) {
-  const fin = inicio + 95 * modulo;
-  if (fin > lum.length + modulo) return null;
-  let bits = '';
-  for (let m = 0; m < 95; m++) {
-    /* `floor` y no `round`: con módulos de un píxel, redondear el
-       centro (x + 0,5) lo empuja AL MÓDULO SIGUIENTE y se lee todo
-       corrido una columna. Lo cazó la prueba del módulo de 1 px. */
-    const centro = Math.floor(inicio + (m + 0.5) * modulo);
-    bits += lum[Math.min(lum.length - 1, Math.max(0, centro))] < umbral ? '1' : '0';
+const ANCHOS = { L: L.map(anchosDe), G: G.map(anchosDe), R: R.map(anchosDe) };
+
+/* Cuánto se le permite desviarse a un dígito, en módulos sumando los
+   cuatro tramos. Un dígito bien medido se queda por debajo de 0,5; con
+   una foto movida sube. Por encima de 1,5 ya no se distingue de otro
+   dígito y es mejor no adivinar: para eso está el dígito de control,
+   pero cuanto menos llegue hasta él, mejor. */
+const TOLERANCIA = 1.5;
+
+/**
+ * Qué dígito es este grupo de cuatro tramos.
+ *
+ * Se normaliza a siete módulos con la SUMA de los cuatro, no con el
+ * módulo estimado del código: así cada dígito se mide consigo mismo y
+ * da igual que el código esté un poco escorado o que la cámara lo vea
+ * en perspectiva.
+ */
+function digitoDe(anchos, familias) {
+  const total = anchos[0] + anchos[1] + anchos[2] + anchos[3];
+  if (!total) return null;
+  const escala = 7 / total;
+
+  let mejor = null;
+  for (const familia of familias) {
+    const tabla = ANCHOS[familia];
+    for (let d = 0; d < 10; d++) {
+      let error = 0;
+      for (let k = 0; k < 4; k++) error += Math.abs(anchos[k] * escala - tabla[d][k]);
+      if (!mejor || error < mejor.error) mejor = { d, familia, error };
+    }
   }
-  // Al derecho, y del revés por si el libro está boca abajo
-  return decodeModules(bits) || decodeModules([...bits].reverse().join(''));
+  return mejor && mejor.error <= TOLERANCIA ? mejor : null;
+}
+
+/** ¿Estos tramos son una guarda: n tramos de un módulo cada uno? */
+function esGuarda(anchos, modulo) {
+  return anchos.every((w) => w >= modulo * 0.35 && w <= modulo * 2.2);
+}
+
+/**
+ * Leer un EAN-13 empezando en el tramo `i`, que debe ser la guarda.
+ *
+ * Devuelve los trece dígitos o null. La estructura está fijada por la
+ * norma —guarda, seis dígitos, guarda central, seis dígitos, guarda— y
+ * cada pieza que no cuadra corta la lectura: por eso encontrar un
+ * código donde no lo hay es tan improbable.
+ */
+function leerTramos(tramos, i) {
+  const ancho = (k) => tramos[k]?.ancho ?? 0;
+
+  /* La guarda de la izquierda da la primera idea del módulo. */
+  const modulo = (ancho(i) + ancho(i + 1) + ancho(i + 2)) / 3;
+  if (modulo < 2) return null;
+  if (!esGuarda([ancho(i), ancho(i + 1), ancho(i + 2)], modulo)) return null;
+
+  let k = i + 3;
+  const izquierda = [];
+  let paridad = '';
+  for (let n = 0; n < 6; n++, k += 4) {
+    const g = digitoDe([ancho(k), ancho(k + 1), ancho(k + 2), ancho(k + 3)], ['L', 'G']);
+    if (!g) return null;
+    izquierda.push(g.d);
+    paridad += g.familia === 'L' ? '0' : '1';
+  }
+
+  /* La guarda central: cinco tramos de un módulo. */
+  if (!esGuarda([ancho(k), ancho(k + 1), ancho(k + 2), ancho(k + 3), ancho(k + 4)], modulo)) return null;
+  k += 5;
+
+  const derecha = [];
+  for (let n = 0; n < 6; n++, k += 4) {
+    const g = digitoDe([ancho(k), ancho(k + 1), ancho(k + 2), ancho(k + 3)], ['R']);
+    if (!g) return null;
+    derecha.push(g.d);
+  }
+
+  if (!esGuarda([ancho(k), ancho(k + 1), ancho(k + 2)], modulo)) return null;
+
+  /* La paridad de los seis de la izquierda ES el primer dígito. */
+  const primero = PARIDAD.indexOf(paridad);
+  if (primero < 0) return null;
+
+  const codigo = `${primero}${izquierda.join('')}${derecha.join('')}`;
+  return checksumOk(codigo) ? codigo : null;
 }
 
 /** Un barrido completo con un umbral dado. */
 function conUmbral(lum, umbral) {
   const tramos = tramosDe(lum, umbral);
 
-  for (let i = 0; i + 2 < tramos.length; i++) {
-    if (!tramos[i].oscuro) continue;
-    const modulo = guardaPlausible(tramos[i].ancho, tramos[i + 1].ancho, tramos[i + 2].ancho);
-    if (!modulo) continue;
+  /* Al derecho y del revés: un libro se fotografía boca abajo con la
+     misma facilidad que del derecho. */
+  const alReves = [...tramos].reverse();
 
-    const inicio = tramos[i].x;
-    if (inicio + 95 * modulo > lum.length + modulo) continue;
-
-    /* AFINAR CON LA GUARDA DEL FINAL. Estimar el módulo con tres
-       barras y estirarlo a noventa y cinco acumula error: un 3 % de
-       más en la guarda son casi tres módulos de desvío al llegar al
-       otro extremo, y ahí ya se lee la columna equivocada. Si hay un
-       tramo oscuro que acabe cerca de donde debería acabar el código,
-       ese es el borde de verdad y el módulo se recalcula con él. */
-    const candidatos = [modulo];
-    const finEsperado = inicio + 95 * modulo;
-    for (let j = i + 3; j < tramos.length; j++) {
-      const acaba = tramos[j].x + tramos[j].ancho;
-      if (acaba < finEsperado - 4 * modulo) continue;
-      if (acaba > finEsperado + 4 * modulo) break;
-      if (tramos[j].oscuro) candidatos.push((acaba - inicio) / 95);
-    }
-
-    for (const m of candidatos) {
-      const codigo = leerDesde(lum, umbral, inicio, m);
+  for (const lista of [tramos, alReves]) {
+    for (let i = 0; i + 58 < lista.length; i++) {
+      if (!lista[i].oscuro) continue;
+      const codigo = leerTramos(lista, i);
       if (codigo) return codigo;
     }
   }
