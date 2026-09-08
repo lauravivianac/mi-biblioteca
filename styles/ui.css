@@ -690,6 +690,45 @@ body:not(.signed-in) .atajos { display: none; }
 }
 .scan-frame.buscando { animation: scan-latido 1.6s ease-in-out infinite; }
 
+/* Y CUANDO YA LO TIENE, DEJA DE LATIR.
+   El latido significa «estoy buscando». Si sigue latiendo con el código
+   ya leído, sigue diciendo que busca — y entonces no significa nada. */
+.scan-frame.leido {
+  animation: none;
+  border-color: rgb(var(--gold-rgb) / .95);
+  border-width: 2px;
+}
+
+/* LA INSTRUCCIÓN NO ES EL ESTADO.
+     «¿Por qué no dice "toma la foto del código de barras"? ¿Cuánto
+      tiempo debo tener la cámara en el código de barras?»
+   Estaban en el mismo hueco, así que la instrucción vivía medio segundo
+   y luego la pisaba «Buscando el código…» para siempre. Esta va encima
+   del vídeo y no la toca nadie. */
+.scan-guia {
+  margin: 0 0 10px;
+  font-size: 13px; line-height: 1.5;
+  color: var(--muted);
+}
+.scan-guia b { color: var(--text); }
+
+/* LOS DÍGITOS QUE LEYÓ, para poder compararlos con el libro.
+   Tabulares y espaciados: se leen de uno en uno, que es como se
+   comparan con los de debajo de las barras. */
+.scan-codigo {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  color: var(--text);
+}
+
+/* La portada es OTRO camino, no el segundo paso de este.
+   Pegada al escáner se leía como parte de lo mismo. */
+.scan-otro {
+  margin-top: 18px; padding-top: 14px;
+  border-top: var(--card-border);
+}
+.scan-otro .set-fineprint { margin: 0 0 8px; }
+
 /* ── «ESTÁ HACIENDO ALGO» ────────────────────────────────────
    «No hay alguna barra o círculo de carga para ver que el código está
     haciendo algo.»

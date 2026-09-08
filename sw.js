@@ -2,7 +2,7 @@
    es una de las cosas buenas que ya tenía y que el refactor no
    puede perder (criterio de la historia #12). */
 
-const CACHE = 'bib-v42';
+const CACHE = 'bib-v43';
 const SHELL = [
   './', './index.html',
   './styles/tokens.css', './styles/app.css', './styles/worlds.css', './styles/ui.css', './styles/pet.css',
