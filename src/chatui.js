@@ -90,13 +90,17 @@ function pintarSeguridadPrimeraVez() {
 
     <h4 class="prof-sec-title" style="margin-top:18px">Dónde quedar</h4>
     <p class="set-fineprint" style="margin-top:0">
-      La app no sabe qué sitios hay en tu ciudad, así que no se los inventa.
-      Estas son las clases de sitio que funcionan:
+      Estas son las clases de sitio que funcionan, y abajo puedes ver
+      cuáles hay de verdad por el centro de tu ciudad:
     </p>
     <div class="puntos">
       ${PUNTOS_SUGERIDOS.map((p) => `
         <div class="punto"><span>${p.icono}</span> ${esc(p.texto)}</div>`).join('')}
     </div>
+
+    <button class="btn-ghost full" style="margin-top:12px" onclick="openLugares()">
+      📍 Ver sitios concretos de tu ciudad
+    </button>
 
     <button class="btn-magic full" style="margin-top:18px" onclick="entendidoSeguridad()">
       Entendido, abrir la conversación
@@ -127,7 +131,10 @@ export function openSeguridad() {
     <div class="puntos">
       ${PUNTOS_SUGERIDOS.map((p) => `
         <div class="punto"><span>${p.icono}</span> ${esc(p.texto)}</div>`).join('')}
-    </div>`;
+    </div>
+    <button class="btn-ghost full" style="margin-top:12px" onclick="openLugares()">
+      📍 Ver sitios concretos de tu ciudad
+    </button>`;
 }
 
 export const closeSeguridad = (e) => {
@@ -162,6 +169,10 @@ function pintarChat() {
     </div>
 
     <div class="chat-acciones">
+      ${chatActual.completado ? '' : `
+        <button class="btn-mini" onclick="openLugares()">
+          📍 Dónde quedar
+        </button>`}
       ${chatActual.completado ? '' : `
         <button class="btn-mini" onclick="doConfirmar()">
           ${heConfirmado(chatActual, yo) ? 'Confirmado ✓' : 'Ya lo intercambiamos'}

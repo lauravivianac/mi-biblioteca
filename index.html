@@ -558,6 +558,20 @@
   </div>
 </div>
 
+<!-- DÓNDE QUEDAR · historia #157
+     Cafeterías, librerías y bibliotecas del centro de tu ciudad. Lo
+     pinta src/lugaresui.js; los sitios salen de OpenStreetMap y la
+     búsqueda NUNCA usa la posición de la otra persona (el porqué está
+     en la cabecera de src/lugares-core.js). -->
+<div class="overlay" id="lugares-overlay" onclick="closeLugares(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="lugares-titulo">Dónde quedar</div>
+    <button class="sheet-close" onclick="closeSheet('lugares-overlay')" aria-label="Cerrar">✕</button>
+    <div id="lugares-body"></div>
+  </div>
+</div>
+
 <div class="overlay" id="valorar-overlay" onclick="closeValorar(event)">
   <div class="sheet">
     <div class="sheet-handle"></div>
