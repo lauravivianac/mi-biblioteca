@@ -23,6 +23,7 @@ import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll } from './views.js';
 import { ico } from './icons.js';
 import { lomoHtml } from './lomo.js';
+import { mejorLinea } from './text-core.js';
 
 let mode = 'titulo';       // titulo · camara · manual
 let draft = null;          // el candidato elegido, antes de guardar
@@ -502,8 +503,27 @@ export async function shootCover() {
     return;
   }
 
-  const canvas = grabFrame(v);
-  const photo = frameToDataUrl(canvas);
+  /* DOS LIENZOS, Y NO ES DERROCHE.
+
+     Uno GRANDE para leer y uno pequeño para guardar, porque lo que
+     necesita cada cosa es distinto:
+
+     · Tesseract quiere unos 20-25 píxeles de altura por letra. En la
+       foto que se envió, la portada ocupaba como un tercio del ancho:
+       a 900 píxeles de lienzo el título queda JUSTO EN EL LÍMITE, unos
+       veinte. No es que estuviera claramente por debajo —no puedo
+       afirmar que fuera la causa de que saliera `\ a — DE`— pero
+       trabajar en el filo del mínimo es pedir que cualquier cosa
+       (un poco de desenfoque, el brillo del plastificado, un ángulo)
+       lo tire por debajo. A 1800 hay margen.
+
+     · La portada que se guarda, en cambio, se enseña en una ficha de
+       unos 120 píxeles. Guardar 1800 sería meter medio mega en un
+       documento que se sincroniza, para verlo del tamaño de un sello.
+
+     Se dispara UNA sola vez y se reduce: la foto es la misma. */
+  const canvas = grabFrame(v, 1800);
+  const photo = frameToDataUrl(grabFrame(v, 900));
   /* Se para TODO, no solo la cámara: el bucle de códigos seguiría
      pidiéndole cuadros a un vídeo apagado durante todo el OCR. */
   pararEscaner();
@@ -537,6 +557,28 @@ export async function shootCover() {
   }
   if (!trabajo) return;                 // se canceló mientras leía
 
+  /* ¿LEYÓ ALGO, DE VERDAD?
+
+     De una portada nítida el OCR devolvió `\ a — DE`. Con eso se
+     consultaba igual a los catálogos, se le preguntaba al agente, y al
+     final se decía «no lo reconocimos» — que es falso: no es que nadie
+     reconociera el libro, es que no llegamos a leer su nombre.
+
+     Se corta aquí. Ni se gasta una consulta en basura ni se cuenta
+     luego una cosa por otra. */
+  if (!mejorLinea(text)) {
+    trabajo = null;
+    mode = 'manual';
+    draft = {
+      title: '', author: '', pages: '—', cover: photo,
+      genre: 'Novela contemporánea', source: 'foto',
+    };
+    render();
+    toast('La foto salió bien, pero no pudimos leer el texto de la portada. '
+      + 'Prueba con más luz y de frente, o pon el título a mano.', 'error');
+    return;
+  }
+
   trabajo.frase = 'Buscando el libro en los catálogos…';
   trabajo.parte = null;
   pintarTrabajo();
@@ -564,7 +606,13 @@ export async function shootCover() {
     trabajo = null;
     mode = 'manual';
     draft = {
-      title: text.split('\n').map((l) => l.trim()).filter(Boolean)[0] || '',
+      /* LA MEJOR LÍNEA, Y SOLO SI PARECE TEXTO.
+
+         Antes se cogía la PRIMERA línea sin mirar, y así es como
+         `\ a — DE` acabó escrito en el campo del título de una foto
+         perfectamente legible. Un campo vacío se rellena; uno con
+         basura hay que vaciarlo primero. */
+      title: mejorLinea(text),
       author: '', pages: '—', cover: photo, genre: 'Novela contemporánea', source: 'foto',
     };
     render();
@@ -601,11 +649,14 @@ export async function shootCover() {
   trabajo = null;
   mode = 'manual';
   draft = {
-    title: text.split('\n').map((l) => l.trim()).filter(Boolean)[0] || '',
+    /* La mejor línea, no la primera: en una portada la primera suele
+       ser la editorial o un adorno, y la más larga suele ser el
+       título. */
+    title: mejorLinea(text),
     author: '', pages: '—', cover: photo, genre: 'Novela contemporánea', source: 'foto',
   };
   render();
-  toast('No lo reconocimos. Revisa los datos y guárdalo.');
+  toast('Leímos la portada, pero no encontramos el libro. Revisa los datos y guárdalo.');
 }
 
 /* ── GUARDAR ─────────────────────────────────────────────────── */
