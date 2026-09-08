@@ -184,18 +184,63 @@ export const cuantos = (grupos) => grupos.reduce((n, g) => n + g.lugares.length,
 
 /* ── CÓMO SE LEE ─────────────────────────────────────────────── */
 
-/**
- * «A 400 m del centro», «A 2,1 km del centro».
- *
- * Del CENTRO, dicho con todas las letras. Si pusiera solo «a 400 m»,
- * cualquiera entendería «de ti» — y entonces la app estaría dando a
- * entender que sabe dónde estás, que es justo lo que no hace.
- */
-export function distanciaTexto(km) {
+/* Desde dónde se mide, y por qué se dice siempre.
+
+   «A 400 m» a secas lo entiende cualquiera como «de ti». Si la lista
+   está medida desde el centro de la ciudad —que es lo que pasa cuando
+   se busca un sitio para quedar con alguien— esa frase estaría dando a
+   entender que la app sabe dónde estás, que es justo lo que no hace.
+   Así que el origen va escrito en la frase, siempre, y cambia cuando
+   cambia de verdad. */
+export const DESDE = {
+  centro: 'del centro',
+  ti: 'de ti',
+};
+
+/** «A 400 m del centro», «A 2,1 km de ti». */
+export function distanciaTexto(km, desde = 'centro') {
   if (!Number.isFinite(km)) return '';
-  if (km < 1) return `A ${Math.max(1, Math.round(km * 10)) * 100} m del centro`;
-  return `A ${km.toFixed(1).replace('.', ',')} km del centro`;
+  const cola = DESDE[desde] || DESDE.centro;
+  if (km < 1) return `A ${Math.max(1, Math.round(km * 10)) * 100} m ${cola}`;
+  return `A ${km.toFixed(1).replace('.', ',')} km ${cola}`;
 }
+
+/* ── PARA QUÉ SE ABRE LA HOJA ────────────────────────────────
+
+     «Quiero esa funcionalidad también para cuando quiera ir a leer a un
+      cafesito: que me dé opciones, no solo para el intercambio de
+      libros, sino saber dónde puedo leer y comprar libros.»
+
+   Y tiene razón: los sitios son los mismos, pero lo que se va a hacer
+   con ellos no. Quedar con alguien es una cosa —hay otra persona
+   esperando una propuesta— y buscar dónde pasar una tarde leyendo es
+   otra, sin nadie al otro lado.
+
+   La diferencia que importa está en la última línea de cada uno:
+
+     · QUEDAR mide siempre desde el centro de la ciudad, terreno neutral
+       y el mismo para las dos personas. Ahí NO se ofrece buscar cerca
+       de ti, y no por falta de ganas: la lista que se enseña acaba
+       convertida en una propuesta que ve la otra persona, así que
+       cuanto menos dependa de dónde estás, mejor.
+
+     · LEER es cosa tuya y de nadie más. Ahí sí se puede buscar cerca de
+       ti, porque no hay nadie a quien contárselo. */
+export const PROPOSITOS = {
+  quedar: {
+    titulo: 'Dónde quedar',
+    lede: (ciudad) => `Sitios públicos por el centro de ${ciudad}.`,
+    pie: 'Toca uno y se escribe la propuesta en la conversación. '
+      + 'No se manda hasta que le des a Enviar.',
+    cercaDeMi: false,
+  },
+  leer: {
+    titulo: 'Dónde leer y comprar libros',
+    lede: (ciudad) => `Cafeterías, librerías y bibliotecas de ${ciudad}.`,
+    pie: 'Toca uno para verlo en el mapa.',
+    cercaDeMi: true,
+  },
+};
 
 /** El mapa, en OpenStreetMap, que es de donde salió el dato. */
 export const enlaceMapa = (l) =>

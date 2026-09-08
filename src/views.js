@@ -308,6 +308,9 @@ export function renderLib() {
          de tus propios libros, sin red y sin gastar nada. */
       `<button class="btn-ghost full" onclick="openRecs()">${ico('marcador')} Qué leer después</button>`,
       `<button class="btn-ghost full" onclick="openDuel()">${ico('balanza')} ¿Cuál primero?</button>`,
+      /* Y salir de casa, que también es parte de leer: dónde ir a leer
+         un rato y dónde comprar el siguiente. */
+      '<button class="btn-ghost full" onclick="openDondeLeer()">☕ Dónde leer y comprar libros</button>',
     ].join('');
   }
 

@@ -115,21 +115,27 @@ async function preguntarAOverpass(centro) {
  * y «no hemos podido preguntar» son cosas distintas y la pantalla tiene
  * que poder decir cuál de las dos pasó.
  */
-export async function buscarSitios(place = {}) {
+export async function buscarSitios(place = {}, { desdeAqui = null } = {}) {
   const city = String(place.city ?? '').trim();
-  if (!city) return { grupos: [], centro: null, motivo: 'sin-ciudad' };
+  if (!city && !desdeAqui) return { grupos: [], centro: null, motivo: 'sin-ciudad' };
 
-  let centro;
-  try {
-    centro = await centroDe(city, String(place.country ?? '').trim());
-  } catch (e) {
-    console.warn('No se pudo situar la ciudad:', e?.message || e);
-    return { grupos: [], centro: null, motivo: 'servicio-caido' };
+  let centro = desdeAqui;
+  if (!centro) {
+    try {
+      centro = await centroDe(city, String(place.country ?? '').trim());
+    } catch (e) {
+      console.warn('No se pudo situar la ciudad:', e?.message || e);
+      return { grupos: [], centro: null, motivo: 'servicio-caido' };
+    }
+    if (!centro) return { grupos: [], centro: null, motivo: 'ciudad-desconocida' };
   }
-  if (!centro) return { grupos: [], centro: null, motivo: 'ciudad-desconocida' };
 
-  const clave = `lugares.sitios.${normalizarLugar(city)}`;
-  let lugares = guardado(clave, SEMANA);
+  /* Buscando cerca de ti la caché no vale: el centro es otro y los
+     sitios de alrededor también. Y NO SE GUARDA, que es lo importante:
+     una lista guardada bajo «cerca de mí» sería tu posición escrita en
+     el disco del teléfono con otro nombre. */
+  const clave = desdeAqui ? null : `lugares.sitios.${normalizarLugar(city)}`;
+  let lugares = clave ? guardado(clave, SEMANA) : null;
   if (!lugares) {
     try {
       lugares = await preguntarAOverpass(centro);
@@ -140,7 +146,7 @@ export async function buscarSitios(place = {}) {
     /* Una lista vacía TAMBIÉN se guarda. Es una respuesta legítima —hay
        ciudades sin nada cartografiado— y volver a preguntar cada vez no
        la va a cambiar en una semana. */
-    guardar(clave, lugares);
+    if (clave) guardar(clave, lugares);
   }
 
   const grupos = agrupar(lugares, centro);
@@ -152,4 +158,29 @@ export function olvidarSitios(city) {
   try {
     localStorage.removeItem(`lugares.sitios.${normalizarLugar(city)}`);
   } catch { /* da igual: es una caché */ }
+}
+
+/* ── DÓNDE ESTOY ─────────────────────────────────────────────
+   Solo para buscar sitios cerca de una misma, y nada más.
+
+   NO SE GUARDA EN NINGÚN SITIO: ni en el almacén del navegador, ni en
+   los ajustes, ni en Firestore. Vive en una variable mientras la hoja
+   está abierta y se va con ella. Lo que no está guardado no se puede
+   filtrar, que es la misma regla de place-core.js.
+
+   Y NO SE OFRECE al buscar dónde quedar con alguien: ahí la lista acaba
+   convirtiéndose en una propuesta que ve la otra persona, y cuanto
+   menos dependa de dónde estás, mejor. Aquí no hay nadie al otro lado.
+
+   `enableHighAccuracy` a false a propósito: para elegir un café da
+   igual el metro exacto, tarda menos y gasta menos batería. */
+export function dondeEstoy({ espera = 12000 } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) { reject(new Error('sin-geolocalizacion')); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (err) => reject(new Error(err?.code === 1 ? 'permiso-denegado' : 'sin-posicion')),
+      { enableHighAccuracy: false, timeout: espera, maximumAge: 60000 },
+    );
+  });
 }

@@ -1,10 +1,12 @@
 /* ─────────────────────────────────────────────────────────────
-   DÓNDE QUEDAR  ·  historia #157
+   DÓNDE LEER, COMPRAR Y QUEDAR  ·  historia #157
 
      npm run test:lugares
 
-   Dos cosas se comprueban aquí, y la segunda importa más que la
-   primera.
+   La misma lista de sitios sirve para dos cosas distintas: quedar con
+   alguien para intercambiar un libro, y buscar dónde ir a leer o a
+   comprar el siguiente. Se comprueban las dos, y una tercera que
+   importa más que las otras dos juntas.
 
    La primera es la corriente: que lo que devuelve el mapa se lea bien,
    que no salgan sitios repetidos, que una cadena con seis sucursales no
@@ -34,7 +36,7 @@
 import {
   TIPOS, TOPE_POR_TIPO, consultaOverpass, leerRespuesta, distanciaKm,
   quitarRepetidos, agrupar, cuantos, distanciaTexto, enlaceMapa, propuesta,
-  MOTIVOS,
+  MOTIVOS, PROPOSITOS,
 } from '../src/lugares-core.js';
 import { geohash, PRECISION } from '../src/place-core.js';
 
@@ -149,11 +151,16 @@ grupo('CÓMO SE LEE');
 
 ok('cerca se dice en metros', distanciaTexto(0.42) === 'A 400 m del centro');
 ok('lejos, en kilómetros y con coma', distanciaTexto(2.13) === 'A 2,1 km del centro');
-/* Que diga «DEL CENTRO» no es un detalle de estilo: sin esas dos
-   palabras cualquiera entiende «de ti», y entonces la app estaría
-   dando a entender que sabe dónde estás. */
-ok('SIEMPRE dice "del centro", nunca "de ti"',
+/* De dónde se mide va SIEMPRE escrito, y no es un detalle de estilo:
+   «a 400 m» a secas lo entiende cualquiera como «de ti», y si la lista
+   está medida desde el centro esa frase estaría dando a entender que la
+   app sabe dónde estás. */
+ok('por defecto mide desde el centro, y lo dice',
   distanciaTexto(0.3).includes('del centro') && distanciaTexto(9).includes('del centro'));
+ok('y si de verdad mide desde ti, lo dice también',
+  distanciaTexto(0.42, 'ti') === 'A 400 m de ti');
+ok('un origen que no existe no inventa nada raro',
+  distanciaTexto(0.42, 'marte') === 'A 400 m del centro');
 
 const sitio = { id: 'node/1', nombre: 'Café Pasaje', calle: 'Carrera 6 10-20', lat: 4.598, lon: -74.076 };
 ok('el enlace del mapa es de OpenStreetMap',
@@ -253,6 +260,38 @@ ok('el geohash que sí se comparte sigue siendo de un kilómetro',
   geohash(LAURA.lat, LAURA.lon).length === PRECISION && PRECISION === 6);
 ok('y `agrupar` no acepta a ninguna persona, solo el centro',
   agrupar.length <= 3);
+
+/* ── LOS DOS PROPÓSITOS ──────────────────────────────────────
+
+     «Quiero esa funcionalidad también para cuando quiera ir a leer a un
+      cafesito: que me dé opciones, no solo para el intercambio de
+      libros, sino saber dónde puedo leer y comprar libros.»
+
+   Los sitios son los mismos y lo que se hace con ellos no. Y hay una
+   diferencia que NO es cosmética: solo buscando dónde leer se ofrece
+   buscar cerca de ti. Quedando, la lista acaba convertida en una
+   propuesta que ve la otra persona. */
+
+grupo('QUEDAR Y LEER NO SON LO MISMO');
+
+ok('hay un modo para quedar y otro para leer',
+  Boolean(PROPOSITOS.quedar && PROPOSITOS.leer));
+ok('y se llaman distinto en pantalla',
+  PROPOSITOS.quedar.titulo !== PROPOSITOS.leer.titulo);
+ok('el de leer habla de leer Y de comprar, que era lo que se pidió',
+  /leer/i.test(PROPOSITOS.leer.titulo) && /comprar/i.test(PROPOSITOS.leer.titulo));
+ok('QUEDANDO NO SE OFRECE BUSCAR CERCA DE TI',
+  PROPOSITOS.quedar.cercaDeMi === false,
+  'esa lista acaba siendo una propuesta que ve la otra persona');
+ok('leyendo sí, porque no hay nadie al otro lado',
+  PROPOSITOS.leer.cercaDeMi === true);
+ok('los dos explican qué pasa al tocar un sitio',
+  PROPOSITOS.quedar.pie.length > 10 && PROPOSITOS.leer.pie.length > 10);
+ok('y quedando se avisa de que no se manda solo',
+  /no se manda/i.test(PROPOSITOS.quedar.pie));
+ok('cada uno sabe presentarse con el nombre de la ciudad',
+  PROPOSITOS.leer.lede('Bogotá').includes('Bogotá')
+  && PROPOSITOS.quedar.lede('Bogotá').includes('Bogotá'));
 
 /* ── LO QUE SE PROMETE ───────────────────────────────────────── */
 

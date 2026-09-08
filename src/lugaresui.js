@@ -1,20 +1,34 @@
 /* ─────────────────────────────────────────────────────────────
-   DÓNDE QUEDAR · la pantalla  ·  historia #157
+   DÓNDE LEER, COMPRAR Y QUEDAR · la pantalla  ·  historia #157
 
-   Se abre desde el chat, que es donde se acuerda el encuentro, y desde
-   la hoja de seguridad, que es donde ya se decía qué CLASE de sitio
-   sirve. Aquí se dice cuál, con nombre.
+   La misma hoja sirve para dos cosas que se parecen y no son iguales:
 
-   ELEGIR UN SITIO NO LO MANDA. Deja la frase escrita en la caja del
-   chat y ahí se queda: proponer un sitio para verse es una decisión,
-   no un botón, y quien lo manda tiene que poder añadir la hora, el
-   día, o pensárselo otra vez. Un botón que manda solo convierte un
-   toque curioso en un compromiso.
+     · QUEDAR con alguien para intercambiar un libro. Se abre desde la
+       conversación, y elegir un sitio escribe la propuesta en la caja
+       del chat.
+
+     · IR A LEER O A COMPRAR LIBROS, que es cosa de una y de nadie más.
+       Se abre desde la Biblioteca:
+
+         «Quiero esa funcionalidad también para cuando quiera ir a leer
+          a un cafesito: que me dé opciones, no solo para el intercambio
+          de libros, sino saber dónde puedo leer y comprar libros.»
+
+   La diferencia que importa no es el título: es que solo en el segundo
+   se ofrece BUSCAR CERCA DE TI. Quedando, la lista acaba convertida en
+   una propuesta que ve la otra persona, así que cuanto menos dependa de
+   dónde estás, mejor. Leyendo no hay nadie al otro lado a quien
+   contárselo.
+
+   ELEGIR UN SITIO NO LO MANDA, cuando se está quedando. Deja la frase
+   escrita en la caja del chat y ahí se queda: proponer un sitio para
+   verse es una decisión, no un botón, y quien lo manda tiene que poder
+   añadir la hora, el día, o pensárselo otra vez.
    ───────────────────────────────────────────────────────────── */
 
-import { buscarSitios, olvidarSitios } from './lugares.js';
+import { buscarSitios, olvidarSitios, dondeEstoy } from './lugares.js';
 import {
-  distanciaTexto, enlaceMapa, propuesta, MOTIVOS, CREDITO,
+  distanciaTexto, enlaceMapa, propuesta, MOTIVOS, CREDITO, PROPOSITOS,
 } from './lugares-core.js';
 import { tieneCiudad } from './place-core.js';
 import { MAX_MENSAJE } from './chat-core.js';
@@ -24,11 +38,25 @@ import { $, esc, toast, openSheet, closeSheet } from './ui.js';
 let grupos = [];
 let ciudad = null;
 let cargando = false;
+let proposito = 'quedar';
+/* Tu posición mientras la hoja está abierta, y NADA MÁS. No se guarda
+   en el almacén, ni en los ajustes, ni en el servidor: se va con la
+   hoja. Lo que no está guardado no se puede filtrar. */
+let aqui = null;
 
-/** Abre la hoja y busca los sitios de tu ciudad. */
-export async function openLugares() {
+/** Para quedar con alguien: se abre desde la conversación. */
+export const openLugares = () => abrir('quedar');
+
+/** Para ir a leer o a comprar libros: se abre desde la Biblioteca. */
+export const openDondeLeer = () => abrir('leer');
+
+async function abrir(cual) {
+  proposito = cual;
   ciudad = myPlace();
   grupos = [];
+  aqui = null;
+  const titulo = $('lugares-titulo');
+  if (titulo) titulo.textContent = PROPOSITOS[proposito].titulo;
   openSheet('lugares-overlay');
   pintar();
   if (!tieneCiudad(ciudad)) { pintar('sin-ciudad'); return; }
@@ -41,7 +69,39 @@ export const closeLugares = (e) => {
 
 /** Volver a preguntar cuando el mapa estaba caído. */
 export async function reintentarLugares() {
-  if (ciudad?.city) olvidarSitios(ciudad.city);
+  if (!aqui && ciudad?.city) olvidarSitios(ciudad.city);
+  await cargar();
+}
+
+/**
+ * Buscar alrededor de donde estás.
+ *
+ * El permiso se pide AQUÍ y no al abrir la app: quien no toque este
+ * botón no ve nunca la ventana del navegador pidiendo la ubicación, y
+ * la hoja funciona igual sin ella.
+ */
+export async function buscarCercaDeMi() {
+  if (cargando) return;
+  cargando = true;
+  pintar();
+  try {
+    aqui = await dondeEstoy();
+  } catch (e) {
+    cargando = false;
+    aqui = null;
+    toast(e?.message === 'permiso-denegado'
+      ? 'Sin permiso de ubicación. Se siguen viendo los sitios del centro.'
+      : 'No hemos podido saber dónde estás. Se siguen viendo los del centro.', 'error');
+    pintar();
+    return;
+  }
+  cargando = false;
+  await cargar();
+}
+
+/** Volver a los sitios del centro, y olvidar tu posición. */
+export async function volverAlCentro() {
+  aqui = null;
   await cargar();
 }
 
@@ -49,7 +109,7 @@ async function cargar() {
   if (cargando) return;
   cargando = true;
   pintar();
-  const r = await buscarSitios(ciudad);
+  const r = await buscarSitios(ciudad, { desdeAqui: aqui });
   cargando = false;
   grupos = r.grupos;
   pintar(r.motivo);
@@ -65,7 +125,9 @@ function pintar(motivo = null) {
     cuerpo.innerHTML = `
       <div class="trabajo">
         <span class="trabajo-giro" aria-hidden="true"></span>
-        <span class="trabajo-txt">Buscando sitios por ${esc(ciudad?.city || 'tu ciudad')}…</span>
+        <span class="trabajo-txt">${esc(aqui
+    ? 'Buscando sitios cerca de ti…'
+    : `Buscando sitios por ${ciudad?.city || 'tu ciudad'}…`)}</span>
       </div>
       <div class="trabajo-bar sin-fin"><i></i></div>`;
     return;
@@ -75,10 +137,9 @@ function pintar(motivo = null) {
     /* «El mapa no contesta» tiene arreglo —volver a intentarlo— y «no
        hay nada cartografiado» no lo tiene. Solo se ofrece el botón
        donde sirve de algo. */
-    const sePuedeReintentar = motivo === 'servicio-caido';
     cuerpo.innerHTML = `
       <p class="planner-hint">${esc(MOTIVOS[motivo] || MOTIVOS['sin-resultados'])}</p>
-      ${sePuedeReintentar
+      ${motivo === 'servicio-caido'
     ? '<button class="btn-ghost full" onclick="reintentarLugares()">Volver a intentarlo</button>'
     : ''}
       ${motivo === 'sin-ciudad'
@@ -87,12 +148,13 @@ function pintar(motivo = null) {
     return;
   }
 
+  const modo = PROPOSITOS[proposito];
   cuerpo.innerHTML = `
-    <p class="planner-lede">Sitios públicos por el centro de ${esc(ciudad?.city || '')}.</p>
-    <p class="set-fineprint lugares-intro">
-      Toca uno y se escribe la propuesta en la conversación. No se manda
-      hasta que le des a Enviar.
-    </p>
+    <p class="planner-lede">${esc(aqui
+    ? 'Cafeterías, librerías y bibliotecas cerca de donde estás.'
+    : modo.lede(ciudad?.city || 'tu ciudad'))}</p>
+    <p class="set-fineprint lugares-intro">${esc(modo.pie)}</p>
+    ${modo.cercaDeMi ? cambiarDeCentro() : ''}
     ${grupos.map((g) => `
       <div class="prof-sec">
         <h4 class="prof-sec-title">${g.icono} ${esc(g.label)}</h4>
@@ -101,12 +163,23 @@ function pintar(motivo = null) {
     <p class="set-fineprint">${esc(CREDITO)}</p>`;
 }
 
+/* Un botón y no un interruptor permanente: pedir la ubicación es algo
+   que se hace cuando hace falta, no un ajuste que se queda encendido. */
+const cambiarDeCentro = () => (aqui
+  ? `<button class="btn-ghost full" style="margin-bottom:14px" onclick="volverAlCentro()">
+       Ver los del centro de ${esc(ciudad?.city || 'la ciudad')}
+     </button>`
+  : `<button class="btn-ghost full" style="margin-bottom:14px" onclick="buscarCercaDeMi()">
+       📍 Buscar cerca de donde estoy
+     </button>`);
+
 function fila(l) {
+  const desde = aqui ? 'ti' : 'centro';
   return `
     <div class="sitio">
       <button class="sitio-elegir" onclick="elegirLugar('${esc(l.id)}')">
         <span class="sitio-nombre">${esc(l.nombre)}</span>
-        <span class="sitio-datos">${esc([l.calle, distanciaTexto(l.km)].filter(Boolean).join(' · '))}</span>
+        <span class="sitio-datos">${esc([l.calle, distanciaTexto(l.km, desde)].filter(Boolean).join(' · '))}</span>
         ${l.horario ? `<span class="sitio-horario">${esc(l.horario)}</span>` : ''}
       </button>
       <a class="btn-mini" href="${esc(enlaceMapa(l))}" target="_blank" rel="noopener noreferrer">Mapa</a>
@@ -114,21 +187,22 @@ function fila(l) {
 }
 
 /**
- * Elegir un sitio: la frase va a la caja de escribir del chat.
+ * Tocar un sitio.
  *
- * Si la hoja se abrió desde la de seguridad y no hay chat abierto
- * detrás, no hay dónde escribir — y entonces se dice, en vez de que el
- * toque no haga nada.
+ * Quedando, la frase va a la caja del chat. Buscando dónde leer no hay
+ * ninguna caja, así que se abre el mapa — que es lo único que se puede
+ * querer hacer con un café cuando no hay nadie esperando una propuesta.
  */
 export function elegirLugar(id) {
   const l = grupos.flatMap((g) => g.lugares).find((x) => x.id === id);
   if (!l) return;
 
   const campo = $('chat-texto');
-  if (!campo) {
-    toast('Abre la conversación con esa persona para proponerle el sitio');
+  if (proposito !== 'quedar' || !campo) {
+    window.open(enlaceMapa(l), '_blank', 'noopener,noreferrer');
     return;
   }
+
   campo.value = propuesta(l, { max: MAX_MENSAJE });
   closeSheet('lugares-overlay');
   campo.focus();
