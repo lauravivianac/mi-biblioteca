@@ -36,7 +36,7 @@
 import {
   TIPOS, TOPE_POR_TIPO, consultaOverpass, leerRespuesta, distanciaKm,
   quitarRepetidos, agrupar, cuantos, distanciaTexto, enlaceMapa, propuesta,
-  MOTIVOS, PROPOSITOS,
+  MOTIVOS, PROPOSITOS, sePuedeReintentar,
 } from '../src/lugares-core.js';
 import { geohash, PRECISION } from '../src/place-core.js';
 
@@ -66,6 +66,12 @@ ok('pregunta por puntos Y por edificios',
 ok('pide el centro de los edificios, o volverían sin coordenadas',
   q.includes('out center'));
 ok('lleva un tope de tiempo, para no quedarse colgada', q.includes('timeout'));
+/* El tope de la consulta es lo que Overpass se permite tardar
+   EJECUTÁNDOLA. El nuestro tiene que ser mayor, porque el tiempo que
+   pasa de verdad es la cola MÁS la ejecución: estaban los dos en 20
+   segundos y así cortábamos siempre justo cuando el otro terminaba. */
+ok('y ese tope se puede ajustar desde fuera',
+  consultaOverpass(CENTRO, { espera: 33 }).includes('[timeout:33]'));
 ok('sin centro no hay consulta', consultaOverpass(null) === null);
 ok('ni con coordenadas que no son números',
   consultaOverpass({ lat: 'x', lon: 2 }) === null);
@@ -182,14 +188,36 @@ ok('sin sitio no hay frase', propuesta(null) === '');
 grupo('CUANDO NO SE PUEDE');
 
 ok('«no hay sitios» y «no pudimos preguntar» son mensajes distintos',
-  MOTIVOS['sin-resultados'] !== MOTIVOS['servicio-caido']);
+  MOTIVOS['sin-resultados'] !== MOTIVOS['mapa-caido']);
 ok('y el del mapa caído dice que NO es que no haya sitios',
-  /no es que no haya sitios/i.test(MOTIVOS['servicio-caido']));
+  /no es que no haya sitios/i.test(MOTIVOS['mapa-caido']));
 ok('sin ciudad se explica qué falta, sin pedir la dirección',
   /ciudad/i.test(MOTIVOS['sin-ciudad']) && /no se pide la dirección/i.test(MOTIVOS['sin-ciudad']));
 ok('hay un mensaje para cada motivo que devuelve la búsqueda',
-  ['sin-ciudad', 'ciudad-desconocida', 'servicio-caido', 'sin-resultados']
+  ['sin-ciudad', 'ciudad-desconocida', 'ciudad-caida', 'mapa-caido', 'sin-resultados']
     .every((m) => typeof MOTIVOS[m] === 'string' && MOTIVOS[m].length > 20));
+
+/* ── DOS SERVICIOS, DOS FRACASOS ─────────────────────────────
+
+     «No me deja ver los cafés o librerías» — con el aviso «el mapa no
+      contesta ahora mismo» en pantalla.
+
+   Y ese aviso salía tanto si falló SITUAR LA CIUDAD como si falló
+   PREGUNTAR QUÉ HAY: dos servicios distintos detrás de la misma frase.
+   Eso deja a ciegas a quien lo lee y también a quien lo arregla, que
+   no puede saber cuál de los dos fue por lo que le cuenten.
+
+   Y no es solo cuestión de precisión: si lo que falla es situar la
+   ciudad, BUSCAR CERCA DE DONDE ESTÁS SÍ FUNCIONA, porque ese camino
+   no pasa por ahí. */
+ok('SITUAR LA CIUDAD y PREGUNTAR QUÉ HAY fallan con mensajes distintos',
+  MOTIVOS['ciudad-caida'] !== MOTIVOS['mapa-caido']);
+ok('y el de la ciudad propone el camino que sí funciona',
+  /cerca de donde estás/i.test(MOTIVOS['ciudad-caida']));
+ok('los dos se pueden reintentar',
+  sePuedeReintentar('ciudad-caida') && sePuedeReintentar('mapa-caido'));
+ok('pero «no hay nada cartografiado» no: reintentar no lo cambia',
+  !sePuedeReintentar('sin-resultados') && !sePuedeReintentar('sin-ciudad'));
 
 /* ── LA PRUEBA QUE IMPORTA ───────────────────────────────────── */
 

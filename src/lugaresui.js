@@ -29,6 +29,7 @@
 import { buscarSitios, olvidarSitios, dondeEstoy } from './lugares.js';
 import {
   distanciaTexto, enlaceMapa, propuesta, MOTIVOS, CREDITO, PROPOSITOS,
+  sePuedeReintentar,
 } from './lugares-core.js';
 import { tieneCiudad } from './place-core.js';
 import { MAX_MENSAJE } from './chat-core.js';
@@ -43,6 +44,10 @@ let proposito = 'quedar';
    en el almacén, ni en los ajustes, ni en el servidor: se va con la
    hoja. Lo que no está guardado no se puede filtrar. */
 let aqui = null;
+/* Lo que dijo el servicio al fallar. Se enseña en letra pequeña: sin
+   esto, lo unico que se puede contar de vuelta es «no funciona», y con
+   eso no se arregla nada. */
+let detalle = '';
 
 /** Para quedar con alguien: se abre desde la conversación. */
 export const openLugares = () => abrir('quedar');
@@ -55,6 +60,7 @@ async function abrir(cual) {
   ciudad = myPlace();
   grupos = [];
   aqui = null;
+  detalle = '';
   const titulo = $('lugares-titulo');
   if (titulo) titulo.textContent = PROPOSITOS[proposito].titulo;
   openSheet('lugares-overlay');
@@ -112,6 +118,7 @@ async function cargar() {
   const r = await buscarSitios(ciudad, { desdeAqui: aqui });
   cargando = false;
   grupos = r.grupos;
+  detalle = r.detalle || '';
   pintar(r.motivo);
 }
 
@@ -134,17 +141,30 @@ function pintar(motivo = null) {
   }
 
   if (motivo) {
-    /* «El mapa no contesta» tiene arreglo —volver a intentarlo— y «no
-       hay nada cartografiado» no lo tiene. Solo se ofrece el botón
-       donde sirve de algo. */
+    /* AQUÍ SE ESCONDÍA LA SALIDA. La pantalla de error solo ofrecía
+       «volver a intentarlo», y se llevaba por delante el botón de
+       buscar cerca de ti — que es justo el camino que NO pasa por el
+       servicio que acaba de fallar cuando lo que falla es situar la
+       ciudad. O sea que la única alternativa que podía funcionar
+       desaparecía exactamente cuando hacía falta.
+
+       «No hay nada cartografiado» sigue sin tener arreglo, así que ahí
+       no se ofrece reintentar: un botón que no puede cambiar nada es
+       peor que ninguno. */
+    const modoError = PROPOSITOS[proposito];
     cuerpo.innerHTML = `
       <p class="planner-hint">${esc(MOTIVOS[motivo] || MOTIVOS['sin-resultados'])}</p>
-      ${motivo === 'servicio-caido'
+      ${sePuedeReintentar(motivo)
     ? '<button class="btn-ghost full" onclick="reintentarLugares()">Volver a intentarlo</button>'
     : ''}
+      ${modoError.cercaDeMi && !aqui && motivo !== 'sin-ciudad'
+    ? `<button class="btn-magic full" style="margin-top:8px" onclick="buscarCercaDeMi()">
+         📍 Buscar cerca de donde estoy
+       </button>` : ''}
       ${motivo === 'sin-ciudad'
     ? '<button class="btn-magic full" style="margin-top:8px" onclick="openPlace()">Decir en qué ciudad estoy</button>'
-    : ''}`;
+    : ''}
+      ${detalle ? `<p class="set-fineprint lugares-detalle">Detalle técnico: ${esc(detalle)}</p>` : ''}`;
     return;
   }
 

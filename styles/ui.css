@@ -723,6 +723,11 @@ body:not(.signed-in) .fab { display: none; }
    bloque. */
 .lugares-intro { margin: 0 0 20px; }
 
+/* Lo que dijo el servicio al fallar, en pequeño. No es para leerlo: es
+   para poder copiarlo y contarlo, que es lo que convierte un «no
+   funciona» en algo que se puede arreglar. */
+.lugares-detalle { margin-top: 14px; opacity: .75; word-break: break-word; }
+
 .sitio {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 0; border-bottom: 1px solid var(--border-soft);

@@ -81,7 +81,7 @@ export const RADIO = 4000;
  * contorno del edificio y no como un punto, y sin `center` esos vuelven
  * sin coordenadas y no se pueden poner en un mapa.
  */
-export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS } = {}) {
+export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS, espera = 25 } = {}) {
   if (!centro || !Number.isFinite(centro.lat) || !Number.isFinite(centro.lon)) return null;
   const lat = centro.lat.toFixed(5);
   const lon = centro.lon.toFixed(5);
@@ -89,7 +89,7 @@ export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS } = {}) 
     .flatMap((t) => t.consulta)
     .flatMap((filtro) => ['node', 'way'].map((q) => `  ${q}[${filtro}](around:${radio},${lat},${lon});`))
     .join('\n');
-  return `[out:json][timeout:20];\n(\n${cuerpo}\n);\nout center 300;`;
+  return `[out:json][timeout:${espera}];\n(\n${cuerpo}\n);\nout center 300;`;
 }
 
 /* ── LO QUE VUELVE ───────────────────────────────────────────── */
@@ -275,11 +275,26 @@ export const MOTIVOS = {
     + 'No se pide la dirección: solo la ciudad.',
   'ciudad-desconocida': 'No hemos podido situar esa ciudad en el mapa. '
     + 'Prueba a escribirla completa, o quedad como veníais haciendo.',
-  'servicio-caido': 'El mapa no contesta ahora mismo. Vuelve a intentarlo en un rato: '
+  /* DOS SERVICIOS, DOS AVISOS. Antes los dos caían en el mismo —«el
+     mapa no contesta»— y eso dejaba a todo el mundo a ciegas: ni quien
+     lo lee sabe qué falló, ni quien lo arregla puede saberlo por lo que
+     le cuenten. Es el mismo error que ya se había arreglado en la
+     búsqueda de libros y que aquí volví a cometer.
+
+     Y hay una diferencia práctica, no solo de precisión: si lo que
+     falla es SITUAR LA CIUDAD, buscar cerca de donde estás sí funciona,
+     porque ese camino no pasa por ahí. */
+  'ciudad-caida': 'No hemos podido situar tu ciudad en el mapa ahora mismo. '
+    + 'Si estás fuera de casa, prueba a buscar cerca de donde estás: '
+    + 'ese camino no necesita este paso.',
+  'mapa-caido': 'El mapa no contesta ahora mismo. Vuelve a intentarlo en un rato: '
     + 'no es que no haya sitios, es que no hemos podido preguntar.',
   'sin-resultados': 'No encontramos cafeterías, librerías ni bibliotecas por el centro '
     + 'de tu ciudad. El mapa lo mantiene gente voluntaria y a veces falta.',
 };
+
+/** ¿Este fracaso se arregla volviendo a intentarlo? */
+export const sePuedeReintentar = (motivo) => motivo === 'mapa-caido' || motivo === 'ciudad-caida';
 
 /* De dónde salen los datos. Va en pantalla porque la licencia lo pide y
    porque está bien decir quién ha hecho el trabajo. */
