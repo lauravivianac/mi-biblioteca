@@ -151,5 +151,98 @@ ok('con la línea central tapada, la encuentra en otra',
 const blanca = new Uint8ClampedArray(300 * 40 * 4).fill(255);
 ok('una imagen en blanco no devuelve código', decodeImage(blanca, 300, 40) === null);
 
+/* ── UN FOTOGRAMA DE CÁMARA, QUE NO ES UNA IMAGEN DE LABORATORIO ──
+
+   «Agregar libro por código de barras sigue sin funcionar.»
+
+   Y llevaba sin funcionar desde el principio, con estas pruebas en
+   verde. Todo lo de arriba dibuja el código SOLO, sobre blanco,
+   ocupando la línea entera — y el lector suponía justo eso: que el
+   código iba «de la primera a la última marca oscura». En una foto
+   nunca es así. Siempre hay algo más oscuro en la misma línea: el
+   borde del libro, la mesa, la sombra, el texto de la contraportada.
+   Con cualquiera de ellas, los 95 módulos se repartían a lo ancho de
+   medio cuadro.
+
+   Medido con estos mismos fotogramas antes del arreglo: 2 de 7, y los
+   2 eran de laboratorio. En el Safari del iPhone, donde no existe
+   `BarcodeDetector` y este es el único lector, ese camino no funcionó
+   nunca.
+
+   Así que ahora se prueba con el cuadro entero y con lo que hay
+   alrededor de verdad. */
+
+grupo('UN FOTOGRAMA DE CÁMARA');
+
+/**
+ * Un cuadro como el que da la cámara: el código en su sitio, y
+ * alrededor lo que hay en una contraportada.
+ */
+function fotograma({
+  ancho = 1920, alto = 432, modulo = 3, x0 = 700,
+  bordes = true, texto = true, ruido = 6, ean = CIEN_ANOS, conCodigo = true,
+} = {}) {
+  const bits = codificar(ean);
+  const data = new Uint8ClampedArray(ancho * alto * 4);
+  let semilla = 1;
+  const azar = () => { semilla = (semilla * 1103515245 + 12345) % 2147483648; return semilla / 2147483648; };
+
+  for (let y = 0; y < alto; y++) {
+    for (let x = 0; x < ancho; x++) {
+      let v = 210;                                        // la página
+      if (bordes && (x < 40 || x > ancho - 60)) v = 45;    // el libro y la mesa
+      if (texto && ((y < 90 && y % 14 < 7) || (y > alto - 90 && y % 14 < 7))
+          && x > 120 && x < 640) v = 60;                  // renglones impresos
+      if (conCodigo && x >= x0 && x < x0 + bits.length * modulo && y > 60 && y < alto - 60) {
+        v = bits[Math.floor((x - x0) / modulo)] === '1' ? 25 : 235;
+      }
+      const c = Math.max(0, Math.min(255, v + (azar() * 2 - 1) * ruido));
+      const p = (y * ancho + x) * 4;
+      data[p] = data[p + 1] = data[p + 2] = c;
+      data[p + 3] = 255;
+    }
+  }
+  return { data, ancho, alto };
+}
+
+const leeFotograma = (op = {}) => {
+  const f = fotograma(op);
+  return decodeImage(f.data, f.ancho, f.alto);
+};
+
+ok('EL CASO DE LAURA · con el borde del libro y el texto alrededor',
+  leeFotograma() === CIEN_ANOS);
+ok('con el libro más cerca', leeFotograma({ modulo: 5, x0: 500 }) === CIEN_ANOS);
+ok('con el libro más lejos', leeFotograma({ modulo: 2, x0: 900 }) === CIEN_ANOS);
+ok('descentrado a la izquierda', leeFotograma({ x0: 150 }) === CIEN_ANOS);
+ok('descentrado a la derecha', leeFotograma({ x0: 1300 }) === CIEN_ANOS);
+ok('con sombra en un lado (poco contraste)',
+  leeFotograma({ ruido: 14 }) === CIEN_ANOS);
+ok('y con otro libro distinto', leeFotograma({ ean: ORGULLO }) === ORGULLO);
+
+/* ── Y LO QUE NO PUEDE PASAR ─────────────────────────────────
+   Ahora el lector prueba muchos puntos de arranque en cada línea, así
+   que hay que asegurarse de que no se INVENTA un código. El dígito de
+   control es lo que lo impide, y esto lo comprueba. */
+ok('una contraportada SIN código no devuelve nada',
+  leeFotograma({ conCodigo: false }) === null);
+
+let inventados = 0;
+for (let s = 0; s < 40; s++) {
+  const ancho = 900;
+  const alto = 60;
+  const data = new Uint8ClampedArray(ancho * alto * 4);
+  let semilla = s * 7919 + 13;
+  for (let i = 0; i < ancho * alto; i++) {
+    semilla = (semilla * 1103515245 + 12345) % 2147483648;
+    const c = (semilla / 2147483648) * 255;
+    data[i * 4] = data[i * 4 + 1] = data[i * 4 + 2] = c;
+    data[i * 4 + 3] = 255;
+  }
+  if (decodeImage(data, ancho, alto)) inventados += 1;
+}
+ok('cuarenta imágenes de ruido puro y ningún código inventado',
+  inventados === 0, `se inventó ${inventados}`);
+
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.`);
 process.exit(fallaron ? 1 : 0);

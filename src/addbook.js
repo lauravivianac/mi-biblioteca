@@ -29,9 +29,26 @@ let draft = null;          // el candidato elegido, antes de guardar
 let searchTimer = null;
 let lastQuery = '';
 
+/* Lo que la app está haciendo AHORA MISMO, cuando tarda.
+
+     «Por la portada no se toma la foto, ni tampoco hay alguna barra o
+      círculo de carga para ver que el código está haciendo algo.»
+
+   Las dos mitades eran otra vez la misma cosa. La foto SÍ se tomaba:
+   lo que pasaba después es que se apagaba la cámara —así que la
+   pantalla se quedaba negra—, aparecía una línea de texto que no se
+   movía, y detrás empezaba a bajar el motor de OCR con su diccionario,
+   varios megas, en silencio. Sin ver la foto y sin ver movimiento, lo
+   único razonable que se puede pensar es que no se tomó.
+
+   Así que ahora se enseña la foto EN CUANTO se dispara —que es la
+   prueba de que salió— y debajo qué se está haciendo, con barra. */
+let trabajo = null;        // { foto, frase, parte }
+
 export function openAdd() {
   mode = 'titulo';
   draft = null;
+  trabajo = null;
   render();
   openSheet('add-overlay');
 }
@@ -43,6 +60,7 @@ export function closeAdd(e) {
 
 export function closeAddSheet() {
   pararEscaner();
+  trabajo = null;
   clearTimeout(searchTimer);
   closeSheet('add-overlay');
 }
@@ -51,6 +69,7 @@ export function setAddMode(next) {
   if (mode === 'camara' && next !== 'camara') pararEscaner();
   mode = next;
   draft = null;
+  trabajo = null;
   render();
   if (next === 'camara') startCamera();
   if (next === 'titulo') setTimeout(() => $('add-query')?.focus(), 80);
@@ -68,7 +87,51 @@ function render() {
       ${tab('camara', 'Con la cámara')}
       ${tab('manual', 'A mano')}
     </div>
-    ${draft ? renderDraft() : { titulo: renderTitulo, camara: renderCamara, manual: renderManual }[mode]()}`;
+    ${trabajo ? renderTrabajo()
+      : draft ? renderDraft()
+      : { titulo: renderTitulo, camara: renderCamara, manual: renderManual }[mode]()}`;
+}
+
+/* La foto arriba y el estado debajo. La foto no se vuelve a pintar en
+   cada avance —parpadearía— así que el texto y la barra se actualizan
+   por su cuenta en `pintarTrabajo`. */
+function renderTrabajo() {
+  return `
+    <div class="foto-tomada">
+      <img src="${esc(trabajo.foto)}" alt="La foto de la portada que acabas de tomar">
+    </div>
+    <div class="trabajo">
+      <span class="trabajo-giro" aria-hidden="true"></span>
+      <span class="trabajo-txt" id="trabajo-txt">${esc(trabajo.frase)}</span>
+    </div>
+    <div class="trabajo-bar ${trabajo.parte == null ? 'sin-fin' : ''}" id="trabajo-bar"
+         role="progressbar" aria-label="${esc(trabajo.frase)}">
+      <i style="width:${trabajo.parte == null ? 100 : Math.round(trabajo.parte * 100)}%"></i>
+    </div>
+    <button class="btn-ghost full" style="margin-top:14px" onclick="cancelarPortada()">
+      Cancelar
+    </button>`;
+}
+
+/** Mover el estado sin repintar la foto. */
+function pintarTrabajo() {
+  if (!trabajo) return;
+  const txt = $('trabajo-txt');
+  const bar = $('trabajo-bar');
+  if (!txt || !bar) { render(); return; }
+  txt.textContent = trabajo.frase;
+  bar.setAttribute('aria-label', trabajo.frase);
+  bar.classList.toggle('sin-fin', trabajo.parte == null);
+  const relleno = bar.querySelector('i');
+  if (relleno) relleno.style.width = trabajo.parte == null ? '100%' : `${Math.round(trabajo.parte * 100)}%`;
+}
+
+/** Volver a la cámara desde la espera de la portada. */
+export function cancelarPortada() {
+  trabajo = null;
+  mode = 'camara';
+  render();
+  startCamera();
 }
 
 function renderTitulo() {
@@ -107,9 +170,12 @@ function renderCamara() {
       <video id="scan-video" playsinline muted autoplay></video>
       <div class="scan-frame buscando"></div>
     </div>
-    <p class="planner-hint" id="scan-hint">
-      Encuadra el código de barras de la contraportada dentro del marco.
-    </p>
+    <div class="trabajo">
+      <span class="trabajo-giro" aria-hidden="true"></span>
+      <span class="trabajo-txt" id="scan-hint">
+        Encuadra el código de barras de la contraportada dentro del marco.
+      </span>
+    </div>
     <div class="store-actions">
       <button class="btn-ghost full" onclick="shootCover()">
         ${ico('camara')} No tiene código: foto de la portada
@@ -239,7 +305,7 @@ export function pickCandidate(i) {
   if (draft) render();
 }
 
-export function discardDraft() { draft = null; render(); }
+export function discardDraft() { draft = null; trabajo = null; render(); }
 
 /* ── CON LA CÁMARA ───────────────────────────────────────────── */
 
@@ -340,29 +406,63 @@ async function usarCodigo(code) {
 
 export async function shootCover() {
   const v = $('scan-video');
-  const hint = $('scan-hint');
   if (!v) return;
+
+  /* ¿HAY CUADRO? Si el vídeo todavía no da imagen —el permiso recién
+     dado, la cámara arrancando— `grabFrame` devuelve un lienzo en
+     negro y el OCR se pasa medio minuto leyendo la nada. Antes eso
+     acababa en «no lo reconocimos», que es mentira: no es que no se
+     reconociera, es que no había foto. */
+  if (!v.videoWidth || !v.videoHeight) {
+    const hint = $('scan-hint');
+    if (hint) hint.textContent = 'La cámara todavía no da imagen. Espera un segundo y vuelve a intentarlo.';
+    return;
+  }
 
   const canvas = grabFrame(v);
   const photo = frameToDataUrl(canvas);
   /* Se para TODO, no solo la cámara: el bucle de códigos seguiría
      pidiéndole cuadros a un vídeo apagado durante todo el OCR. */
   pararEscaner();
-  if (hint) hint.textContent = 'Leyendo la portada…';
+
+  /* Y AQUÍ SE ENSEÑA LA FOTO, antes de nada. Es lo primero que se
+     quiere saber —¿salió?— y hasta ahora la respuesta era una pantalla
+     negra durante todo el rato que tardara el OCR. */
+  trabajo = { foto: photo, frase: 'Preparando el lector…', parte: null };
+  render();
 
   let text = '';
   try {
-    text = await readText(canvas, (p) => {
-      if (hint) hint.textContent = `Leyendo la portada… ${Math.round(p * 100)}%`;
+    text = await readText(canvas, (parte, frase) => {
+      if (!trabajo) return;
+      trabajo.frase = frase;
+      trabajo.parte = parte;
+      pintarTrabajo();
     });
-  } catch {
-    if (hint) hint.textContent = 'No se pudo leer la portada. Añádelo por título.';
+  } catch (e) {
+    /* La foto NO se pierde. Se queda de portada y se rellena a mano,
+       que es mucho mejor que mandarla a empezar de cero. */
+    trabajo = null;
+    mode = 'manual';
+    draft = {
+      title: '', author: '', pages: '—', cover: photo,
+      genre: 'Novela contemporánea', source: 'foto',
+    };
+    render();
+    toast(`${e.message || 'No se pudo leer la portada.'} La foto se guarda: pon el título a mano.`, 'error');
     return;
   }
+  if (!trabajo) return;                 // se canceló mientras leía
+
+  trabajo.frase = 'Buscando el libro en los catálogos…';
+  trabajo.parte = null;
+  pintarTrabajo();
 
   // 1) Los catálogos, que son gratis y fiables
   const res = await lookupByCoverText(text);
+  if (!trabajo) return;
   if (res.ok) {
+    trabajo = null;
     window.__candidates = res.candidates;
     draft = { ...res.candidates[0], cover: res.candidates[0].cover || photo };
     render();
@@ -375,23 +475,31 @@ export async function shootCover() {
      foto ya está tomada y dentro de un rato esta misma búsqueda
      funciona. */
   if (res.reason === 'catalogos-caidos') {
-    if (hint) {
-      hint.textContent = 'La foto salió bien, pero los catálogos no contestan ahora mismo. '
-        + 'Vuelve a intentarlo en un rato.';
-    }
-    /* La cámara se apagó al disparar, así que se vuelve a encender: si
-       no, queda un rectángulo negro debajo de un mensaje que pide
-       reintentar. */
-    startCamera();
+    /* La foto tampoco se tira aquí. Se vuelve a la cámara, pero con el
+       libro ya en la ficha y la foto puesta: si los catálogos no
+       contestan, al menos queda guardarlo a mano sin repetir la foto. */
+    trabajo = null;
+    mode = 'manual';
+    draft = {
+      title: text.split('\n').map((l) => l.trim()).filter(Boolean)[0] || '',
+      author: '', pages: '—', cover: photo, genre: 'Novela contemporánea', source: 'foto',
+    };
+    render();
+    toast('La foto salió bien, pero los catálogos no contestan. Revisa los datos y guárdalo.', 'error');
     return;
   }
 
   // 2) Solo si fallan, el agente traduce el texto sucio del OCR
   if (agentAvailable()) {
-    if (hint) hint.textContent = 'Los catálogos no lo reconocen. Preguntando al agente…';
+    trabajo.frase = 'Los catálogos no lo reconocen. Preguntando al agente…';
+    trabajo.parte = null;
+    pintarTrabajo();
     const guess = await identifyFromCoverText(text);
+    if (!trabajo) return;
     if (guess) {
       const found = await lookupByTitle(`${guess.title} ${guess.author}`.trim());
+      if (!trabajo) return;
+      trabajo = null;
       draft = found.length
         ? { ...found[0], cover: found[0].cover || photo, source: 'agente' }
         : { title: guess.title, author: guess.author, pages: '—', cover: photo, genre: 'Novela contemporánea', source: 'agente' };
@@ -401,6 +509,7 @@ export async function shootCover() {
   }
 
   // 3) Nada lo reconoce: la foto queda de portada y se completa a mano
+  trabajo = null;
   mode = 'manual';
   draft = {
     title: text.split('\n').map((l) => l.trim()).filter(Boolean)[0] || '',

@@ -2,7 +2,7 @@
    es una de las cosas buenas que ya tenía y que el refactor no
    puede perder (criterio de la historia #12). */
 
-const CACHE = 'bib-v32';
+const CACHE = 'bib-v33';
 const SHELL = [
   './', './index.html',
   './styles/tokens.css', './styles/app.css', './styles/worlds.css', './styles/ui.css', './styles/pet.css',
@@ -60,7 +60,28 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  /* El resto: RED PRIMERO, con la caché como red de seguridad.
+  /* LO QUE NO ES DE ESTA CASA, NO SE TOCA.
+
+     El resto de este manejador está pensado para los ficheros de la
+     app: red primero y, si no hay red, lo que haya en la caché y en
+     último extremo el `index.html`, para que abrir la app sin conexión
+     enseñe la app y no un error del navegador.
+
+     Aplicado a un fichero de OTRO servidor, ese último recurso hace un
+     destrozo silencioso: si falla la descarga del lector de texto
+     —varios megas desde un CDN, justo lo que se pide al fotografiar
+     una portada— el service worker responde con el HTML del
+     `index.html` Y CON ÉXITO. El navegador cree que ha recibido el
+     programa, lo intenta interpretar, no es JavaScript, y lo que llega
+     a la pantalla es «no se pudo leer la portada» sin que nadie sepa
+     que lo que pasó fue que no había red.
+
+     Así que lo de fuera va directo a la red, sin intermediarios. Las
+     portadas de OpenLibrary y Google son la excepción y ya se han
+     resuelto arriba, con su propia caché. */
+  if (new URL(url).origin !== self.location.origin) return;
+
+  /* Los de casa: RED PRIMERO, con la caché como red de seguridad.
      Servir de caché primero dejaba cada despliegue una recarga por
      detrás: la primera visita mostraba la versión vieja y guardaba la
      nueva para la siguiente. La app seguía funcionando sin conexión,
