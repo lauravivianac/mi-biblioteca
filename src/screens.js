@@ -21,6 +21,7 @@ const THEME_BASE = THEMES[0].tokens;
 import { readingPace, goalFeasibility, goalProgress, stalledBooks, generatePlan, planPatches, estimateDays } from './planner.js';
 import { $, esc, toast, confirmAction, download, closeSheet, openSheet } from './ui.js';
 import { refreshAll } from './views.js';
+import { pintarEstanterias } from './shelvesui.js';
 import { MONTH_ORDER } from './seed.js';
 import { achievementStatus, earnedCount } from './achievements.js';
 import {
@@ -738,32 +739,19 @@ export function openSettings() {
       nunca pasa por el agente.
     </p>` : ''}
 
+    ${/* LAS ESTANTERÍAS SE FUERON DE AQUÍ · historia #57.
+          Estaban desplegadas al final de Ajustes, entre el agente y la
+          exportación de datos — o sea que para ver tus estanterías
+          había que entrar en la pantalla de la configuración y bajar.
+          Ahora tienen su propio botón en el margen y su propia hoja;
+          esto es solo la puerta, para quien las busque donde estaban. */''}
     <div class="section-heading"><span class="section-heading-text">Estanterías</span></div>
-    ${allShelves().length ? `
-      <div class="shelf-manage">
-        ${allShelves().map((sh) => {
-          const n = shelfCounts()[sh.id] || 0;
-          return `<div class="shelf-row" style="--shelf-rgb: var(--${sh.color}-rgb)">
-            <span class="shelf-row-emoji">${sh.emoji}</span>
-            <div class="shelf-row-info">
-              <div class="shelf-row-name">${esc(sh.name)}</div>
-              <div class="shelf-row-count">${n} ${n === 1 ? 'libro' : 'libros'}</div>
-            </div>
-            <button class="btn-mini" onclick="editShelf('${sh.id}')">Renombrar</button>
-            <button class="btn-mini" onclick="deleteShelf('${sh.id}')">Borrar</button>
-          </div>`;
-        }).join('')}
-      </div>` : `
-      <p class="set-fineprint" style="margin-bottom:10px">
-        Todavía no tienes ninguna. Sirven para agrupar los libros como piensas en ellos,
-        que casi nunca es por género.
-      </p>
-      <button class="btn-ghost full" onclick="addSuggestedShelves()">
-        Crear ${SUGGESTED.map((s) => s.emoji).join(' ')} ${SUGGESTED.map((s) => s.name).join(', ')}
-      </button>`}
-    <button class="btn-ghost full" onclick="newShelfFor()">＋ Nueva estantería</button>
+    ${filaAjuste('openEstanterias()', 'Mis estanterías',
+    allShelves().length
+      ? `${allShelves().length} ${allShelves().length === 1 ? 'estantería' : 'estanterías'}`
+      : 'Todavía ninguna')}
     <p class="set-fineprint">
-      Un libro puede estar en varias a la vez. Borrar una estantería no borra libros.
+      También están en el botón del margen. Un libro puede estar en varias a la vez.
     </p>
 
     <div class="section-heading"><span class="section-heading-text">Tus datos</span></div>
@@ -1121,6 +1109,10 @@ export function newShelfFor(bookId = null) {
     if (bookId) toggleBookShelf(bookId, shelf.id);
     toast(`Estantería «${shelf.name}» creada`);
     if (bookId) openDetail(bookId);
+    /* Y si venía de la hoja de estanterías, que la nueva aparezca en
+       ella. Sin esto, crear una desde ahí la dejaba en una lista que
+       seguía enseñando las de antes. */
+    pintarEstanterias();
     refreshAll();
   });
 
@@ -1157,7 +1149,7 @@ export async function editShelf(id) {
     toast('Ese nombre ya está usado', 'error');
     return;
   }
-  openSettings();
+  pintarEstanterias();
   refreshAll();
 }
 
@@ -1201,7 +1193,7 @@ export async function deleteShelf(id) {
   if (!yes) return;
   removeShelf(id);
   toast(`Estantería «${shelf.name}» borrada`);
-  openSettings();
+  pintarEstanterias();
   refreshAll();
 }
 
@@ -1210,7 +1202,7 @@ export function addSuggestedShelves() {
   let puestas = 0;
   for (const s of SUGGESTED) if (createShelf(s)) puestas++;
   toast(puestas ? `${puestas} estanterías creadas` : 'Ya las tenías todas');
-  openSettings();
+  pintarEstanterias();
   refreshAll();
 }
 

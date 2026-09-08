@@ -65,6 +65,8 @@ export function placeInMonth(bookId, year, month) {
   book.month = month;
   updateEntry(bookId, {
     plannedYear: year, plannedMonth: month, pinnedMonth: month,
+    /* Volver a darle mes deshace el «sin fecha» de antes. */
+    sinPlan: false,
   });
   return true;
 }
@@ -73,6 +75,35 @@ export function placeInMonth(bookId, year, month) {
 export function unpinFromMonth(bookId) {
   if (!entry(bookId).pinnedMonth) return;
   updateEntry(bookId, { pinnedMonth: null });
+}
+
+/**
+ * SACARLO DEL PLAN DEL TODO: sin mes y sin año.
+ *
+ * No es lo mismo que `unpinFromMonth`, y esa diferencia es justo lo que
+ * estaba roto:
+ *
+ *   · `unpinFromMonth` quita la CHINCHETA. El libro sigue teniendo su
+ *     mes; lo único que cambia es que el generador puede moverlo.
+ *   · esto le quita el MES.
+ *
+ * Y como quien decide si un libro está atrasado es `stalledBooks`
+ * mirando `b.year` y `b.month`, quitar solo la chincheta no lo saca de
+ * la lista de atrasados. Con eso, decirle a la mascota «más adelante»
+ * no servía de nada: al día siguiente volvía a preguntar por el mismo
+ * libro, porque para el plan seguía siendo el libro de agosto.
+ *
+ * `sinPlan` tiene que quedar ESCRITO y no basta con borrar los campos:
+ * el mes de los libros de la semilla vive en el código, así que al
+ * recargar volvería solo. Es la marca de «esto fue una decisión», no
+ * un hueco.
+ */
+export function quitarDelPlan(bookId) {
+  const book = findBook(bookId);
+  if (book) { book.year = null; book.month = ''; }
+  updateEntry(bookId, {
+    plannedYear: null, plannedMonth: null, pinnedMonth: null, sinPlan: true,
+  });
 }
 
 export { fillableGaps, describeGap };

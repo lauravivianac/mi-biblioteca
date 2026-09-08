@@ -1022,15 +1022,16 @@ body {
 }
 .fab .ico { width: 22px; height: 22px; }
 
-/* ── SALIR DE CASA · historia #157 ────────────────────────────
-   Dos atajos en el margen contrario al de agregar libro: dónde
-   sentarse a leer y dónde comprar el siguiente.
+/* ── LOS ATAJOS DEL MARGEN · historias #57 y #157 ─────────────
+   Tres cosas que se usan a menudo y estaban detrás de pantallas que se
+   abren de vez en cuando: las estanterías, dónde sentarse a leer y
+   dónde comprar el siguiente.
 
    MÁS PEQUEÑOS QUE EL «+», y a propósito. Añadir un libro es lo que se
    hace en esta app todos los días; salir a un café es lo que se hace
    de vez en cuando. Dos botones del mismo tamaño dirían que las tres
    cosas pesan lo mismo, y no es verdad. */
-.salir {
+.atajos {
   position: fixed;
   /* EN COLUMNA SOBRE EL «+», Y A LA DERECHA.
 
@@ -1048,7 +1049,7 @@ body {
   display: flex; flex-direction: column; gap: 10px;
   z-index: 200;
 }
-.salir-btn {
+.atajo-btn {
   width: 42px; height: 42px;
   border-radius: var(--ctl-radius);
   /* El MISMO fondo y borde que el «+», que es lo que los hace leerse
@@ -1063,8 +1064,8 @@ body {
   box-shadow: 0 5px 16px rgb(0 0 0 / .5);
   display: flex; align-items: center; justify-content: center;
 }
-.salir-btn .ico { width: 20px; height: 20px; }
-.salir-btn:active { transform: translateY(1px); background: var(--purple); }
+.atajo-btn .ico { width: 20px; height: 20px; }
+.atajo-btn:active { transform: translateY(1px); background: var(--purple); }
 .fab:active { transform: translateY(1px); background: var(--purple); }
 
 /* ── MODALS ── */
