@@ -25,6 +25,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { chromium } from 'playwright';
+import { rutaChromium } from './navegador.mjs';
 import { createServer } from 'node:http';
 import { readFile, readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -59,7 +60,7 @@ const servidor = createServer(async (req, res) => {
 await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
 const base = `http://127.0.0.1:${servidor.address().port}`;
 
-const navegador = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const navegador = await chromium.launch({ executablePath: rutaChromium() });
 const fallos = [];
 
 console.log(`\n  ${temas.length} temas · ${laminas.size} láminas en img/tema/\n`);

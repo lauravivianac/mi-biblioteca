@@ -66,15 +66,23 @@ ok('que me siga no cambia mi botón',
 
 grupo('«TE SIGUE» VA APARTE DEL BOTÓN');
 ok('si me sigue y no la sigo', followBadge({ sigo: false, meSigue: true }) === 'Te sigue');
-ok('si nos seguimos', followBadge({ sigo: true, meSigue: true }) === 'Os seguís');
+ok('si nos seguimos', followBadge({ sigo: true, meSigue: true }) === 'Se siguen');
 ok('si solo la sigo yo, nada', followBadge({ sigo: true, meSigue: false }) === '');
 ok('si no hay nada, nada', followBadge({}) === '');
 
 grupo('LOS CONTADORES SE LEEN EN CASTELLANO');
-ok('una seguidora', seguidorasTexto(1) === '1 seguidora');
-ok('dos seguidoras', seguidorasTexto(2) === '2 seguidoras');
-ok('cero también en plural', seguidorasTexto(0) === '0 seguidoras');
-ok('siguiendo a', siguiendoTexto(5) === 'siguiendo a 5');
+/* ── SIN GÉNERO ──────────────────────────────────────────────
+   «Pero él es un amigo, no una amiga.» Las frases dicen ahora qué HACE
+   la persona, no qué es: no «tres seguidoras» sino «te siguen tres».
+   Y se comprueba que no vuelva ninguna palabra con género — cambiarlo
+   a masculino sería el mismo error del otro lado. */
+ok('una: en singular y sin género', seguidorasTexto(1) === 'te sigue 1');
+ok('dos: en plural y sin género', seguidorasTexto(2) === 'te siguen 2');
+ok('cero también en plural', seguidorasTexto(0) === 'te siguen 0');
+ok('a quién sigues', siguiendoTexto(5) === 'sigues a 5');
+ok('ninguna de las dos tiene género',
+  ![seguidorasTexto(1), seguidorasTexto(3), siguiendoTexto(2), followBadge({ sigo: true, meSigue: true })]
+    .some((t) => /seguidor|amig|lector/i.test(t)));
 ok('cuenta sirve para cualquier par', cuenta(1, 'libro', 'libros') === '1 libro');
 
 /* ── LOS AVISOS ──────────────────────────────────────────────── */

@@ -201,9 +201,9 @@ export function renderUsername() {
       </div>
     </div>
     <p class="set-fineprint">${puede.ok
-      ? 'Así te encuentran tus amigas. Puedes cambiarlo aquí abajo.'
+      ? 'Así te encuentran tus amistades. Puedes cambiarlo aquí abajo.'
       : esc(puede.error)}</p>` : `<p class="planner-hint">
-      Todavía no tienes nombre. Es con lo que te encontrarán tus amigas.
+      Todavía no tienes nombre. Es con lo que te encontrarán tus amistades.
     </p>`}
 
     ${puede.ok ? `

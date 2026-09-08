@@ -340,6 +340,12 @@ export function usernameFromHash(hash = '') {
   return m ? m[1].toLowerCase() : null;
 }
 
+/* Lo que se dice de quien todavía no ha publicado nada. Es una
+   CONSTANTE y no un literal suelto porque hay pantallas que necesitan
+   saber si el resumen dice algo o no dice nada, y compararse contra una
+   frase copiada a mano se rompe en cuanto alguien la retoca. */
+export const SIN_DATOS = 'Acaba de llegar.';
+
 /** Una frase para el perfil vacío: con pocos libros también tiene que verse bien. */
 export function resumenCorto(doc = {}) {
   const partes = [];
@@ -347,6 +353,6 @@ export function resumenCorto(doc = {}) {
   if (n?.leidosEsteAnio) partes.push(`${n.leidosEsteAnio} ${n.leidosEsteAnio === 1 ? 'libro' : 'libros'} en ${n.anio}`);
   if (n?.racha > 1) partes.push(`${n.racha} días seguidos`);
   if (doc.generos?.length) partes.push(`sobre todo ${doc.generos[0].genre}`);
-  if (!partes.length) return 'Acaba de llegar.';
+  if (!partes.length) return SIN_DATOS;
   return partes.join(' · ');
 }

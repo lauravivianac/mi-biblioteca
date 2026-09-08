@@ -22,6 +22,7 @@ import { MONTH_ORDER } from './seed.js';
 import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll, openDetail } from './views.js';
 import { lomoHtml } from './lomo.js';
+import { ico } from './icons.js';
 
 let elegidos = [];
 let busqueda = '';

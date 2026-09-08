@@ -240,7 +240,7 @@
           <div class="brand-title">Library</div>
         </div>
         <div class="header-actions">
-          <button class="icon-btn" onclick="openPeople()" aria-label="Encontrar lectoras" title="Encontrar lectoras">
+          <button class="icon-btn" onclick="openPeople()" aria-label="Encontrar quién más lee" title="Encontrar quién más lee">
             <svg class="ico" viewBox="0 0 24 24"><use href="#i-lupa"/></svg>
           </button>
           <button class="icon-btn" onclick="openNotices()" aria-label="Avisos" title="Avisos">
@@ -279,7 +279,7 @@
       </div>
       <div class="nav-item" onclick="nav('feed',this)" role="button" tabindex="0">
         <svg class="ico nav-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-fichas"/></svg>
-        <span class="nav-label">Amigas</span>
+        <span class="nav-label">Amistades</span>
       </div>
       <div class="nav-item" onclick="nav('trueque',this)" role="button" tabindex="0">
         <svg class="ico nav-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-cruce"/></svg>
@@ -342,7 +342,7 @@
       </div>
     </div>
 
-    <!-- FEED DE AMIGAS -->
+    <!-- FEED DE AMISTADES -->
     <div class="view" id="view-feed">
       <p class="planner-lede">Lo que están leyendo las personas que sigues.</p>
       <div id="feed-body"></div>
@@ -648,7 +648,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <button class="sheet-close" onclick="closeSheet('people-overlay')" aria-label="Cerrar">✕</button>
-    <div class="sheet-title">Encontrar lectoras</div>
+    <div class="sheet-title">Encontrar quién más lee</div>
     <div id="people-body"></div>
   </div>
 </div>
@@ -668,7 +668,7 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <button class="sheet-close" onclick="closeSheet('follows-overlay')" aria-label="Cerrar">✕</button>
-    <div class="sheet-title" id="follows-title">Seguidoras</div>
+    <div class="sheet-title" id="follows-title">Quién me sigue</div>
     <div id="follows-body"></div>
   </div>
 </div>

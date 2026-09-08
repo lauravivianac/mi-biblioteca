@@ -12,10 +12,10 @@
    de ser una lista de cosas bonitas que no llevan a ninguna parte.
    ───────────────────────────────────────────────────────────── */
 
-import { loadFeed } from './social.js';
-import { allBooks, addBook, updateEntry, findBook } from './store.js';
+import { loadFeed, followingOf, profilesOf, unfollow } from './social.js';
+import { allBooks, addBook, updateEntry, findBook, uid as myUid } from './store.js';
 import { activityLine, cuandoTexto, estadoVacio } from './feed-core.js';
-import { inicial } from './profile-core.js';
+import { inicial, resumenCorto, SIN_DATOS } from './profile-core.js';
 import { misBloqueos } from './moderation.js';
 import { filtrarFuera } from './moderation-core.js';
 import { $, esc, toast } from './ui.js';
@@ -23,6 +23,7 @@ import { refreshAll } from './views.js';
 import { ico } from './icons.js';
 
 let entradas = [];
+let sigo = [];              // los perfiles de quienes sigo
 let siguiendo = 0;
 let hayMas = false;
 let cargando = false;
@@ -45,6 +46,14 @@ export async function renderFeed() {
   siguiendo = r.siguiendo;
   hayMas = r.hayMas;
   pintar();
+
+  /* A QUIÉN SIGUES, que es lo que faltaba aquí.
+     Va después de pintar el feed y no antes: es la referencia, no la
+     noticia. Si tarda, el feed ya está en pantalla. */
+  const perfiles = await profilesOf(await followingOf(myUid()));
+  if (mio !== turno) return;
+  sigo = perfiles;
+  pintar();
 }
 
 export async function moreFeed() {
@@ -61,9 +70,91 @@ export async function moreFeed() {
   pintar();
 }
 
+/* ── A QUIÉN SIGUES ──────────────────────────────────────────
+   «Ya seguí a Rafael pero no me dice a quién estoy siguiendo, ni me da
+    un resumen del perfil para ver cuántos libros ha leído, ni dejar de
+    seguir y esas opciones.»
+
+   Y tenía razón: esta pestaña era un CALLEJÓN SIN SALIDA justo cuando
+   más falta hacía. Con el feed vacío decía «silencio por ahora, puedes
+   seguir a más gente» — o sea que la única salida que ofrecía era
+   seguir a MÁS personas, sin enseñarte las que ya sigues ni dejarte
+   hacer nada con ellas. La lista existía, pero escondida detrás de un
+   contador dentro de tu propio perfil.
+
+   Ahora está aquí, con lo que de verdad se quiere saber de alguien a
+   quien sigues: QUÉ ESTÁ LEYENDO y CUÁNTOS LLEVA. Las dos líneas, no
+   una — la primera versión enseñaba los números solo a quien no estaba
+   leyendo nada, o sea que a Rafael, que sí lee, nunca se le habrían
+   visto los libros que es exactamente lo que se preguntaba. Las dos
+   salen de su perfil público: aparece lo que esa persona publicó y
+   nada más.
+
+   Va SIEMPRE, con feed o sin él, pero debajo: el feed es la noticia y
+   esto es la referencia. Con el feed vacío queda arriba del todo, que
+   es justo cuando se necesita. */
+function aQuienSigues() {
+  if (!sigo.length) return '';
+  return `
+    <div class="prof-sec feed-sigues">
+      <h4 class="prof-sec-title">${sigo.length === 1 ? 'Sigues a 1 persona' : `Sigues a ${sigo.length} personas`}</h4>
+      ${sigo.map(filaDeQuienSigues).join('')}
+    </div>`;
+}
+
+/* Se exporta para poder MIRARLA de verdad. La versión anterior de esta
+   fila se comprobó pintando a mano una copia del marcado en una prueba
+   visual, y una copia a mano enseña lo que uno cree que escribió y no
+   lo que escribió: así fue como se dio por buena una pantalla que no
+   existía. Quien quiera verla, que pinte ESTA. */
+export function filaDeQuienSigues(p) {
+  const leyendo = p.leyendo?.[0];
+  const resumen = resumenCorto(p);
+  /* «Acaba de llegar» debajo de «Leyendo tal libro» se contradice a sí
+     mismo, así que con una línea de lectura los números solo salen si
+     los hay. */
+  const numeros = leyendo && resumen === SIN_DATOS ? '' : resumen;
+  const abrir = `onclick="openProfile('${esc(p.username)}')"`;
+  return `
+      <div class="pers-row">
+        <div class="pers-avatar" ${abrir}>${esc(inicial(p.name || p.username))}</div>
+        <div class="pers-txt" ${abrir}>
+          <div class="pers-name">${esc(p.name || p.username)}</div>
+          <div class="pers-handle">@${esc(p.username)}</div>
+          ${leyendo ? `<div class="pers-why">${esc(`Leyendo ${leyendo.title}`)}</div>` : ''}
+          ${numeros ? `<div class="pers-datos">${esc(numeros)}</div>` : ''}
+        </div>
+        <button class="btn-mini" onclick="dejarDeSeguir('${esc(p.uid)}')">Dejar de seguir</button>
+      </div>`;
+}
+
+/* Dejar de seguir es inmediato y callado, igual que en el perfil: si
+   avisara, tendría un coste social y nadie lo usaría. Se quita de la
+   lista al momento y el feed se rehace sin esa persona. */
+export async function dejarDeSeguir(otherUid) {
+  const antes = sigo;
+  sigo = sigo.filter((p) => p.uid !== otherUid);
+  siguiendo = Math.max(0, siguiendo - 1);
+  pintar();
+  const r = await unfollow(otherUid);
+  if (!r.ok) {
+    sigo = antes;
+    siguiendo += 1;
+    pintar();
+    toast('No se pudo. Inténtalo otra vez.', 'error');
+    return;
+  }
+  renderFeed();
+}
+
 function pintar() {
   const cuerpo = $('feed-body');
   if (!cuerpo) return;
+
+  const buscar = `
+    <button class="btn-magic full" style="margin-top:14px" onclick="openPeople()">
+      🔍 Encontrar quién más lee
+    </button>`;
 
   const vacio = estadoVacio({ siguiendo, entradas: entradas.length });
   if (vacio) {
@@ -73,9 +164,8 @@ function pintar() {
         <div class="empty-text">${esc(vacio.titulo)}</div>
       </div>
       <p class="set-fineprint" style="text-align:center">${esc(vacio.texto)}</p>
-      <button class="btn-magic full" style="margin-top:14px" onclick="openPeople()">
-        🔍 Encontrar lectoras
-      </button>`;
+      ${aQuienSigues()}
+      ${buscar}`;
     return;
   }
 
@@ -83,7 +173,8 @@ function pintar() {
     ${entradas.map(tarjeta).join('')}
     ${hayMas ? `<button class="btn-ghost full" style="margin-top:10px" onclick="moreFeed()">
       Ver más
-    </button>` : '<p class="set-fineprint" style="text-align:center">No hay nada más por ahora.</p>'}`;
+    </button>` : '<p class="set-fineprint" style="text-align:center">No hay nada más por ahora.</p>'}
+    ${aQuienSigues()}`;
 }
 
 function tarjeta(a) {

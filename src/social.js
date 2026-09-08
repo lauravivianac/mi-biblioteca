@@ -258,7 +258,7 @@ export async function quitarSeguidora(otherUid) {
     await deleteDoc(followRef(otherUid, me));
     return { ok: true };
   } catch (e) {
-    console.warn('No se pudo quitar a la seguidora:', e);
+    console.warn('No se pudo quitar a quien te sigue:', e);
     return { ok: false };
   }
 }

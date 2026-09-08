@@ -155,7 +155,7 @@ export function estadoVacio({ siguiendo = 0, entradas = 0 } = {}) {
   if (entradas > 0) return null;
   if (siguiendo === 0) {
     return {
-      titulo: 'Aquí verás lo que leen tus amigas',
+      titulo: 'Aquí verás lo que leen tus amistades',
       texto: 'Todavía no sigues a nadie. Busca a alguien por su @usuario, o mira quién ha leído lo mismo que tú.',
       accion: 'buscar',
     };
