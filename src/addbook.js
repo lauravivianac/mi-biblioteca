@@ -84,7 +84,10 @@ function render() {
   $('add-body').innerHTML = `
     <div class="auth-tabs">
       ${tab('titulo', 'Por título')}
-      ${tab('camara', 'Con la cámara')}
+      ${/* «Con la cámara» no dice qué hay que hacer con la cámara. Con
+            un código de barras y una portada detrás del mismo nombre,
+            lo único que se puede hacer es adivinar. */''}
+      ${tab('camara', 'Código de barras')}
       ${tab('manual', 'A mano')}
     </div>
     ${trabajo ? renderTrabajo()
@@ -164,23 +167,77 @@ function renderTitulo() {
    Queda un solo botón, el de la portada, que es el otro camino de
    verdad — y ahora se lee como lo que es: la alternativa para el libro
    que no tiene código. */
+/* ── Y AHORA, QUÉ HAY QUE HACER  ·  segunda vuelta ───────────
+
+     «¿Por qué no dice "toma la foto del código de barras" o algo así?
+      Están mezclados código de barras y portada, pero ninguna es clara
+      para el usuario. ¿Cuánto tiempo debo tener la cámara en el código
+      de barras? ¿Si lo leyó bien o no? No es claro.»
+
+   Tres preguntas distintas y las tres sin contestar en pantalla:
+
+   1 · QUÉ APUNTAR. La instrucción existía, pero era el mismo hueco que
+       el estado, así que en cuanto empezaba a buscar se sobrescribía
+       con «Buscando el código…» y ya no volvía. La única frase que
+       decía qué hacer duraba medio segundo. Ahora son DOS SITIOS: una
+       instrucción fija encima del vídeo, que no se toca nunca, y el
+       estado debajo, que va cambiando.
+
+   2 · CUÁNTO HAY QUE AGUANTAR. Ninguno: lee solo, en cuanto lo ve
+       nítido. Pero eso hay que decirlo, porque la pregunta es
+       razonable —con una cámara encendida y un círculo girando, lo
+       normal es pensar que hay que mantenerla quieta un rato— y la
+       respuesta no se puede deducir mirando.
+
+   3 · SI LO LEYÓ BIEN. Esta es la importante y es la más fácil: se
+       enseñan LOS DÍGITOS, agrupados igual que van impresos debajo de
+       las barras (9 786287 794108). Así no hay que creerse nada: se
+       mira el libro, se mira la pantalla, y o coinciden o no.
+
+   Y la portada deja de estar pegada al escáner como si fuera parte de
+   lo mismo: va debajo, separada, y con su pregunta delante. */
 function renderCamara() {
   return `
+    <p class="scan-guia">
+      Apunta al <b>código de barras</b> de la contraportada.
+      Se lee solo: no hay que tocar nada ni aguantar, en cuanto se vea
+      nítido lo coge.
+    </p>
     <div class="scan-stage">
       <video id="scan-video" playsinline muted autoplay></video>
-      <div class="scan-frame buscando"></div>
+      <div class="scan-frame buscando" id="scan-frame"></div>
     </div>
-    <div class="trabajo">
+    <div class="trabajo" id="scan-estado">
       <span class="trabajo-giro" aria-hidden="true"></span>
-      <span class="trabajo-txt" id="scan-hint">
-        Encuadra el código de barras de la contraportada dentro del marco.
-      </span>
+      <span class="trabajo-txt" id="scan-hint">Buscando el código…</span>
     </div>
-    <div class="store-actions">
+    <div class="scan-otro">
+      <p class="set-fineprint">¿Este libro no tiene código de barras?</p>
       <button class="btn-ghost full" onclick="shootCover()">
-        ${ico('camara')} No tiene código: foto de la portada
+        ${ico('camara')} Tomar foto de la portada
       </button>
     </div>`;
+}
+
+/* Los dígitos como van impresos debajo de las barras: 1, 6 y 6. Se
+   enseñan tal cual para que se puedan COMPARAR con el libro que se
+   tiene en la mano, que es la única forma de contestar «¿lo leyó
+   bien?» sin pedir un acto de fe. */
+export function agruparCodigo(code) {
+  const d = String(code || '').replace(/\D/g, '');
+  if (d.length !== 13) return String(code || '');
+  return `${d[0]} ${d.slice(1, 7)} ${d.slice(7)}`;
+}
+
+/** El estado de debajo del vídeo: girando o quieto, y con qué texto. */
+function estado(texto, { girando = true, codigo = '' } = {}) {
+  const caja = $('scan-estado');
+  if (!caja) return;
+  caja.innerHTML = `
+    ${girando ? '<span class="trabajo-giro" aria-hidden="true"></span>' : ''}
+    <span class="trabajo-txt" id="scan-hint">
+      ${codigo ? `<b class="scan-codigo">${esc(agruparCodigo(codigo))}</b>` : ''}${esc(texto)}
+    </span>`;
 }
 
 function renderManual() {
@@ -326,8 +383,8 @@ async function startCamera() {
     if (v) { v.srcObject = s; await v.play().catch(() => {}); }
     buscarCodigoSinParar();
   } catch {
-    const hint = $('scan-hint');
-    if (hint) hint.innerHTML = 'No se pudo abrir la cámara. Revisa el permiso, o añade el libro por título.';
+    estado('No se pudo abrir la cámara. Revisa el permiso, o añade el libro por título.',
+      { girando: false });
   }
 }
 
@@ -348,17 +405,18 @@ async function buscarCodigoSinParar() {
   mirando = true;
 
   const v = $('scan-video');
-  const hint = $('scan-hint');
   if (!v) { mirando = false; return; }
-  if (hint) hint.textContent = 'Buscando el código…';
+  /* Volver a mirar tiene que VERSE: si el marco se quedó quieto tras
+     leer un código que no estaba en los catálogos, la pantalla seguiría
+     diciendo que ya terminó mientras la cámara busca otra vez. */
+  $('scan-frame')?.classList.replace('leido', 'buscando');
+  estado('Buscando el código…');
 
   const desde = Date.now();
   const aviso = setInterval(() => {
     if (!mirando) return;
-    const h = $('scan-hint');
-    if (h && Date.now() - desde > 8000) {
-      h.textContent = 'Sigo buscando… acércate un poco más, o busca mejor luz. '
-        + 'Si el libro no tiene código, usa la foto de la portada.';
+    if (Date.now() - desde > 8000) {
+      estado('Sigo buscando… acércate un poco más, o busca mejor luz.');
     }
   }, 1000);
 
@@ -374,23 +432,33 @@ async function buscarCodigoSinParar() {
   await usarCodigo(code);
 }
 
-async function usarCodigo(code) {
-  const hint = $('scan-hint');
-  if (hint) hint.textContent = 'Código leído. Buscando el libro…';
+/* Se exporta para que la prueba de navegador ejecute ESTA función y no
+   una copia suya. Es lo mismo que se hizo con `filaDeQuienSigues`: una
+   copia enseña lo que uno cree que escribió, no lo que escribió. */
+export async function usarCodigo(code) {
+  /* «Código leído» pide que te lo creas. Los dígitos, no: están
+     impresos debajo de las barras del libro que tienes en la mano, así
+     que o coinciden o no, y eso se ve de un vistazo. Era la pregunta
+     más directa de las tres —«¿si lo leyó bien o no?»— y la que menos
+     cuesta contestar. */
+  $('scan-frame')?.classList.replace('buscando', 'leido');
+  estado(' · Buscando el libro…', { codigo: code });
 
   const res = await lookupByIsbn(code);
   if (!res.ok) {
-    if (hint) {
-      /* «Prueba con la portada» es un mal consejo si lo que pasa es
-         que los catálogos no contestan: la foto acaba en la misma
-         consulta y va a fallar igual. Leímos su código bien; lo que
-         falta es el otro lado. */
-      hint.textContent = {
-        'isbn-invalido': 'Ese código no es un ISBN válido. Prueba con la portada.',
-        'catalogos-caidos': 'Leímos el código, pero los catálogos no contestan ahora mismo. '
-          + 'Vuelve a intentarlo en un rato.',
-      }[res.reason] || 'El código no está en los catálogos. Prueba con la portada.';
-    }
+    /* «Prueba con la portada» es un mal consejo si lo que pasa es que
+       los catálogos no contestan: la foto acaba en la misma consulta y
+       va a fallar igual. Leímos su código bien; lo que falta es el otro
+       lado.
+
+       El código se sigue enseñando en los tres casos: si no coincide
+       con el del libro, ahí está el fallo y se ve solo. */
+    estado({
+      'isbn-invalido': ' · no es un ISBN válido. Prueba con la foto de la portada.',
+      'catalogos-caidos': ' · lo leímos bien, pero los catálogos no contestan ahora mismo. '
+        + 'Vuelve a intentarlo en un rato.',
+    }[res.reason] || ' · no está en los catálogos. Prueba con la foto de la portada.',
+    { girando: false, codigo: code });
     /* Y SE VUELVE A MIRAR. Sin esto, un código que no está en los
        catálogos dejaba la cámara encendida y ciega: el mensaje decía
        qué pasó y luego no pasaba nada nunca más, ni con ese libro ni
@@ -414,8 +482,8 @@ export async function shootCover() {
      acababa en «no lo reconocimos», que es mentira: no es que no se
      reconociera, es que no había foto. */
   if (!v.videoWidth || !v.videoHeight) {
-    const hint = $('scan-hint');
-    if (hint) hint.textContent = 'La cámara todavía no da imagen. Espera un segundo y vuelve a intentarlo.';
+    estado('La cámara todavía no da imagen. Espera un segundo y vuelve a intentarlo.',
+      { girando: false });
     return;
   }
 

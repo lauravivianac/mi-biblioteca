@@ -245,6 +245,98 @@ console.log('\n─── SI LA CÁMARA AÚN NO DA IMAGEN ───');
   await ctx.close();
 }
 
+/* ── 5 · LAS TRES PREGUNTAS SIN CONTESTAR ────────────────────
+
+     «¿Por qué no dice "toma la foto del código de barras" o algo así?
+      Están mezclados código de barras y portada, pero ninguna es clara
+      para el usuario. ¿Cuánto tiempo debo tener la cámara en el código
+      de barras? ¿Si lo leyó bien o no? No es claro.»
+
+   Tres preguntas distintas: QUÉ apuntar, CUÁNTO aguantar, y si lo leyó
+   BIEN. La pantalla no contestaba ninguna. */
+
+console.log('\n─── ¿QUÉ HAY QUE HACER, Y CUÁNTO? ───');
+{
+  const { p, ctx, errores } = await abrir();
+  const t = await p.evaluate(() => ({
+    pestanas: [...document.querySelectorAll('.auth-tabs .auth-tab')].map((b) => b.textContent.trim()),
+    guia: document.querySelector('.scan-guia')?.textContent?.replace(/\s+/g, ' ').trim() || '',
+    /* La guía tiene que seguir ahí MIENTRAS busca: antes era el mismo
+       hueco que el estado y se la comía «Buscando el código…». */
+    estado: document.getElementById('scan-hint')?.textContent?.trim() || '',
+    otro: document.querySelector('.scan-otro')?.textContent?.replace(/\s+/g, ' ').trim() || '',
+    separada: !!document.querySelector('.scan-otro'),
+  }));
+
+  ok('LA PESTAÑA DICE QUÉ HACE: «Código de barras»',
+    t.pestanas.includes('Código de barras'), t.pestanas.join(' · '));
+  ok('y encima del vídeo dice qué hay que apuntar',
+    /código de barras/i.test(t.guia) && /contraportada/i.test(t.guia), t.guia);
+  ok('CONTESTA CUÁNTO HAY QUE AGUANTAR: nada, lee solo',
+    /se lee solo|no hay que|en cuanto/i.test(t.guia), t.guia);
+  ok('LA GUÍA SIGUE EN PANTALLA mientras busca',
+    t.guia.length > 0 && /buscando/i.test(t.estado),
+    'antes la instrucción y el estado eran el mismo hueco, y el estado se la comía');
+  ok('la portada está separada, con su propia pregunta',
+    t.separada && /no tiene código de barras/i.test(t.otro), t.otro);
+  ok('y su botón dice lo que hace', /foto de la portada/i.test(t.otro), t.otro);
+  ok('sin errores de página', errores.length === 0, errores.join(' | '));
+  await ctx.close();
+}
+
+console.log('\n─── ¿LO LEYÓ BIEN? ───');
+{
+  const { p, ctx, errores } = await abrir();
+  /* El código del libro de la pantalla que se envió. Se llama a la
+     función DE VERDAD —por eso se exporta— y no a una copia. Los
+     catálogos no contestan en esta prueba, que es además el caso en el
+     que más falta hace ver los dígitos: si el libro no aparece, lo
+     primero que hay que poder descartar es que se leyera mal. */
+  await p.evaluate(() => { window.__addbook.usarCodigo('9786287794108'); });
+  await p.waitForTimeout(1500);
+
+  const v = await p.evaluate(() => ({
+    pista: document.getElementById('scan-hint')?.textContent?.replace(/\s+/g, ' ').trim() || '',
+    digitos: document.querySelector('.scan-codigo')?.textContent?.trim() || '',
+    late: !!document.querySelector('.scan-frame.buscando'),
+    leido: !!document.querySelector('.scan-frame.leido'),
+  }));
+
+  ok('SE ENSEÑAN LOS DÍGITOS QUE LEYÓ', v.digitos.length > 0, `pista: «${v.pista}»`);
+  ok('agrupados como van impresos debajo de las barras',
+    v.digitos === '9 786287 794108', v.digitos);
+  ok('EL MARCO DEJA DE LATIR: ya no está buscando', !v.late && v.leido);
+  ok('sin errores de página', errores.length === 0, errores.join(' | '));
+  await ctx.close();
+}
+
+/* Y la función que los agrupa, en el navegador y no en Node: aquí
+   `addbook.js` arrastra la cámara y Firebase, así que importarlo suelto
+   falla. La primera versión lo intentaba con un `catch` que devolvía un
+   objeto vacío, y entonces las cuatro comprobaciones NO SE EJECUTABAN y
+   nadie se enteraba — una prueba que se salta en silencio es peor que
+   no tenerla, porque además da tranquilidad. */
+console.log('\n─── LOS DÍGITOS, AGRUPADOS ───');
+{
+  const { p, ctx } = await abrir();
+  const r = await p.evaluate(() => {
+    const f = window.__addbook.agruparCodigo;
+    return {
+      hay: typeof f === 'function',
+      ean: f('9786287794108'),
+      conGuiones: f('978-628-7794-10-8'),
+      corto: f('12345'),
+      vacio: f(null),
+    };
+  });
+  ok('la función existe donde se la busca', r.hay);
+  ok('un EAN-13 se parte en 1, 6 y 6', r.ean === '9 786287 794108', r.ean);
+  ok('los guiones del ISBN impreso dan igual', r.conGuiones === '9 786287 794108', r.conGuiones);
+  ok('lo que no mide 13 se deja tal cual', r.corto === '12345', r.corto);
+  ok('y sin código no se inventa nada', r.vacio === '', `«${r.vacio}»`);
+  await ctx.close();
+}
+
 await navegador.close();
 servidor.close();
 
