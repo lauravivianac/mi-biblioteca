@@ -157,7 +157,7 @@ async function preguntarAOverpass(centro) {
  * y «no hemos podido preguntar» son cosas distintas y la pantalla tiene
  * que poder decir cuál de las dos pasó.
  */
-export async function buscarSitios(place = {}, { desdeAqui = null } = {}) {
+export async function buscarSitios(place = {}, { desdeAqui = null, foco = 'todo' } = {}) {
   const city = String(place.city ?? '').trim();
   if (!city && !desdeAqui) return { grupos: [], centro: null, motivo: 'sin-ciudad', detalle: '' };
 
@@ -198,7 +198,7 @@ export async function buscarSitios(place = {}, { desdeAqui = null } = {}) {
     if (clave) guardar(clave, lugares);
   }
 
-  const grupos = agrupar(lugares, centro);
+  const grupos = agrupar(lugares, centro, { foco });
   return { grupos, centro, motivo: grupos.length ? null : 'sin-resultados', detalle: '' };
 }
 

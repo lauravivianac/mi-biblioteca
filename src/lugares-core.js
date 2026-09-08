@@ -52,10 +52,42 @@ import { sinTildes, unSoloEspacio } from './text-core.js';
    con gente dentro, y con una excusa evidente para estar ahí con un
    libro en la mano. Ordenadas como se enseñan. */
 export const TIPOS = [
-  { id: 'biblioteca', icono: '📚', label: 'Bibliotecas', consulta: ['"amenity"="library"'] },
-  { id: 'libreria', icono: '📖', label: 'Librerías', consulta: ['"shop"="books"'] },
-  { id: 'cafe', icono: '☕', label: 'Cafeterías', consulta: ['"amenity"="cafe"'] },
+  { id: 'biblioteca', icono: 'fichas', label: 'Bibliotecas', consulta: ['"amenity"="library"'] },
+  { id: 'libreria', icono: 'tienda', label: 'Librerías', consulta: ['"shop"="books"'] },
+  { id: 'cafe', icono: 'taza', label: 'Cafeterías', consulta: ['"amenity"="cafe"'] },
 ];
+
+/* ── A QUÉ SE ENTRA ──────────────────────────────────────────
+
+     «Esa funcionalidad está muy oculta. Me gustaría que fuera más
+      intuitiva, como un botón del lado izquierdo en el margen, con una
+      taza de café y una como una tienda, así pudiera abrir dónde tomar
+      café y dónde comprar.»
+
+   Los dos botones del margen no abren la misma pantalla: cada uno
+   abre LO SUYO. Un atajo que te deja delante de una lista donde
+   todavía hay que buscar no es un atajo.
+
+   Pero tampoco es un callejón: dentro se puede cambiar de idea sin
+   volver a salir, con las pestañas de arriba. */
+export const FOCOS = {
+  cafe: { titulo: 'Dónde tomar café', tipos: ['cafe'] },
+  comprar: { titulo: 'Dónde comprar libros', tipos: ['libreria'] },
+  todo: { titulo: 'Dónde leer y comprar libros', tipos: null },
+};
+
+/** Las pestañas de dentro, para poder cambiar de idea. */
+export const PESTANAS = [
+  { id: 'todo', label: 'Todo' },
+  { id: 'cafe', label: 'Cafés' },
+  { id: 'comprar', label: 'Librerías' },
+];
+
+/** ¿Entra este tipo de sitio en el foco elegido? */
+export function enFoco(tipo, foco = 'todo') {
+  const f = FOCOS[foco] || FOCOS.todo;
+  return !f.tipos || f.tipos.includes(tipo);
+}
 
 const POR_ETIQUETA = {
   library: 'biblioteca',
@@ -168,9 +200,9 @@ export function quitarRepetidos(lugares) {
  * centro es además el sitio neutral por defecto: es a donde va la gente
  * cuando queda con alguien a quien no conoce.
  */
-export function agrupar(lugares, centro, { tope = TOPE_POR_TIPO } = {}) {
+export function agrupar(lugares, centro, { tope = TOPE_POR_TIPO, foco = 'todo' } = {}) {
   const limpios = quitarRepetidos(lugares);
-  return TIPOS.map((t) => ({
+  return TIPOS.filter((t) => enFoco(t.id, foco)).map((t) => ({
     ...t,
     lugares: limpios
       .filter((l) => l.tipo === t.id)

@@ -29,12 +29,13 @@
 import { buscarSitios, olvidarSitios, dondeEstoy } from './lugares.js';
 import {
   distanciaTexto, enlaceMapa, propuesta, MOTIVOS, CREDITO, PROPOSITOS,
-  sePuedeReintentar,
+  sePuedeReintentar, FOCOS, PESTANAS,
 } from './lugares-core.js';
 import { tieneCiudad } from './place-core.js';
 import { MAX_MENSAJE } from './chat-core.js';
 import { myPlace } from './store.js';
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
+import { ico } from './icons.js';
 
 let grupos = [];
 let ciudad = null;
@@ -48,21 +49,41 @@ let aqui = null;
    esto, lo unico que se puede contar de vuelta es «no funciona», y con
    eso no se arregla nada. */
 let detalle = '';
+/* A qué se entró: todo, cafés o librerías. Cada botón del margen abre
+   lo suyo — un atajo que te deja delante de una lista donde todavía hay
+   que buscar no es un atajo. */
+let foco = 'todo';
 
 /** Para quedar con alguien: se abre desde la conversación. */
 export const openLugares = () => abrir('quedar');
 
-/** Para ir a leer o a comprar libros: se abre desde la Biblioteca. */
-export const openDondeLeer = () => abrir('leer');
+/** Los tres caminos de «salir de casa». Los dos primeros son los
+    botones del margen; el tercero, el de la Biblioteca. */
+export const openDondeTomarCafe = () => abrir('leer', 'cafe');
+export const openDondeComprar = () => abrir('leer', 'comprar');
+export const openDondeLeer = () => abrir('leer', 'todo');
 
-async function abrir(cual) {
+/** Cambiar de idea sin salir de la hoja. */
+export function verLugares(cual) {
+  foco = cual;
+  const titulo = $('lugares-titulo');
+  if (titulo) titulo.textContent = FOCOS[foco]?.titulo || FOCOS.todo.titulo;
+  cargar();
+}
+
+async function abrir(cual, cualFoco = 'todo') {
   proposito = cual;
+  foco = proposito === 'quedar' ? 'todo' : cualFoco;
   ciudad = myPlace();
   grupos = [];
   aqui = null;
   detalle = '';
   const titulo = $('lugares-titulo');
-  if (titulo) titulo.textContent = PROPOSITOS[proposito].titulo;
+  if (titulo) {
+    titulo.textContent = proposito === 'quedar'
+      ? PROPOSITOS.quedar.titulo
+      : (FOCOS[foco]?.titulo || FOCOS.todo.titulo);
+  }
   openSheet('lugares-overlay');
   pintar();
   if (!tieneCiudad(ciudad)) { pintar('sin-ciudad'); return; }
@@ -115,7 +136,7 @@ async function cargar() {
   if (cargando) return;
   cargando = true;
   pintar();
-  const r = await buscarSitios(ciudad, { desdeAqui: aqui });
+  const r = await buscarSitios(ciudad, { desdeAqui: aqui, foco });
   cargando = false;
   grupos = r.grupos;
   detalle = r.detalle || '';
@@ -174,14 +195,25 @@ function pintar(motivo = null) {
     ? 'Cafeterías, librerías y bibliotecas cerca de donde estás.'
     : modo.lede(ciudad?.city || 'tu ciudad'))}</p>
     <p class="set-fineprint lugares-intro">${esc(modo.pie)}</p>
+    ${modo.cercaDeMi ? pestanas() : ''}
     ${modo.cercaDeMi ? cambiarDeCentro() : ''}
     ${grupos.map((g) => `
       <div class="prof-sec">
-        <h4 class="prof-sec-title">${g.icono} ${esc(g.label)}</h4>
+        <h4 class="prof-sec-title">${ico(g.icono, 'ico-sm')} ${esc(g.label)}</h4>
         ${g.lugares.map(fila).join('')}
       </div>`).join('')}
     <p class="set-fineprint">${esc(CREDITO)}</p>`;
 }
+
+/* Entrar por el atajo del café no puede dejarte encerrada en los cafés:
+   aquí se cambia de idea sin volver a salir. */
+const pestanas = () => `
+  <div class="auth-tabs lugares-tabs">
+    ${PESTANAS.map((p) => `
+      <button class="auth-tab ${foco === p.id ? 'active' : ''}" onclick="verLugares('${p.id}')">
+        ${esc(p.label)}
+      </button>`).join('')}
+  </div>`;
 
 /* Un botón y no un interruptor permanente: pedir la ubicación es algo
    que se hace cuando hace falta, no un ajuste que se queda encendido. */

@@ -36,7 +36,7 @@
 import {
   TIPOS, TOPE_POR_TIPO, consultaOverpass, leerRespuesta, distanciaKm,
   quitarRepetidos, agrupar, cuantos, distanciaTexto, enlaceMapa, propuesta,
-  MOTIVOS, PROPOSITOS, sePuedeReintentar,
+  MOTIVOS, PROPOSITOS, sePuedeReintentar, FOCOS, PESTANAS, enFoco,
 } from '../src/lugares-core.js';
 import { geohash, PRECISION } from '../src/place-core.js';
 
@@ -320,6 +320,58 @@ ok('y quedando se avisa de que no se manda solo',
 ok('cada uno sabe presentarse con el nombre de la ciudad',
   PROPOSITOS.leer.lede('Bogotá').includes('Bogotá')
   && PROPOSITOS.quedar.lede('Bogotá').includes('Bogotá'));
+
+/* ── LOS DOS ATAJOS DEL MARGEN ───────────────────────────────
+
+     «Esa funcionalidad está muy oculta. Me gustaría que fuera más
+      intuitiva, como un botón del lado izquierdo en el margen, con una
+      taza de café y una como una tienda, así pudiera abrir dónde tomar
+      café y dónde comprar.»
+
+   Estaba detrás de un botón dentro de la Biblioteca, entre otros dos.
+   Ahora hay dos botones en el margen, y cada uno abre LO SUYO: un
+   atajo que te deja delante de una lista donde todavía hay que buscar
+   no es un atajo. */
+
+grupo('CAFÉ Y TIENDA, CADA UNO A LO SUYO');
+
+ok('el atajo del café enseña cafeterías y nada más',
+  FOCOS.cafe.tipos.join() === 'cafe');
+ok('el de la tienda, librerías y nada más',
+  FOCOS.comprar.tipos.join() === 'libreria');
+ok('y «todo» no filtra nada', FOCOS.todo.tipos === null);
+ok('cada uno se llama por lo que hace',
+  /caf/i.test(FOCOS.cafe.titulo) && /comprar/i.test(FOCOS.comprar.titulo));
+
+ok('una cafetería entra en el foco del café', enFoco('cafe', 'cafe'));
+ok('y una librería no', !enFoco('libreria', 'cafe'));
+ok('en «todo» entra todo',
+  ['cafe', 'libreria', 'biblioteca'].every((t) => enFoco(t, 'todo')));
+ok('un foco que no existe no esconde nada', enFoco('biblioteca', 'marte'));
+
+/* Filtrar de verdad la lista, no solo el título. */
+const soloCafes = agrupar(muchas, CENTRO, { foco: 'cafe' });
+ok('AL ENTRAR POR EL CAFÉ, la lista trae solo cafeterías',
+  soloCafes.length === 1 && soloCafes[0].id === 'cafe');
+ok('y por la tienda, ninguna cafetería se cuela',
+  !agrupar(muchas, CENTRO, { foco: 'comprar' }).some((g) => g.id === 'cafe'));
+
+/* Pero un atajo no puede ser un callejón. */
+ok('desde dentro se puede volver a verlo todo',
+  PESTANAS.some((p) => p.id === 'todo'));
+ok('y llegar a los otros dos sin salir de la hoja',
+  PESTANAS.some((p) => p.id === 'cafe') && PESTANAS.some((p) => p.id === 'comprar'));
+ok('cada pestaña corresponde a un foco de verdad',
+  PESTANAS.every((p) => FOCOS[p.id]));
+
+/* Los iconos son del pliego de la app, no emojis. `src/icons.js`
+   explica por qué: un emoji lo dibuja el teléfono, cada uno el suyo, y
+   una fila de ellos es lo que hace que una app parezca hecha por una
+   máquina. Que el símbolo exista en el HTML lo comprueba
+   `test:pantallas`, que busca iconos huérfanos. */
+ok('las tres clases usan iconos dibujados, no emojis',
+  TIPOS.every((t) => /^[a-z]+$/.test(t.icono)),
+  TIPOS.map((t) => t.icono).join(', '));
 
 /* ── LO QUE SE PROMETE ───────────────────────────────────────── */
 

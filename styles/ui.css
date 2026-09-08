@@ -553,7 +553,12 @@
 
 /* La app solo se ve con sesión iniciada */
 body:not(.signed-in) .app-wrapper,
-body:not(.signed-in) .fab { display: none; }
+/* Sin sesión no hay ni «+» ni atajos para salir de casa: los dos
+   necesitan tu biblioteca y tu ciudad. Los botones del margen se
+   quedaron fuera de esta regla al añadirlos y se veían en la pantalla
+   de entrada, encima del formulario. */
+body:not(.signed-in) .fab,
+body:not(.signed-in) .salir { display: none; }
 
 /* Foco visible: quien navega con teclado tiene que ver dónde está */
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 4px; }
@@ -722,6 +727,9 @@ body:not(.signed-in) .fab { display: none; }
    hasta que le des a Enviar» y «BIBLIOTECAS» se leen como un mismo
    bloque. */
 .lugares-intro { margin: 0 0 20px; }
+.lugares-tabs { margin-bottom: 14px; }
+/* El icono de cada grupo, alineado con su nombre. */
+.prof-sec-title .ico { display: inline-block; vertical-align: -2px; margin-right: 5px; }
 
 /* Lo que dijo el servicio al fallar, en pequeño. No es para leerlo: es
    para poder copiarlo y contarlo, que es lo que convierte un «no

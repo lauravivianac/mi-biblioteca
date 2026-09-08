@@ -1021,6 +1021,39 @@ body {
   transition: transform 0.15s, background 0.15s;
 }
 .fab .ico { width: 22px; height: 22px; }
+
+/* ── SALIR DE CASA · historia #157 ────────────────────────────
+   Dos atajos en el margen contrario al de agregar libro: dónde
+   sentarse a leer y dónde comprar el siguiente.
+
+   MÁS PEQUEÑOS QUE EL «+», y a propósito. Añadir un libro es lo que se
+   hace en esta app todos los días; salir a un café es lo que se hace
+   de vez en cuando. Dos botones del mismo tamaño dirían que las tres
+   cosas pesan lo mismo, y no es verdad. */
+.salir {
+  position: fixed;
+  bottom: calc(22px + env(safe-area-inset-bottom, 0));
+  left: 18px;
+  display: flex; gap: 10px;
+  z-index: 200;
+}
+.salir-btn {
+  width: 42px; height: 42px;
+  border-radius: var(--ctl-radius);
+  /* El MISMO fondo y borde que el «+», que es lo que los hace leerse
+     como la misma familia de botones y no como parte del dibujo del
+     fondo. Con el color de superficie se confundían con la ilustración
+     de la mesa, que es exactamente la queja de partida: que estaba
+     escondido. */
+  background: var(--fab-bg);
+  color: var(--fab-color);
+  border: 1px solid var(--fab-borde);
+  cursor: pointer;
+  box-shadow: 0 5px 16px rgb(0 0 0 / .5);
+  display: flex; align-items: center; justify-content: center;
+}
+.salir-btn .ico { width: 20px; height: 20px; }
+.salir-btn:active { transform: translateY(1px); background: var(--purple); }
 .fab:active { transform: translateY(1px); background: var(--purple); }
 
 /* ── MODALS ── */
