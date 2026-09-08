@@ -16,6 +16,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { chromium } from 'playwright';
+import { rutaChromium } from './navegador.mjs';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -62,7 +63,7 @@ connectAuthEmulator(auth, 'http://${AUTH}', { disableWarnings: true });
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 `;
 
-const navegador = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const navegador = await chromium.launch({ executablePath: rutaChromium() });
 const ctx = await navegador.newContext({ viewport: { width: 420, height: 880 }, deviceScaleFactor: 2 });
 const pagina = await ctx.newPage();
 

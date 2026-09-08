@@ -1065,6 +1065,16 @@ body:not(.signed-in) .fab { display: none; }
 .pers-name { font-size: 14px; color: var(--text); line-height: 1.35; }
 .pers-handle { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 .pers-why { font-size: 11.5px; color: var(--lilac); margin-top: 3px; font-style: italic; }
+/* Los números de quien sigues. Van en su propia línea y NO en cursiva:
+   «Leyendo tal libro» es una frase y «12 libros en 2026» es un dato, y
+   si los dos se ven igual hay que leerlos para distinguirlos. */
+.pers-datos { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* «A quién sigues» dentro del feed. El feed es la noticia y esto la
+   referencia, así que se separa con la misma raya que el resto de la
+   app usa para decir «esto ya es otra cosa». Sin ella, el título se
+   pegaba al texto de arriba y parecían el mismo bloque. */
+.feed-sigues { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-soft); }
 
 /* El punto de avisos sin leer */
 .notice-dot {

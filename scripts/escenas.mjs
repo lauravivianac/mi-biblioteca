@@ -22,6 +22,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import { chromium } from 'playwright';
+import { rutaChromium } from './navegador.mjs';
 import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
@@ -38,7 +39,7 @@ await mkdir(destino, { recursive: true });
 const ANCHO = 1200;
 const CALIDAD = 0.82;
 
-const navegador = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const navegador = await chromium.launch({ executablePath: rutaChromium() });
 const pagina = await navegador.newPage();
 
 const entradas = (await readdir(origen)).filter((f) => /\.(png|jpe?g|webp)$/i.test(f)).sort();

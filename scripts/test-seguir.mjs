@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   EL BOTÓN DE SEGUIR, ¿ESTÁ?
+   SEGUIR A ALGUIEN: EL BOTÓN, Y LO QUE PASA DESPUÉS
 
      npm run test:seguir
 
@@ -101,6 +101,52 @@ comprobar('en el perfil de OTRA persona no se pinta esta relación',
 
 comprobar('en mi propio perfil no hay botón de seguirme',
   !socialui.relationSlot(YO).includes('toggleFollow'));
+
+/* ── Y DESPUÉS DE SEGUIR, ¿QUÉ? ──────────────────────────────
+   «Ya seguí a Rafael pero no me dice a quién estoy siguiendo, ni me da
+    un resumen del perfil para ver cuántos libros ha leído.»
+
+   El botón funcionaba y aun así la pantalla no servía: seguías a
+   alguien y la pestaña seguía sin nombrarlo. Lo que se comprueba aquí
+   es la fila de esa lista, y en particular LO QUE SE PREGUNTABA —los
+   libros— porque la primera versión los enseñaba solo a quien no
+   estaba leyendo nada, o sea que a Rafael, que sí lee, no se le habrían
+   visto nunca. */
+
+console.log('\n─── A QUIÉN SIGUES ───');
+
+const feedui = await import('../src/feedui.js');
+
+const RAFA = {
+  uid: 'u1', username: 'rafaelmartinez', name: 'Rafael Martinez',
+  leyendo: [{ title: 'El nombre de la rosa' }],
+  numeros: { anio: 2026, leidosEsteAnio: 7, racha: 4 },
+};
+const fila = feedui.filaDeQuienSigues(RAFA);
+
+comprobar('sale su nombre', fila.includes('Rafael Martinez'), fila);
+comprobar('y su @usuario, que es por donde se abre el perfil',
+  fila.includes("openProfile('rafaelmartinez')"), fila);
+comprobar('dice qué está leyendo', fila.includes('Leyendo El nombre de la rosa'), fila);
+comprobar('Y CUÁNTOS LIBROS LLEVA, aunque esté leyendo algo',
+  fila.includes('7 libros en 2026'), fila);
+comprobar('se puede dejar de seguir desde aquí',
+  fila.includes(`dejarDeSeguir('${RAFA.uid}')`), fila);
+comprobar('y el botón dice qué hace, no solo «Dejar»',
+  fila.includes('Dejar de seguir'), fila);
+
+/* Quien acaba de llegar no tiene números que enseñar, y decirlo es
+   mejor que dejar el hueco en blanco. */
+const nuevo = feedui.filaDeQuienSigues({ uid: 'u3', username: 'juanp', name: 'Juan P.' });
+comprobar('a quien acaba de llegar se le dice, no se le deja en blanco',
+  nuevo.includes('Acaba de llegar'), nuevo);
+
+/* Pero «acaba de llegar» debajo de «leyendo tal libro» se contradice. */
+const leeSinPublicar = feedui.filaDeQuienSigues({
+  uid: 'u4', username: 'marta', name: 'Marta', leyendo: [{ title: 'Cien años de soledad' }],
+});
+comprobar('y no se le dice a quien SÍ está leyendo algo',
+  !leeSinPublicar.includes('Acaba de llegar'), leeSinPublicar);
 
 console.log(`\n  ${bien} comprobaciones pasaron, ${mal} fallaron.\n`);
 process.exit(mal ? 1 : 0);
