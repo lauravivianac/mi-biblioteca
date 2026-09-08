@@ -229,14 +229,23 @@ export function agruparCodigo(code) {
   return `${d[0]} ${d.slice(1, 7)} ${d.slice(7)}`;
 }
 
-/** El estado de debajo del vídeo: girando o quieto, y con qué texto. */
-function estado(texto, { girando = true, codigo = '' } = {}) {
+/**
+ * El estado de debajo del vídeo: girando o quieto, y con qué texto.
+ *
+ * `detalle` es lo que dijeron los catálogos al fallar, en letra
+ * pequeña. Va en pantalla por lo mismo que en la hoja de los cafés: sin
+ * él, lo único que se puede contar de vuelta es «no funcionó», y con
+ * eso no se arregla nada. Con el detalle del mapa se encontró la causa
+ * real en una tarde.
+ */
+function estado(texto, { girando = true, codigo = '', detalle = '' } = {}) {
   const caja = $('scan-estado');
   if (!caja) return;
   caja.innerHTML = `
     ${girando ? '<span class="trabajo-giro" aria-hidden="true"></span>' : ''}
     <span class="trabajo-txt" id="scan-hint">
       ${codigo ? `<b class="scan-codigo">${esc(agruparCodigo(codigo))}</b>` : ''}${esc(texto)}
+      ${detalle ? `<span class="lugares-detalle">Detalle técnico: ${esc(detalle)}</span>` : ''}
     </span>`;
 }
 
@@ -457,8 +466,14 @@ export async function usarCodigo(code) {
       'isbn-invalido': ' · no es un ISBN válido. Prueba con la foto de la portada.',
       'catalogos-caidos': ' · lo leímos bien, pero los catálogos no contestan ahora mismo. '
         + 'Vuelve a intentarlo en un rato.',
-    }[res.reason] || ' · no está en los catálogos. Prueba con la foto de la portada.',
-    { girando: false, codigo: code });
+      /* «No está» y «no está en el que pudo contestar» no son lo mismo,
+         y mandar a por la portada en el segundo caso es mandar a la
+         misma consulta que acaba de fallar. */
+      'no-encontrado-a-medias': ' · lo leímos bien, pero uno de los dos catálogos no contestó '
+        + 'y el otro no lo tiene. Vuelve a intentarlo en un rato antes de darlo por perdido.',
+    }[res.reason] || ' · no está en los catálogos. Prueba con la foto de la portada, '
+      + 'o escribe el título a mano.',
+    { girando: false, codigo: code, detalle: res.detalle });
     /* Y SE VUELVE A MIRAR. Sin esto, un código que no está en los
        catálogos dejaba la cámara encendida y ciega: el mensaje decía
        qué pasó y luego no pasaba nada nunca más, ni con ese libro ni
@@ -542,7 +557,7 @@ export async function shootCover() {
      ellos— ni tiene sentido mandarla a rellenar la ficha a mano: la
      foto ya está tomada y dentro de un rato esta misma búsqueda
      funciona. */
-  if (res.reason === 'catalogos-caidos') {
+  if (res.reason === 'catalogos-caidos' || res.reason === 'sin-coincidencia-a-medias') {
     /* La foto tampoco se tira aquí. Se vuelve a la cámara, pero con el
        libro ya en la ficha y la foto puesta: si los catálogos no
        contestan, al menos queda guardarlo a mano sin repetir la foto. */
@@ -553,7 +568,13 @@ export async function shootCover() {
       author: '', pages: '—', cover: photo, genre: 'Novela contemporánea', source: 'foto',
     };
     render();
-    toast('La foto salió bien, pero los catálogos no contestan. Revisa los datos y guárdalo.', 'error');
+    /* La foto salió bien: lo que falló es el otro lado. Decirlo así
+       importa, porque «no lo reconocimos» invita a repetir la foto —y
+       repetirla no va a arreglar un catálogo que no contesta. */
+    toast(res.reason === 'catalogos-caidos'
+      ? 'La foto salió bien, pero los catálogos no contestan. Revisa los datos y guárdalo.'
+      : 'La foto salió bien, pero uno de los catálogos no contestó y el otro no lo tiene. '
+        + 'Revisa los datos y guárdalo, o inténtalo en un rato.', 'error');
     return;
   }
 

@@ -184,7 +184,56 @@ async function conReintento(hacer) {
   }
 }
 
+/* ── BUSCAR UN ISBN EN OPENLIBRARY: LA API, NO EL BUSCADOR ────
+
+     «De todos los libros que intenté por portada y por escáner de
+      código de barras, ninguno funcionó.»
+
+   Se estaba preguntando por `search.json?q=isbn:...`, que es el
+   BUSCADOR de texto de OpenLibrary. Encuentra ediciones si están
+   indexadas, y el índice de búsqueda va muy por detrás del catálogo:
+   se le escapan ediciones enteras, y muy en particular las
+   latinoamericanas — que son las que ella tiene en la mano.
+
+   O sea que la app preguntaba en el sitio donde el libro no iba a
+   estar, y luego decía «este libro no está en los catálogos», que es
+   una conclusión razonable a partir de una pregunta mal hecha.
+
+   La API de ediciones —`/api/books?bibkeys=ISBN:...`— consulta el
+   catálogo directamente, que es donde SÍ están, y encima devuelve
+   título, autoría, editorial, páginas y portada en una sola llamada.
+
+   Se prueban las dos, en ese orden: si la API no lo tiene, todavía
+   queda el buscador. Dos oportunidades donde antes había una, y la
+   buena primero. */
+async function openLibraryIsbn(isbn) {
+  const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}`
+    + '&format=json&jscmd=data';
+  const d = await conReintento(() => pedir(url));
+
+  /* Contesta 200 con `{}` cuando no lo tiene: un objeto vacío no es un
+     fallo, es un «no lo tengo». */
+  const x = d?.[`ISBN:${isbn}`];
+  if (!x) return [];
+
+  return [candidate({
+    title: x.title,
+    author: x.authors?.[0]?.name,
+    pages: x.number_of_pages,
+    year: x.publish_date ? Number(String(x.publish_date).match(/\d{4}/)?.[0]) || null : null,
+    publisher: x.publishers?.[0]?.name,
+    cover: x.cover?.medium || x.cover?.large || null,
+    isbn,
+    genre: guessGenre((x.subjects || []).map((t) => t.name || t)),
+    source: 'openlibrary',
+  })];
+}
+
 async function openLibrary(query, { isbn = false, limit = 6 } = {}) {
+  if (isbn) {
+    const porApi = await openLibraryIsbn(query);
+    if (porApi.length) return porApi;
+  }
   const url = isbn
     ? `https://openlibrary.org/search.json?q=isbn:${encodeURIComponent(query)}&limit=1&fields=title,author_name,number_of_pages_median,first_publish_year,publisher,cover_i,isbn,subject`
     : `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=${limit}&fields=title,author_name,number_of_pages_median,first_publish_year,publisher,cover_i,isbn,subject`;
@@ -281,13 +330,19 @@ async function preguntarALosCatalogos(query, opciones = {}) {
       /* A la consola el motivo de verdad; a la pantalla, nunca. Lo que
          hace falta arriba es SI falló, no por qué. */
       console.warn(`El catálogo ${nombre} no pudo contestar:`, e?.message || e);
-      return { nombre, libros: null };
+      return { nombre, libros: null, error: String(e?.message || e) };
     }
   }));
 
   return {
     libros: mergeCandidates(salidas.map((s) => s.libros || []), typeof query === 'string' ? query : ''),
     caidas: salidas.filter((s) => s.libros === null).map((s) => s.nombre),
+    /* El motivo de cada caída, para poder ENSEÑARLO. Sin esto, lo único
+       que se puede contar de vuelta es «no funciona», y con eso no se
+       arregla nada — es la misma lección que el mapa de los cafés, donde
+       el «Detalle técnico» de la pantalla fue lo que permitió encontrar
+       la causa real. */
+    detalle: salidas.filter((s) => s.error).map((s) => `${s.nombre}: ${s.error}`).join(' · '),
   };
 }
 
@@ -303,8 +358,23 @@ export async function lookupByIsbn(raw) {
      están caídos NO es «este libro no está»: reintentar en un rato
      funciona, y volver a escanear no. La pantalla dice cosas
      distintas para cada uno. */
-  if (sinCatalogos(r)) return { ok: false, reason: 'catalogos-caidos', isbn, caidas: r.caidas };
-  if (!r.libros.length) return { ok: false, reason: 'no-encontrado', isbn };
+  if (sinCatalogos(r)) {
+    return { ok: false, reason: 'catalogos-caidos', isbn, caidas: r.caidas, detalle: r.detalle };
+  }
+  if (!r.libros.length) {
+    /* NO ES LO MISMO «no está» QUE «no está en el que pudo contestar».
+       Si uno de los dos se cayó —un 429 de Google es de lo más normal
+       desde una red móvil— decir «este libro no está en los catálogos»
+       es afirmar algo que no se ha comprobado. Y encima manda a por la
+       portada, que acaba en la MISMA consulta y va a fallar igual. */
+    return {
+      ok: false,
+      reason: r.caidas.length ? 'no-encontrado-a-medias' : 'no-encontrado',
+      isbn,
+      caidas: r.caidas,
+      detalle: r.detalle,
+    };
+  }
   return { ok: true, book: { ...r.libros[0], isbn }, candidates: r.libros };
 }
 
@@ -319,7 +389,12 @@ export async function buscarPorTitulo(text) {
   const query = clean(text);
   if (query.length < 3) return { libros: [], caidas: [], corto: true };
   const r = await preguntarALosCatalogos(query);
-  return { libros: r.libros.slice(0, 8), caidas: r.caidas, sinCatalogos: sinCatalogos(r) };
+  return {
+    libros: r.libros.slice(0, 8),
+    caidas: r.caidas,
+    sinCatalogos: sinCatalogos(r),
+    detalle: r.detalle,
+  };
 }
 
 /** Escribiendo el título. Devuelve varios para poder distinguir ediciones. */
@@ -340,6 +415,8 @@ export async function lookupByCoverText(ocrText) {
     .sort((a, b) => b.length - a.length);
 
   let mudos = false;
+  let cojos = false;      // uno de los dos no contestó
+  let detalle = '';
   for (const attempt of [lines.slice(0, 2).join(' '), lines[0], lines.slice(0, 3).join(' ')]) {
     if (!attempt) continue;
     const r = await buscarPorTitulo(attempt);
@@ -348,8 +425,12 @@ export async function lookupByCoverText(ocrText) {
        mismo y ninguno significa «no lo reconocemos». Se recuerda para
        no acabar diciendo que la foto salió mal. */
     if (r.sinCatalogos) mudos = true;
+    /* Y si contestó UNO SOLO, tampoco se ha comprobado que el libro no
+       esté: se ha comprobado que no está en el que pudo contestar. */
+    if (r.caidas?.length) { cojos = true; detalle = r.detalle || detalle; }
   }
-  if (mudos) return { ok: false, reason: 'catalogos-caidos', lines };
+  if (mudos) return { ok: false, reason: 'catalogos-caidos', lines, detalle };
+  if (cojos) return { ok: false, reason: 'sin-coincidencia-a-medias', lines, detalle };
   return { ok: false, reason: 'sin-coincidencia', lines };
 }
 

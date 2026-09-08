@@ -6,6 +6,7 @@
 import {
   looksLikeSame, titleSimilarity,
   cleanIsbn, isValidIsbn, fold, guessGenre, scoreCandidate, mergeCandidates, buscarPorTitulo,
+  lookupByIsbn,
 } from '../src/booklookup.js';
 
 let pass = 0, fail = 0;
@@ -155,6 +156,79 @@ console.log('\nCUANDO EL CATÁLOGO NO CONTESTA');
      no se le pregunta dos veces, solo alarga la espera. */
   r = await con(() => respuesta({ error: 'mal' }, 400));
   ok(r.llamadas === 2, 'un 400 no se reintenta', `fueron ${r.llamadas}`);
+
+  /* ── EL ISBN SE BUSCA DONDE ESTÁ EL LIBRO ──────────────────
+
+       «De todos los libros que intenté por portada y por escáner de
+        código de barras, ninguno funcionó.»
+
+     Se preguntaba por `search.json?q=isbn:`, que es el BUSCADOR de
+     texto de OpenLibrary, no su catálogo. El índice de búsqueda va muy
+     por detrás y se le escapan ediciones enteras — muy en particular
+     las latinoamericanas, que son las que ella tiene en la mano. Se
+     preguntaba en el sitio donde el libro no iba a estar, y luego se
+     concluía que el libro no existe. */
+
+  console.log('\nUN ISBN SE BUSCA EN EL CATÁLOGO, NO EN EL BUSCADOR');
+
+  const ISBN = '9786287794108';   // el de su pantalla: Penguin Colombia
+  const EDICION = {
+    [`ISBN:${ISBN}`]: {
+      title: 'Un curso de economía',
+      authors: [{ name: 'Quien sea' }],
+      number_of_pages: 426,
+      publish_date: 'marzo 2024',
+      publishers: [{ name: 'Penguin Random House' }],
+      cover: { medium: 'https://covers.openlibrary.org/b/id/1-M.jpg' },
+      subjects: [{ name: 'Economics' }],
+    },
+  };
+
+  const pedidas = [];
+  const conIsbn = async (responder) => {
+    pedidas.length = 0;
+    globalThis.fetch = async (url) => { pedidas.push(String(url)); return responder(String(url)); };
+    return lookupByIsbn(ISBN);
+  };
+
+  let ri = await conIsbn((url) => {
+    if (url.includes('/api/books')) return respuesta(EDICION);
+    if (url.includes('googleapis')) return respuesta({ items: [] });
+    return respuesta({ docs: [] });
+  });
+  ok(ri.ok === true, 'LO ENCUENTRA por la API de ediciones', JSON.stringify(ri.reason));
+  ok(ri.book?.title === 'Un curso de economía', 'con su título', ri.book?.title);
+  ok(ri.book?.pages === '~426', 'y sus páginas', ri.book?.pages);
+  ok(pedidas.some((u) => u.includes('/api/books?bibkeys=ISBN:')),
+    'se pregunta al CATÁLOGO, no solo al buscador',
+    pedidas.filter((u) => u.includes('openlibrary')).join(' '));
+
+  /* Y el buscador sigue de reserva: si la API no lo tiene, todavía
+     queda una oportunidad más de la que había antes. */
+  ri = await conIsbn((url) => {
+    if (url.includes('/api/books')) return respuesta({});   // 200 con {} = no lo tengo
+    if (url.includes('googleapis')) return respuesta({ items: [] });
+    return respuesta({ docs: [{ title: 'Por el buscador', author_name: ['X'] }] });
+  });
+  ok(ri.ok === true, 'si la API no lo tiene, el buscador sigue de reserva', JSON.stringify(ri.reason));
+  ok(ri.book?.title === 'Por el buscador', 'y su resultado vale igual', ri.book?.title);
+
+  /* ── «NO ESTÁ» NO ES LO MISMO QUE «NO ESTÁ EN EL QUE CONTESTÓ» ── */
+
+  console.log('\nCUANDO SOLO CONTESTA UNO DE LOS DOS');
+
+  ri = await conIsbn((url) => (url.includes('googleapis')
+    ? respuesta(cuota, 429)
+    : respuesta(url.includes('/api/books') ? {} : { docs: [] })));
+  ok(ri.reason === 'no-encontrado-a-medias',
+    'NO SE DICE «no está»: uno de los dos nunca contestó', ri.reason);
+  ok(/429/.test(ri.detalle || ''),
+    'y el motivo viaja para poder enseñarlo en pantalla', ri.detalle);
+
+  ri = await conIsbn((url) => respuesta(url.includes('/api/books') ? {} : { docs: [], items: [] }));
+  ok(ri.reason === 'no-encontrado',
+    'los dos contestan y no lo tienen: ESO sí es «no está»', ri.reason);
+  ok(!ri.caidas?.length, 'y no consta ninguna caída');
 
   globalThis.fetch = fetchDeVerdad;
 }
