@@ -19,6 +19,7 @@ import { seedBooks, pageCount } from './seed.js';
 import { publicReviewDoc, isPublicReview, publicCount } from './reviews-core.js';
 import { streakInfo, addDay } from './streak-core.js';
 import { apuntarHora, RECORDATORIO_POR_DEFECTO } from './habito-core.js';
+import { avisosCompletos } from './push-core.js';
 import { validateUsername, canChangeUsername, normalize } from './username-core.js';
 import { publicProfileDoc, seccionVisible, followersOnlyDoc, esPrivada } from './profile-core.js';
 import { activityDoc, activityId } from './feed-core.js';
@@ -141,6 +142,23 @@ export function setRecordatorio(patch) {
   const nuevo = { ...miRecordatorio(), ...patch };
   updateSettings({ recordatorio: nuevo });
   return nuevo;
+}
+
+/* ── QUÉ AVISOS QUIERES  ·  historia #95 ──────────────────────
+   Se guardan en los ajustes, que ya se sincronizan: el interruptor que
+   pones en el móvil vale también en el portátil. Lo que decide si un
+   aviso concreto se manda está en push-core.js, que no toca nada. */
+
+export const misAvisos = () => avisosCompletos(settings().avisos);
+
+export function setTipoAviso(tipo, encendido) {
+  const antes = misAvisos();
+  updateSettings({ avisos: { ...antes, tipos: { ...antes.tipos, [tipo]: !!encendido } } });
+}
+
+export function setSilencio(patch) {
+  const antes = misAvisos();
+  updateSettings({ avisos: { ...antes, silencio: { ...antes.silencio, ...patch } } });
 }
 
 /** El día del último aviso mandado, para no mandar dos. */

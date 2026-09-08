@@ -29,6 +29,7 @@ import * as chatui from './chatui.js';
 import * as lugaresui from './lugaresui.js';
 import * as shelvesui from './shelvesui.js';
 import * as habitoui from './habitoui.js';
+import * as avisosui from './avisosui.js';
 import * as postsui from './postsui.js';
 import { loadMyBlocks } from './moderation.js';
 import { setConsentPrompt } from './agent.js';
@@ -75,7 +76,7 @@ Object.assign(window, {
   nav, closeSheet,
   ...addbook, ...quotesui, ...finished, ...gapsui, ...duel, ...yearui, ...shareui,
   ...profileui, ...socialui, ...inviteui, ...feedui, ...commentsui, ...swapui,
-  ...exploreui, ...chatui, ...postsui, ...lugaresui, ...shelvesui, ...habitoui,
+  ...exploreui, ...chatui, ...postsui, ...lugaresui, ...shelvesui, ...habitoui, ...avisosui,
   ...petchat, ...petask,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),

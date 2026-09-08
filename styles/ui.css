@@ -1746,3 +1746,16 @@ a.set-row { text-decoration: none; color: inherit; display: flex; }
 /* Lo que pasaría ahora mismo. En cursiva y apagado: es una observación
    sobre el estado, no una instrucción ni un error. */
 .hab-ahora { margin-top: 14px; font-style: italic; }
+
+
+/* ── EL INTERRUPTOR DE CADA AVISO  ·  historia #95 ────────────
+   «Sí» y «No» con el mismo peso obligan a LEER los seis para saber qué
+   está encendido, y una lista de ajustes se mira, no se lee. El
+   encendido lleva el realce dorado —el mismo de todo lo elegido en esta
+   app— y el apagado se queda apagado de verdad. */
+.btn-mini.activo {
+  border-color: rgb(var(--gold-rgb) / .75);
+  background: var(--gold-wash);
+  color: var(--text);
+  font-weight: 600;
+}
