@@ -36,6 +36,7 @@ import { $, esc, toast, openSheet, closeSheet } from './ui.js';
 import { petConfig, petState, petVista, petNombre, petPhrase } from './pet.js';
 import { updateEntry, entry, settings, updateSettings, recordReadingDay } from './store.js';
 import { refreshAll } from './views.js';
+import { placeInMonth, quitarDelPlan } from './gaps.js';
 
 /** El libro por el que pregunta ahora mismo. */
 let enCuestion = null;
@@ -178,8 +179,13 @@ export function loDejo() {
   const b = enCuestion;
   if (!b) return;
   /* `abandoned` ya lo entiende el plan: `stalledBooks` lo descarta y
-     `generatePlan` no lo vuelve a repartir. No hay que inventar nada. */
-  updateEntry(b.id, { status: 'abandoned', pinnedMonth: null });
+     `generatePlan` no lo vuelve a repartir.
+
+     Y ADEMÁS se le quita el mes. Sin eso, el día que lo retomes vuelve
+     a ser el libro atrasado de agosto y la mascota vuelve a preguntar
+     por él nada más volver — que es la peor bienvenida posible. */
+  quitarDelPlan(b.id);
+  updateEntry(b.id, { status: 'abandoned' });
   cerrarCon('Fuera. Sigue en tu biblioteca por si vuelves.');
 }
 
@@ -187,17 +193,36 @@ export function loDejo() {
 export function traerAlMes() {
   const b = enCuestion;
   if (!b) return;
-  const mes = new Date().toLocaleDateString('es', { month: 'long' });
+  const hoy = new Date();
+  const mes = hoy.toLocaleDateString('es', { month: 'long' });
   const nombre = mes.charAt(0).toUpperCase() + mes.slice(1);
-  updateEntry(b.id, { status: 'reading', pinnedMonth: nombre, startedAt: Date.now() });
+  /* `placeInMonth` Y NO un `pinnedMonth` a secas. La chincheta sola no
+     le cambia el MES al libro, así que «traerlo a este mes» lo dejaba
+     igual de atrasado que estaba: seguía siendo el libro de agosto y la
+     mascota lo volvía a sacar al día siguiente, después de haberlo
+     rescatado. */
+  placeInMonth(b.id, hoy.getFullYear(), nombre);
+  updateEntry(b.id, { status: 'reading', startedAt: Date.now() });
   cerrarCon(`${b.title} pasa a ${nombre.toLowerCase()}.`);
 }
 
-/** Ni ahora ni fuera: sale del mes pero se queda en la biblioteca. */
+/**
+ * Ni ahora ni fuera: sale del plan pero se queda en la biblioteca.
+ *
+ * AQUÍ ESTABA EL FALLO. Antes solo se le quitaba la chincheta
+ * (`pinnedMonth`), que no es lo mismo que quitarle el mes: para
+ * `stalledBooks` el libro seguía siendo el de agosto, así que seguía
+ * atrasado y la mascota volvía a preguntar lo mismo al día siguiente.
+ *
+ * Y como con el ánimo en «rescatando» tocar a la mascota abre esta
+ * hoja y nunca el chat, tampoco se podía hablar con ella: el mismo
+ * fallo cerraba las dos puertas.
+ */
 export function masAdelante() {
   const b = enCuestion;
   if (!b) return;
-  updateEntry(b.id, { status: 'pending', pinnedMonth: null });
+  quitarDelPlan(b.id);
+  updateEntry(b.id, { status: 'pending' });
   cerrarCon('Lo dejo esperando, sin fecha.');
 }
 

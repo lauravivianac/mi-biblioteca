@@ -624,6 +624,12 @@ function applyPlannedMonths() {
   for (const b of state.books) {
     const e = state.entries[b.id];
     if (!e) continue;
+    /* SIN FECHA, A PROPÓSITO. Los libros de la semilla traen su mes
+       escrito en el código, así que borrarlo no basta: al recargar
+       vuelve solo, y con él vuelve la mascota preguntando por un libro
+       que ya dijiste que dejabas para más adelante. Por eso la
+       decisión se guarda como una marca y se aplica aquí. */
+    if (e.sinPlan) { b.month = ''; b.year = null; continue; }
     if (e.plannedMonth) b.month = e.plannedMonth;
     if (e.plannedYear) b.year = e.plannedYear;
   }
