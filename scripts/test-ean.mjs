@@ -12,6 +12,9 @@
    no copiadas de src/ean.js.
    ───────────────────────────────────────────────────────────── */
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { decodeLine, decodeImage, decodeModules, checksumOk } from '../src/ean.js';
 
 let pasaron = 0;
@@ -101,10 +104,30 @@ ok('rechaza 95 módulos inventados',
 /* ── UNA LÍNEA DE LA CÁMARA ──────────────────────────────────── */
 
 grupo('LEER UNA LÍNEA');
-for (const modulo of [1, 2, 3, 5, 8]) {
+for (const modulo of [2, 3, 5, 8]) {
   const leido = decodeLine(pintarLinea(CIEN_ANOS, { modulo }));
-  ok(`con módulos de ${modulo} píxel${modulo > 1 ? 'es' : ''}`, leido === CIEN_ANOS, `leyó ${leido}`);
+  ok(`con módulos de ${modulo} píxeles`, leido === CIEN_ANOS, `leyó ${leido}`);
 }
+
+/* ── Y UN MÓDULO DE 1 PÍXEL SE RECHAZA A PROPÓSITO ───────────
+
+   Antes se leía, y era un caso de laboratorio: un código dibujado
+   perfecto a un píxel por módulo. En una foto no existe — noventa y
+   cinco módulos serían noventa y cinco píxeles, o sea un código del
+   tamaño de una uña en el cuadro.
+
+   Y aceptarlo sale caro. A esa escala los tramos miden uno o dos
+   píxeles, la proporción entre ellos se cuantiza tan grueso que
+   CUALQUIER patrón periódico encaja, y entonces una reja, una persiana
+   o una camisa de rayas se leen como un ISBN válido. Justo debajo está
+   la prueba que lo enseña.
+
+   Leer un ISBN equivocado es peor que no leer ninguno: el libro que se
+   guarda no es el que tienes en la mano, y eso no se nota hasta mucho
+   después. */
+ok('UN MÓDULO DE 1 PÍXEL SE RECHAZA, y es una decisión, no un fallo',
+  decodeLine(pintarLinea(CIEN_ANOS, { modulo: 1 })) === null,
+  'a esa escala no se distingue un código de una reja');
 
 ok('con el libro boca abajo',
   decodeLine(Uint8ClampedArray.from([...pintarLinea(PRINCIPITO, { modulo: 4 })].reverse())) === PRINCIPITO);
@@ -118,9 +141,18 @@ ok('sin contraste no inventa nada',
 ok('una línea demasiado corta no se intenta',
   decodeLine(Uint8ClampedArray.from(new Array(40).fill(0))) === null);
 
-ok('ruido puro no produce un código',
+/* Y ESTO ES LO QUE PROTEGE ESE MÍNIMO.
+
+   No es ruido aleatorio: `(i × 177) mod 256` dibuja una REJA de rayas
+   regulares de uno y dos píxeles, que es lo que se ve al fotografiar
+   una persiana, un radiador o una camisa. Con el mínimo de módulo por
+   debajo de dos píxeles, esta línea se leía como el ISBN
+   «0252527252527» — un libro que no existe, guardado sin que nadie se
+   entere. */
+ok('UNA REJA DE RAYAS NO SE LEE COMO UN ISBN',
   decodeLine(Uint8ClampedArray.from(
-    Array.from({ length: 600 }, (_, i) => ((i * 2654435761) % 256)))) === null);
+    Array.from({ length: 600 }, (_, i) => ((i * 2654435761) % 256)))) === null,
+  'con módulos de menos de 2 px daba 0252527252527');
 
 /* Con ruido encima de un código de verdad sí debe leerlo. */
 const conRuido = pintarLinea(CIEN_ANOS, { modulo: 6 });
@@ -243,6 +275,47 @@ for (let s = 0; s < 40; s++) {
 }
 ok('cuarenta imágenes de ruido puro y ningún código inventado',
   inventados === 0, `se inventó ${inventados}`);
+
+/* ── UNA FOTO DE VERDAD, DE UN TELÉFONO DE VERDAD ────────────
+
+   Todo lo de arriba son códigos DIBUJADOS: barras perfectas, bordes
+   limpios, contraste de manual. Y por eso el lector pasaba las pruebas
+   mientras en un teléfono no leía ni uno.
+
+     «De todos los libros que intenté por portada y por escáner de
+      código de barras, ninguno funcionó.»
+
+   Estas líneas salen de la captura que se envió: «Antes de que se
+   enfríe el café», Plaza & Janés, ISBN 978-958-5457-81-2. El código se
+   ve nítido, grande y centrado en el cuadro — y el lector de entonces
+   NO LEÍA NI UNA de las 57 filas.
+
+   Con esa foto se descubrió que muestrear un píxel por módulo no puede
+   funcionar: aun con la geometría perfecta hallada por fuerza bruta
+   salían 12 módulos mal de 95. De ahí el cambio a medir anchos.
+
+   Queda aquí para que ningún «arreglo» futuro del lector vuelva a
+   pasar todas las pruebas de laboratorio y fallar con una foto. */
+
+grupo('UNA FOTO DE VERDAD');
+
+const aqui = dirname(fileURLToPath(import.meta.url));
+const muestra = JSON.parse(readFileSync(join(aqui, 'muestras/codigo-real.json'), 'utf8'));
+
+let leidas = 0;
+let equivocadas = 0;
+for (const fila of muestra.filas) {
+  const c = decodeLine(Uint8ClampedArray.from(fila));
+  if (c === muestra.isbn) leidas += 1;
+  else if (c) equivocadas += 1;
+}
+
+ok(`lee el ISBN de la foto (${leidas} de ${muestra.filas.length} filas)`,
+  leidas > 0, 'el lector de antes leía 0');
+ok('y en bastantes filas, no por casualidad en una',
+  leidas >= muestra.filas.length / 4, `solo ${leidas} de ${muestra.filas.length}`);
+ok('SIN LEER NUNCA UN ISBN EQUIVOCADO', equivocadas === 0,
+  `${equivocadas} filas dieron otro código`);
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.`);
 process.exit(fallaron ? 1 : 0);
