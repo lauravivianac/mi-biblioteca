@@ -1032,9 +1032,20 @@ body {
    cosas pesan lo mismo, y no es verdad. */
 .salir {
   position: fixed;
-  bottom: calc(22px + env(safe-area-inset-bottom, 0));
-  left: 18px;
-  display: flex; gap: 10px;
+  /* EN COLUMNA SOBRE EL «+», Y A LA DERECHA.
+
+     Primero estuvieron abajo a la izquierda, enfrente del «+». Pero
+     ese lado es donde vive el dibujo del fondo —la lámpara, la pila de
+     libros, el bote de las tijeras— y dos botones encima de eso se
+     leen como parte de la ilustración y no como botones. La derecha
+     está despejada.
+
+     Así que se apilan sobre el botón de añadir: una sola columna, en
+     el mismo eje, con el «+» abajo del todo porque es el que más se
+     usa y el que cae más cerca del pulgar. */
+  bottom: calc(84px + env(safe-area-inset-bottom, 0));
+  right: 22px;
+  display: flex; flex-direction: column; gap: 10px;
   z-index: 200;
 }
 .salir-btn {
