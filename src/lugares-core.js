@@ -52,10 +52,42 @@ import { sinTildes, unSoloEspacio } from './text-core.js';
    con gente dentro, y con una excusa evidente para estar ahí con un
    libro en la mano. Ordenadas como se enseñan. */
 export const TIPOS = [
-  { id: 'biblioteca', icono: '📚', label: 'Bibliotecas', consulta: ['"amenity"="library"'] },
-  { id: 'libreria', icono: '📖', label: 'Librerías', consulta: ['"shop"="books"'] },
-  { id: 'cafe', icono: '☕', label: 'Cafeterías', consulta: ['"amenity"="cafe"'] },
+  { id: 'biblioteca', icono: 'fichas', label: 'Bibliotecas', consulta: ['"amenity"="library"'] },
+  { id: 'libreria', icono: 'tienda', label: 'Librerías', consulta: ['"shop"="books"'] },
+  { id: 'cafe', icono: 'taza', label: 'Cafeterías', consulta: ['"amenity"="cafe"'] },
 ];
+
+/* ── A QUÉ SE ENTRA ──────────────────────────────────────────
+
+     «Esa funcionalidad está muy oculta. Me gustaría que fuera más
+      intuitiva, como un botón del lado izquierdo en el margen, con una
+      taza de café y una como una tienda, así pudiera abrir dónde tomar
+      café y dónde comprar.»
+
+   Los dos botones del margen no abren la misma pantalla: cada uno
+   abre LO SUYO. Un atajo que te deja delante de una lista donde
+   todavía hay que buscar no es un atajo.
+
+   Pero tampoco es un callejón: dentro se puede cambiar de idea sin
+   volver a salir, con las pestañas de arriba. */
+export const FOCOS = {
+  cafe: { titulo: 'Dónde tomar café', tipos: ['cafe'] },
+  comprar: { titulo: 'Dónde comprar libros', tipos: ['libreria'] },
+  todo: { titulo: 'Dónde leer y comprar libros', tipos: null },
+};
+
+/** Las pestañas de dentro, para poder cambiar de idea. */
+export const PESTANAS = [
+  { id: 'todo', label: 'Todo' },
+  { id: 'cafe', label: 'Cafés' },
+  { id: 'comprar', label: 'Librerías' },
+];
+
+/** ¿Entra este tipo de sitio en el foco elegido? */
+export function enFoco(tipo, foco = 'todo') {
+  const f = FOCOS[foco] || FOCOS.todo;
+  return !f.tipos || f.tipos.includes(tipo);
+}
 
 const POR_ETIQUETA = {
   library: 'biblioteca',
@@ -81,7 +113,7 @@ export const RADIO = 4000;
  * contorno del edificio y no como un punto, y sin `center` esos vuelven
  * sin coordenadas y no se pueden poner en un mapa.
  */
-export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS } = {}) {
+export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS, espera = 25 } = {}) {
   if (!centro || !Number.isFinite(centro.lat) || !Number.isFinite(centro.lon)) return null;
   const lat = centro.lat.toFixed(5);
   const lon = centro.lon.toFixed(5);
@@ -89,7 +121,7 @@ export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS } = {}) 
     .flatMap((t) => t.consulta)
     .flatMap((filtro) => ['node', 'way'].map((q) => `  ${q}[${filtro}](around:${radio},${lat},${lon});`))
     .join('\n');
-  return `[out:json][timeout:20];\n(\n${cuerpo}\n);\nout center 300;`;
+  return `[out:json][timeout:${espera}];\n(\n${cuerpo}\n);\nout center 300;`;
 }
 
 /* ── LO QUE VUELVE ───────────────────────────────────────────── */
@@ -168,9 +200,9 @@ export function quitarRepetidos(lugares) {
  * centro es además el sitio neutral por defecto: es a donde va la gente
  * cuando queda con alguien a quien no conoce.
  */
-export function agrupar(lugares, centro, { tope = TOPE_POR_TIPO } = {}) {
+export function agrupar(lugares, centro, { tope = TOPE_POR_TIPO, foco = 'todo' } = {}) {
   const limpios = quitarRepetidos(lugares);
-  return TIPOS.map((t) => ({
+  return TIPOS.filter((t) => enFoco(t.id, foco)).map((t) => ({
     ...t,
     lugares: limpios
       .filter((l) => l.tipo === t.id)
@@ -275,11 +307,26 @@ export const MOTIVOS = {
     + 'No se pide la dirección: solo la ciudad.',
   'ciudad-desconocida': 'No hemos podido situar esa ciudad en el mapa. '
     + 'Prueba a escribirla completa, o quedad como veníais haciendo.',
-  'servicio-caido': 'El mapa no contesta ahora mismo. Vuelve a intentarlo en un rato: '
+  /* DOS SERVICIOS, DOS AVISOS. Antes los dos caían en el mismo —«el
+     mapa no contesta»— y eso dejaba a todo el mundo a ciegas: ni quien
+     lo lee sabe qué falló, ni quien lo arregla puede saberlo por lo que
+     le cuenten. Es el mismo error que ya se había arreglado en la
+     búsqueda de libros y que aquí volví a cometer.
+
+     Y hay una diferencia práctica, no solo de precisión: si lo que
+     falla es SITUAR LA CIUDAD, buscar cerca de donde estás sí funciona,
+     porque ese camino no pasa por ahí. */
+  'ciudad-caida': 'No hemos podido situar tu ciudad en el mapa ahora mismo. '
+    + 'Si estás fuera de casa, prueba a buscar cerca de donde estás: '
+    + 'ese camino no necesita este paso.',
+  'mapa-caido': 'El mapa no contesta ahora mismo. Vuelve a intentarlo en un rato: '
     + 'no es que no haya sitios, es que no hemos podido preguntar.',
   'sin-resultados': 'No encontramos cafeterías, librerías ni bibliotecas por el centro '
     + 'de tu ciudad. El mapa lo mantiene gente voluntaria y a veces falta.',
 };
+
+/** ¿Este fracaso se arregla volviendo a intentarlo? */
+export const sePuedeReintentar = (motivo) => motivo === 'mapa-caido' || motivo === 'ciudad-caida';
 
 /* De dónde salen los datos. Va en pantalla porque la licencia lo pide y
    porque está bien decir quién ha hecho el trabajo. */

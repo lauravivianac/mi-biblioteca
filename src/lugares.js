@@ -35,9 +35,30 @@ import { consultaOverpass, leerRespuesta, agrupar, RADIO } from './lugares-core.
 import { normalizarLugar } from './place-core.js';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
-const OVERPASS = 'https://overpass-api.de/api/interpreter';
 
-const ESPERA = 20000;
+/* VARIOS SERVIDORES DE OVERPASS, y por la misma razón que hay dos
+   catálogos de libros: para que uno pueda faltar. El primero es el
+   oficial y también el más cargado del mundo —devuelve 429 y 504 con
+   toda naturalidad a media tarde—, y los otros dos son espejos
+   públicos que sirven exactamente los mismos datos. Se prueban en
+   orden y basta con que conteste uno. */
+const OVERPASS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
+
+/* DOS ESPERAS, Y LA DEL CLIENTE TIENE QUE SER MAYOR.
+
+   Estaban las dos en 20 segundos: el `[timeout:20]` que va dentro de la
+   consulta —lo que Overpass se permite tardar EJECUTÁNDOLA— y el
+   nuestro. Pero el tiempo que pasa de verdad es la cola más la
+   ejecución, así que en cuanto el servidor tenía trabajo pendiente
+   nosotros cortábamos antes de que pudiera contestar, siempre. Cortar
+   a la vez que el otro termina es cortar siempre. */
+const ESPERA_CONSULTA = 25;        // segundos, dentro de la consulta
+const ESPERA_RED = 45000;          // milisegundos, del lado de aquí
+const ESPERA_CIUDAD = 15000;       // situar una ciudad es una consulta pequeña
 const MES = 30 * 24 * 3600 * 1000;
 const SEMANA = 7 * 24 * 3600 * 1000;
 
@@ -78,7 +99,7 @@ export async function centroDe(city, country = '') {
   const url = `${NOMINATIM}?${new URLSearchParams({
     city, country, format: 'json', limit: '1',
   })}`;
-  const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: timeout(ESPERA) });
+  const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: timeout(ESPERA_CIUDAD) });
   if (!r.ok) throw new Error(`Nominatim HTTP ${r.status}`);
   const datos = await r.json();
 
@@ -96,15 +117,36 @@ export async function centroDe(city, country = '') {
 /* ── QUÉ HAY ALREDEDOR ───────────────────────────────────────── */
 
 async function preguntarAOverpass(centro) {
-  const consulta = consultaOverpass(centro, { radio: RADIO });
-  const r = await fetch(OVERPASS, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-    body: consulta,
-    signal: timeout(ESPERA),
-  });
-  if (!r.ok) throw new Error(`Overpass HTTP ${r.status}`);
-  return leerRespuesta(await r.json());
+  const consulta = consultaOverpass(centro, { radio: RADIO, espera: ESPERA_CONSULTA });
+  const fallos = [];
+
+  for (const servidor of OVERPASS) {
+    try {
+      const r = await fetch(servidor, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        body: consulta,
+        signal: timeout(ESPERA_RED),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      /* Overpass contesta 200 con un texto de error cuando la consulta
+         se le atraganta, así que un 200 no basta: si no hay `elements`
+         no ha contestado, ha dicho que no puede. */
+      const datos = await r.json();
+      if (!Array.isArray(datos?.elements)) throw new Error('respuesta sin datos');
+      return leerRespuesta(datos);
+    } catch (e) {
+      const corto = new URL(servidor).hostname;
+      fallos.push(`${corto}: ${e?.message || e}`);
+      console.warn(`Overpass ${corto} no pudo contestar:`, e?.message || e);
+    }
+  }
+  /* Ninguno contestó. El motivo viaja hacia arriba para que se pueda
+     LEER EN LA PANTALLA: sin eso, «no funciona» es todo lo que se puede
+     contar de vuelta, y con eso no se arregla nada. */
+  const e = new Error(fallos.join(' · '));
+  e.detalle = fallos.join(' · ');
+  throw e;
 }
 
 /**
@@ -115,9 +157,9 @@ async function preguntarAOverpass(centro) {
  * y «no hemos podido preguntar» son cosas distintas y la pantalla tiene
  * que poder decir cuál de las dos pasó.
  */
-export async function buscarSitios(place = {}, { desdeAqui = null } = {}) {
+export async function buscarSitios(place = {}, { desdeAqui = null, foco = 'todo' } = {}) {
   const city = String(place.city ?? '').trim();
-  if (!city && !desdeAqui) return { grupos: [], centro: null, motivo: 'sin-ciudad' };
+  if (!city && !desdeAqui) return { grupos: [], centro: null, motivo: 'sin-ciudad', detalle: '' };
 
   let centro = desdeAqui;
   if (!centro) {
@@ -125,7 +167,12 @@ export async function buscarSitios(place = {}, { desdeAqui = null } = {}) {
       centro = await centroDe(city, String(place.country ?? '').trim());
     } catch (e) {
       console.warn('No se pudo situar la ciudad:', e?.message || e);
-      return { grupos: [], centro: null, motivo: 'servicio-caido' };
+      /* «Situar la ciudad» y «preguntar qué hay» son dos servicios
+         distintos, y este es el primero. Se distingue porque el otro
+         camino —cerca de donde estás— no lo necesita. */
+      return {
+        grupos: [], centro: null, motivo: 'ciudad-caida', detalle: String(e?.message || e),
+      };
     }
     if (!centro) return { grupos: [], centro: null, motivo: 'ciudad-desconocida' };
   }
@@ -141,7 +188,9 @@ export async function buscarSitios(place = {}, { desdeAqui = null } = {}) {
       lugares = await preguntarAOverpass(centro);
     } catch (e) {
       console.warn('El mapa no pudo contestar:', e?.message || e);
-      return { grupos: [], centro, motivo: 'servicio-caido' };
+      return {
+        grupos: [], centro, motivo: 'mapa-caido', detalle: e?.detalle || String(e?.message || e),
+      };
     }
     /* Una lista vacía TAMBIÉN se guarda. Es una respuesta legítima —hay
        ciudades sin nada cartografiado— y volver a preguntar cada vez no
@@ -149,8 +198,8 @@ export async function buscarSitios(place = {}, { desdeAqui = null } = {}) {
     if (clave) guardar(clave, lugares);
   }
 
-  const grupos = agrupar(lugares, centro);
-  return { grupos, centro, motivo: grupos.length ? null : 'sin-resultados' };
+  const grupos = agrupar(lugares, centro, { foco });
+  return { grupos, centro, motivo: grupos.length ? null : 'sin-resultados', detalle: '' };
 }
 
 /** Para las pruebas y para «volver a buscar» cuando el mapa estaba caído. */
