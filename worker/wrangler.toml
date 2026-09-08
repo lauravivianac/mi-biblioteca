@@ -25,7 +25,28 @@ preview_urls = false
 # binding = "AGENTE"
 # id = "aqui-el-id-que-te-dio-wrangler"
 
+# ── EL RELOJ DE LOS AVISOS  ·  historias #69 y #95 ───────────────────
+# Cada hora en punto. No cada minuto: el recordatorio tiene media hora de
+# margen (ver MARGEN_MINUTOS en src/habito-core.js), así que una vuelta
+# por hora basta y son 24 ejecuciones al día en vez de 1440.
+#
+# La hora es UTC. Quien lee en Bogotá está en UTC-5, y por eso cada
+# suscripción guarda su franja horaria: el cron mira quién tiene su hora
+# AHORA, no manda a todo el mundo a la vez.
+[triggers]
+crons = ["0 * * * *"]
+
 [vars]
+
+# El contacto de VAPID. La norma lo exige y los servicios de push lo
+# comprueban: sin un mailto: válido, FCM contesta 403 sin explicar por
+# qué. Va aquí y no como secreto porque es una dirección pública.
+VAPID_CONTACTO = "mailto:soporte@mibiblioteca.app"
+
+# Y la pública, la misma que está en src/push.js. El Worker la necesita
+# para armar la cabecera de VAPID (el `k=`).
+VAPID_PUBLICA = "BCMCk19F16wf7bLNniqoXoOZyCI8XdOQNRuIxPxBFmePdL5b2R3Et0eBbaR5IP7S1sV28ifVIPi0ADl2DUra0p8"
+
 # Desde qué dominios puede llamarse al Worker.
 #
 # El `*` cubre UN tramo del dominio y está ahí por Vercel, que inventa
@@ -37,8 +58,11 @@ preview_urls = false
 # hay pruebas de eso en scripts/test-worker.mjs.
 ALLOWED_ORIGINS = "https://lauravivianac.github.io,https://mi-biblioteca.vercel.app,https://mi-biblioteca-*.vercel.app,http://localhost:8080"
 
-# La key de DeepSeek NO va aquí: este archivo está en el repositorio.
-# Va como secreto del entorno, con `wrangler secret put DEEPSEEK_API_KEY`.
+# NI LA DE DEEPSEEK NI LA PRIVADA DE VAPID van aquí: este archivo está en
+# el repositorio. Las dos van como secretos del entorno:
+#
+#   npx wrangler secret put DEEPSEEK_API_KEY
+#   npx wrangler secret put VAPID_PRIVADA
 
 # Techo de gasto para TODA la app, en dólares al mes. Cuando se pasa,
 # el agente deja de responder hasta el mes siguiente y la app lo dice

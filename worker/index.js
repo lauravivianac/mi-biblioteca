@@ -443,7 +443,90 @@ export function originAllowed(origin, allowed) {
 
 const escapeRx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+import { mandarAviso } from './push.js';
+
+/* ── EL CRON QUE MANDA LOS AVISOS  ·  historias #69 y #95 ─────
+
+   Cloudflare lo llama a la hora que diga `[triggers] crons` en
+   wrangler.toml. Aquí no hay petición ni origen: no es nadie
+   navegando, es el reloj.
+
+   ── POR QUÉ EL WORKER Y NO EL NAVEGADOR ─────────────────────
+
+   Porque el sentido de esto es que llegue con la app CERRADA. Un
+   `setTimeout` en la pestaña solo funciona mientras la pestaña existe,
+   y entonces no es una notificación: es un aviso para quien ya está
+   mirando.
+
+   ── LO QUE FALTA POR CONECTAR ───────────────────────────────
+
+   De dónde salen las suscripciones. Viven en Firestore, en
+   `users/<uid>/push/<id>`, y leerlas desde aquí necesita credenciales
+   de servidor que todavía no están puestas. Mientras tanto esta función
+   deja escrito el esqueleto y no manda nada: es preferible un cron que
+   no hace nada y lo dice a uno que parece funcionar. */
+async function mandarLosAvisos(env) {
+  const vapid = {
+    publica: env.VAPID_PUBLICA || '',
+    privada: env.VAPID_PRIVADA || '',
+    contacto: env.VAPID_CONTACTO || '',
+  };
+
+  if (!vapid.privada || !vapid.publica) {
+    console.log('Cron: sin claves VAPID, no hay nada que mandar.');
+    return { mandados: 0, motivo: 'sin-claves' };
+  }
+  if (!vapid.contacto) {
+    /* La norma lo exige y los servicios de push lo comprueban: sin un
+       `sub` válido, FCM contesta 403 y no dice por qué. */
+    console.log('Cron: falta VAPID_CONTACTO (un mailto:), sin él FCM rechaza el envío.');
+    return { mandados: 0, motivo: 'sin-contacto' };
+  }
+
+  const pendientes = await suscripcionesPendientes(env);
+  if (!pendientes.length) return { mandados: 0, motivo: 'nada-pendiente' };
+
+  let mandados = 0;
+  const caducadas = [];
+  for (const { sub, carga } of pendientes) {
+    const r = await mandarAviso(sub, carga, vapid);
+    if (r.ok) mandados += 1;
+    /* Un 404 o un 410 significan que esa suscripción ya no existe. Hay
+       que BORRARLA: sin eso, la lista crece para siempre con
+       direcciones muertas a las que se llama todos los días. */
+    else if (r.caducada) caducadas.push(sub);
+    else console.error('No se pudo mandar:', r.estado, r.error || '');
+  }
+
+  if (caducadas.length) await olvidarSuscripciones(env, caducadas);
+  return { mandados, caducadas: caducadas.length };
+}
+
+/* De dónde salen los avisos que tocan ahora. Todavía no hay forma de
+   leer Firestore desde aquí, así que devuelve una lista vacía — y lo
+   dice, en vez de fingir que miró. */
+async function suscripcionesPendientes(env) {
+  if (!env.FIRESTORE_CUENTA) {
+    console.log('Cron: sin credenciales de Firestore todavía; no se puede saber a quién avisar.');
+    return [];
+  }
+  return [];
+}
+
+async function olvidarSuscripciones(env, subs) {
+  console.log(`Cron: ${subs.length} suscripciones caducadas por borrar.`);
+}
+
 export default {
+  /* El reloj. Cloudflare lo llama solo. */
+  async scheduled(evento, env, ctx) {
+    ctx.waitUntil(mandarLosAvisos(env).then((r) => {
+      console.log('Cron terminado:', JSON.stringify(r));
+    }).catch((e) => {
+      console.error('El cron se cayó:', e?.stack || e?.message || e);
+    }));
+  },
+
   /* ── NINGUNA RESPUESTA SIN CORS  ·  el fallo que mentía ──────
      Una excepción sin capturar aquí dentro NO devuelve un error
      nuestro: devuelve la página de error de Cloudflare, que no lleva
