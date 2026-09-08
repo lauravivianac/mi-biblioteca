@@ -159,6 +159,15 @@ const radiosDe = (p) => [...new Set(
   [...String(p.consulta || '').matchAll(/around:(\d+)/g)].map((m) => Number(m[1])),
 )];
 
+/* SOLO LA PROSA, no la hoja entera.
+   La primera versión buscaba «librerías» en todo el HTML y se ponía roja
+   por la PESTAÑA que se llama así — que es un botón para cambiar de
+   idea, no una afirmación de lo que se está buscando. Lo que se mide
+   aquí es lo que la pantalla DICE: el párrafo de debajo del título y el
+   aviso cuando algo falla. */
+const prosa = (html) => [...String(html).matchAll(/<p class="planner-(?:lede|hint)">(.*?)<\/p>/gs)]
+  .map((m) => m[1]).join(' ');
+
 /* ── LO QUE SE PIDIÓ ─────────────────────────────────────────── */
 
 grupo('AL TOCAR LA TAZA, PRIMERO PREGUNTA DÓNDE ESTÁS');
@@ -218,6 +227,53 @@ await abrir('openDondeTomarCafe', { estado: 'denied' });
 const paraCafe = ultimaConsulta();
 ok('y «dónde tomar café» pide cafeterías', paraCafe.includes('"amenity"="cafe"'));
 ok('y nada más', !paraCafe.includes('"shop"="books"'));
+
+/* ── Y LO QUE DICE LA PANTALLA ───────────────────────────────── */
+
+grupo('SI PREGUNTAS POR CAFÉ, NO TE HABLA DE TIENDAS');
+
+/*   «Le pregunto por cafetería, me dice buscando tiendas.»
+
+   El foco filtraba los resultados pero NO LAS PALABRAS. La lista salía
+   bien, pero la frase de debajo del título seguía siendo «cafeterías,
+   librerías y bibliotecas de Bogotá», y el aviso de cuando no hay nada
+   nombraba las tres. Mientras carga y cuando falla, el texto es todo lo
+   que hay en pantalla: si dice otra cosa, la app está buscando otra
+   cosa. Es lo único que se puede concluir desde fuera. */
+
+const conCafe = prosa(await abrir('openDondeTomarCafe', { estado: 'denied' }));
+ok('la pantalla del café habla de cafeterías', /cafeterías/i.test(conCafe));
+ok('Y NO NOMBRA LIBRERÍAS', !/librerías/i.test(conCafe), conCafe);
+ok('ni bibliotecas', !/bibliotecas/i.test(conCafe), conCafe);
+
+const conTienda = prosa(await abrir('openDondeComprar', { estado: 'denied' }));
+ok('la de comprar libros habla de librerías', /librerías/i.test(conTienda));
+ok('y no nombra cafeterías', !/cafeterías/i.test(conTienda), conTienda);
+
+const conTodo = prosa(await abrir('openDondeLeer', { estado: 'denied' }));
+ok('y entrando por «todo» sí se nombran las tres',
+  /cafeterías/i.test(conTodo) && /librerías/i.test(conTodo) && /bibliotecas/i.test(conTodo),
+  conTodo);
+
+/* Pero la pestaña para cambiar de idea SIGUE ESTANDO: que la pantalla
+   no te hable de librerías no puede significar que no puedas ir a
+   verlas. Es la diferencia entre lo que se afirma y lo que se ofrece. */
+const hojaDelCafe = await abrir('openDondeTomarCafe', { estado: 'denied' });
+ok('y aun así se puede saltar a las librerías desde la pestaña',
+  hojaDelCafe.includes("verLugares('comprar')"));
+
+/* También cuando no hay nada que enseñar, que es cuando el texto es lo
+   único que queda. */
+overpassResponde = () => ({ elements: [] });
+const nadaDeCafe = prosa(await abrir('openDondeTomarCafe', { estado: 'denied' }));
+ok('sin resultados, el aviso habla de cafeterías', /cafeterías/i.test(nadaDeCafe));
+ok('Y TAMPOCO AHÍ NOMBRA LIBRERÍAS', !/librerías/i.test(nadaDeCafe), nadaDeCafe);
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 1, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: 'Café de al lado' } },
+    { type: 'node', id: 2, lat: 4.6515, lon: -74.0553, tags: { shop: 'books', name: 'Librería de al lado' } },
+  ],
+});
 
 /* ── LA SALIDA QUE NO LLEVABA A NINGUNA PARTE ────────────────── */
 

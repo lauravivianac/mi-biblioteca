@@ -30,8 +30,8 @@ import {
   buscarSitios, olvidarSitios, dondeEstoy, permisoDeUbicacion, olvidarDondeEstoy,
 } from './lugares.js';
 import {
-  distanciaTexto, enlaceMapa, propuesta, MOTIVOS, CREDITO, PROPOSITOS,
-  sePuedeReintentar, FOCOS, PESTANAS,
+  distanciaTexto, enlaceMapa, propuesta, textoMotivo, CREDITO, PROPOSITOS,
+  sePuedeReintentar, FOCOS, PESTANAS, nombresDe, conMayuscula,
 } from './lugares-core.js';
 import { tieneCiudad } from './place-core.js';
 import { MAX_MENSAJE } from './chat-core.js';
@@ -232,7 +232,7 @@ function pintar(motivo = null) {
        peor que ninguno. */
     const modoError = PROPOSITOS[proposito];
     cuerpo.innerHTML = `
-      <p class="planner-hint">${esc(MOTIVOS[motivo] || MOTIVOS['sin-resultados'])}</p>
+      <p class="planner-hint">${esc(textoMotivo(motivo, foco))}</p>
       ${sePuedeReintentar(motivo)
     ? '<button class="btn-ghost full" onclick="reintentarLugares()">Volver a intentarlo</button>'
     : ''}
@@ -254,8 +254,8 @@ function pintar(motivo = null) {
   const modo = PROPOSITOS[proposito];
   cuerpo.innerHTML = `
     <p class="planner-lede">${esc(aqui
-    ? 'Cafeterías, librerías y bibliotecas a un paseo de donde estás.'
-    : modo.lede(ciudad?.city || 'tu ciudad'))}</p>
+    ? `${conMayuscula(nombresDe(foco))} a un paseo de donde estás.`
+    : modo.lede(ciudad?.city || 'tu ciudad', foco))}</p>
     <p class="set-fineprint lugares-intro">${esc(modo.pie)}</p>
     ${modo.cercaDeMi ? pestanas() : ''}
     ${modo.cercaDeMi ? cambiarDeCentro() : ''}
@@ -273,8 +273,12 @@ function pintar(motivo = null) {
    pareciendo un aviso de otra cosa. */
 const esperando = () => {
   if (situando) return 'Mirando dónde estás…';
-  if (aqui) return 'Buscando sitios cerca de ti…';
-  return `Buscando sitios por ${ciudad?.city || 'tu ciudad'}…`;
+  /* «Buscando sitios» era demasiado vago para el único momento en que
+     el texto es lo ÚNICO que hay en pantalla. Si se entró por la taza,
+     que diga cafeterías. */
+  const que = proposito === 'quedar' ? 'sitios' : nombresDe(foco);
+  if (aqui) return `Buscando ${que} cerca de ti…`;
+  return `Buscando ${que} por ${ciudad?.city || 'tu ciudad'}…`;
 };
 
 /* Entrar por el atajo del café no puede dejarte encerrada en los cafés:
