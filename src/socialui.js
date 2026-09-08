@@ -104,11 +104,16 @@ function marcaRelacion(paraUid = null) {
   return `
     ${cuentas ? `
       <div class="rel-counts">
+        <!-- «Pero él es un amigo, no una amiga.» Los contadores decían
+             «seguidoras», y con eso se equivocaban con la mitad de la
+             gente. Ahora dicen lo que esa persona HACE —«le siguen»,
+             «sigue a»— que no tiene género y además se entiende sin
+             pensar. En el perfil propio se dice en primera persona. -->
         <button class="rel-count" onclick="openFollowList('seguidoras','${esc(uid)}')">
-          <b>${cuentas.seguidoras}</b><span>${cuentas.seguidoras === 1 ? 'seguidora' : 'seguidoras'}</span>
+          <b>${cuentas.seguidoras}</b><span>${esMio ? 'me siguen' : 'le siguen'}</span>
         </button>
         <button class="rel-count" onclick="openFollowList('siguiendo','${esc(uid)}')">
-          <b>${cuentas.siguiendo}</b><span>siguiendo</span>
+          <b>${cuentas.siguiendo}</b><span>${esMio ? 'sigo a' : 'sigue a'}</span>
         </button>
       </div>` : ''}
     ${esMio || sinSesion ? '' : `
@@ -159,20 +164,27 @@ export async function toggleFollow(otherUid) {
   }
   /* Dejar de seguir es silencioso también aquí: sin aviso, sin
      celebración. Solo se dice cuando empiezas a seguir. */
-  if (!antes) toast('Ahora la sigues');
+  if (!antes) toast('Ya le sigues');
 }
 
 /* ── LAS LISTAS DE SEGUIDORAS  ·  #46 ────────────────────────── */
 
 export async function openFollowList(cual, userUid) {
   openSheet('follows-overlay');
-  $('follows-title').textContent = cual === 'seguidoras' ? 'Seguidoras' : 'Siguiendo a';
+  /* El título dice de quién es la lista y en qué dirección va, sin
+     nombrar a nadie por su género. En el perfil propio, en primera
+     persona: leer «Quién le sigue» sobre la lista de una misma suena a
+     que la app no sabe con quién habla. */
+  const mia = userUid === myUid();
+  $('follows-title').textContent = cual === 'seguidoras'
+    ? (mia ? 'Quién me sigue' : 'Quién le sigue')
+    : (mia ? 'A quién sigo' : 'A quién sigue');
   $('follows-body').innerHTML = '<p class="planner-hint">Cargando…</p>';
 
   const uids = cual === 'seguidoras' ? await followersOf(userUid) : await followingOf(userUid);
   const perfiles = await profilesOf(uids);
 
-  const misSeguidoras = cual === 'seguidoras' && userUid === myUid();
+  const misSeguidoras = cual === 'seguidoras' && mia;
 
   /* ── LA LISTA Y EL NÚMERO TIENEN QUE CUADRAR ──────────────
      El contador cuenta FLECHAS y la lista pinta PERFILES, y no son lo
@@ -196,7 +208,7 @@ export async function openFollowList(cual, userUid) {
     : `<div class="empty">
          <div class="empty-rune">${ico('fichas', 'ico-lg')}</div>
          <div class="empty-text">${cual === 'seguidoras'
-           ? 'Todavía no la sigue nadie'
+           ? 'Todavía no le sigue nadie'
            : 'Todavía no sigue a nadie'}</div>
        </div>${nota}`;
 }

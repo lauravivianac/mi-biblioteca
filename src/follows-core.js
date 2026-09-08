@@ -58,15 +58,28 @@ export function followButton({ sigo = false, esperando = false } = {}) {
 
 /** La coletilla de «te sigue», que va aparte del botón. */
 export const followBadge = ({ sigo = false, meSigue = false } = {}) => {
-  if (meSigue && sigo) return 'Os seguís';
+  if (meSigue && sigo) return 'Se siguen';
   if (meSigue) return 'Te sigue';
   return '';
 };
 
-/* Plurales en femenino, que es como habla el resto de la app. */
+/* ── SIN GÉNERO, Y NO POR CORRECCIÓN ─────────────────────────
+   «Pero él es un amigo, no una amiga.»
+
+   La app hablaba en femenino de punta a punta —amigas, seguidoras,
+   lectoras— y era una decisión de estilo, no un descuido. Pero un
+   estilo que se equivoca con la mitad de la gente que lo lee deja de
+   ser estilo: es un dato incorrecto sobre una persona concreta, y se
+   nota justo cuando acabas de añadir a alguien.
+
+   Cambiarlo a masculino sería el mismo error del otro lado. Así que
+   estas frases no dicen QUÉ ES la persona, dicen QUÉ HACE: no «tres
+   seguidoras» sino «te siguen tres». El castellano lo permite casi
+   siempre, y de paso queda más claro. También sirvió para «Os seguís»,
+   que además era de España y esto se usa en Colombia. */
 export const cuenta = (n, uno, muchos) => `${n} ${n === 1 ? uno : muchos}`;
-export const seguidorasTexto = (n) => cuenta(n, 'seguidora', 'seguidoras');
-export const siguiendoTexto = (n) => `siguiendo a ${n}`;
+export const seguidorasTexto = (n) => (n === 1 ? 'te sigue 1' : `te siguen ${n}`);
+export const siguiendoTexto = (n) => `sigues a ${n}`;
 
 /**
  * El aviso de que alguien te empezó a seguir.

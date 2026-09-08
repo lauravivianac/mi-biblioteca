@@ -74,7 +74,7 @@ function pintar() {
       </div>
       <p class="set-fineprint" style="text-align:center">${esc(vacio.texto)}</p>
       <button class="btn-magic full" style="margin-top:14px" onclick="openPeople()">
-        🔍 Encontrar lectoras
+        🔍 Encontrar quién más lee
       </button>`;
     return;
   }

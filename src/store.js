@@ -571,7 +571,7 @@ export async function unpublishProfile() {
  */
 export async function fetchProfile(handle) {
   const nombre = normalize(handle);
-  if (!nombre) return { ok: false, error: 'Falta el nombre de usuaria.' };
+  if (!nombre) return { ok: false, error: 'Falta el @usuario.' };
   try {
     const nameSnap = await getDoc(doc(db, 'usernames', nombre));
     if (!nameSnap.exists()) return { ok: false, error: 'No hay nadie con ese nombre.' };

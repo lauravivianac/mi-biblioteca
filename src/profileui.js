@@ -347,7 +347,7 @@ function pintarAjustes() {
       <div>
         <div class="set-row-title">Cuenta privada</div>
         <div class="set-row-sub">${esPrivada(s)
-          ? 'Solo tus seguidoras ven lo que lees. Seguirte hay que pedírtelo.'
+          ? 'Solo quien te sigue ve lo que lees. Seguirte hay que pedírtelo.'
           : 'Cualquiera puede ver tu perfil y seguirte sin pedir permiso.'}</div>
       </div>
       <span class="prof-flag ${esPrivada(s) ? 'on' : ''}">${esPrivada(s) ? 'Privada' : 'Pública'}</span>
