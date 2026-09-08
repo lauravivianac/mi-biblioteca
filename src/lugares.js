@@ -31,7 +31,9 @@
    enseñar exactamente lo mismo.
    ───────────────────────────────────────────────────────────── */
 
-import { consultaOverpass, leerRespuesta, agrupar, RADIO, RADIO_CERCA } from './lugares-core.js';
+import {
+  consultaOverpass, leerRespuesta, agrupar, tiposDe, FOCOS, RADIO_CERCA,
+} from './lugares-core.js';
 import { normalizarLugar } from './place-core.js';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
@@ -107,7 +109,7 @@ function guardar(clave, dato) {
    tres consultas idénticas al mapa para enseñar tres recortes de la
    misma respuesta. Así que se recuerda UNA, en una variable, sin fecha
    y sin disco: se va al recargar la página, como tiene que irse. */
-let ultima = null;   // { lat, lon, lugares }
+const ultimas = new Map();   // foco → { lat, lon, lugares }
 
 /* Redondeado a tres decimales, unos 100 metros: moverse un poco por la
    calle no vuelve a preguntar, y cruzar el barrio sí. */
@@ -115,13 +117,16 @@ const cerca = (a, b) => a && b
   && a.lat.toFixed(3) === b.lat.toFixed(3)
   && a.lon.toFixed(3) === b.lon.toFixed(3);
 
-const enMemoria = (punto) => (cerca(ultima, punto) ? ultima.lugares : null);
-const recordar = (punto, lugares) => {
-  if (punto) ultima = { lat: punto.lat, lon: punto.lon, lugares };
+const enMemoria = (punto, foco) => {
+  const ya = ultimas.get(foco);
+  return cerca(ya, punto) ? ya.lugares : null;
+};
+const recordar = (punto, foco, lugares) => {
+  if (punto) ultimas.set(foco, { lat: punto.lat, lon: punto.lon, lugares });
 };
 
 /** Al cerrar la hoja: lo que no se recuerda no se puede filtrar. */
-export function olvidarDondeEstoy() { ultima = null; }
+export function olvidarDondeEstoy() { ultimas.clear(); }
 
 /* ── DÓNDE ESTÁ ESA CIUDAD ───────────────────────────────────── */
 
@@ -156,8 +161,10 @@ export async function centroDe(city, country = '') {
 
 /* ── QUÉ HAY ALREDEDOR ───────────────────────────────────────── */
 
-async function preguntarAOverpass(centro, { radio = RADIO } = {}) {
-  const consulta = consultaOverpass(centro, { radio, espera: ESPERA_CONSULTA });
+async function preguntarAOverpass(centro, { radio = null, foco = 'todo' } = {}) {
+  const consulta = consultaOverpass(centro, {
+    radio, tipos: tiposDe(foco), espera: ESPERA_CONSULTA,
+  });
   const fallos = [];
   const limite = Date.now() + ESPERA_TOTAL;
 
@@ -233,11 +240,16 @@ export async function buscarSitios(place, { desdeAqui = null, foco = 'todo' } = 
      sitios de alrededor también. Y NO SE GUARDA, que es lo importante:
      una lista guardada bajo «cerca de mí» sería tu posición escrita en
      el disco del teléfono con otro nombre. */
-  const clave = desdeAqui ? null : `lugares.sitios.${normalizarLugar(city)}`;
-  let lugares = clave ? guardado(clave, SEMANA) : enMemoria(desdeAqui);
+  /* La clave lleva el foco: cada pestaña pide lo suyo y guarda lo suyo.
+     Antes había UNA lista por ciudad con las tres clases dentro, que es
+     lo que obligaba a pedirlas siempre las tres. */
+  const clave = desdeAqui ? null : `lugares.sitios.${normalizarLugar(city)}.${foco}`;
+  let lugares = clave ? guardado(clave, SEMANA) : enMemoria(desdeAqui, foco);
   if (!lugares) {
     try {
-      lugares = await preguntarAOverpass(centro, { radio: desdeAqui ? RADIO_CERCA : RADIO });
+      lugares = await preguntarAOverpass(centro, {
+        radio: desdeAqui ? RADIO_CERCA : null, foco,
+      });
     } catch (e) {
       console.warn('El mapa no pudo contestar:', e?.message || e);
       return {
@@ -248,7 +260,7 @@ export async function buscarSitios(place, { desdeAqui = null, foco = 'todo' } = 
        ciudades sin nada cartografiado— y volver a preguntar cada vez no
        la va a cambiar en una semana. */
     if (clave) guardar(clave, lugares);
-    else recordar(desdeAqui, lugares);
+    else recordar(desdeAqui, foco, lugares);
   }
 
   const grupos = agrupar(lugares, centro, { foco });
@@ -259,7 +271,12 @@ export async function buscarSitios(place, { desdeAqui = null, foco = 'todo' } = 
 /** Para las pruebas y para «volver a buscar» cuando el mapa estaba caído. */
 export function olvidarSitios(city) {
   try {
-    localStorage.removeItem(`lugares.sitios.${normalizarLugar(city)}`);
+    /* Las tres, no una: ahora hay una lista guardada por pestaña, y
+       «volver a intentarlo» tiene que tirarlas todas o la siguiente
+       pestaña seguiría enseñando lo de antes. */
+    const base = `lugares.sitios.${normalizarLugar(city)}`;
+    for (const foco of Object.keys(FOCOS)) localStorage.removeItem(`${base}.${foco}`);
+    localStorage.removeItem(base);   // las guardadas por la versión anterior
   } catch { /* da igual: es una caché */ }
 }
 

@@ -51,10 +51,31 @@ import { sinTildes, unSoloEspacio } from './text-core.js';
    recomienda la hoja de seguridad para un primer encuentro. Públicas,
    con gente dentro, y con una excusa evidente para estar ahí con un
    libro en la mano. Ordenadas como se enseñan. */
+/* CADA UNA CON SU RADIO, Y NO ES UN CAPRICHO.
+
+   De bibliotecas hay tres en una ciudad; de cafeterías, seiscientas. Si
+   se le pide al mapa el mismo círculo para las tres, la parte de los
+   cafés se lleva prácticamente todo el trabajo: en 4 km del centro de
+   Bogotá son miles de locales que hay que encontrar, ordenar y devolver
+   para quedarse con seis.
+
+   Y eso no es una lentitud teórica: es lo que se leyó en el detalle
+   técnico de la pantalla. `overpass-api.de: Load failed` es que la
+   conexión se cayó, y los otros dos `Fetch is aborted` son nuestra
+   propia espera agotándose. Dos minutos para no decir nada.
+
+   Así que el círculo se ajusta a lo que se busca. Para un café, 1,5 km
+   —hay uno en cada esquina, no hace falta mirar más lejos—; para una
+   librería o una biblioteca, los 4 km, porque puede que solo haya una y
+   esté al otro lado. Es a la vez la respuesta más útil y, con mucho, la
+   consulta más barata. */
+export const RADIO_RARO = 4000;    // bibliotecas y librerías: puede haber una sola
+export const RADIO_CAFE = 1500;    // cafeterías: hay una en cada esquina
+
 export const TIPOS = [
-  { id: 'biblioteca', icono: 'fichas', label: 'Bibliotecas', consulta: ['"amenity"="library"'] },
-  { id: 'libreria', icono: 'tienda', label: 'Librerías', consulta: ['"shop"="books"'] },
-  { id: 'cafe', icono: 'taza', label: 'Cafeterías', consulta: ['"amenity"="cafe"'] },
+  { id: 'biblioteca', icono: 'fichas', label: 'Bibliotecas', consulta: ['"amenity"="library"'], radio: RADIO_RARO },
+  { id: 'libreria', icono: 'tienda', label: 'Librerías', consulta: ['"shop"="books"'], radio: RADIO_RARO },
+  { id: 'cafe', icono: 'taza', label: 'Cafeterías', consulta: ['"amenity"="cafe"'], radio: RADIO_CAFE },
 ];
 
 /* ── A QUÉ SE ENTRA ──────────────────────────────────────────
@@ -88,6 +109,21 @@ export function enFoco(tipo, foco = 'todo') {
   const f = FOCOS[foco] || FOCOS.todo;
   return !f.tipos || f.tipos.includes(tipo);
 }
+
+/**
+ * Las clases que hay que pedirle al mapa para este foco.
+ *
+ * Se preguntaba SIEMPRE por las tres y luego se tiraban dos tercios.
+ * Cómodo para la caché —una lista servía para las tres pestañas— y
+ * carísimo donde importa: al tocar «dónde comprar libros», que son
+ * cuatro librerías, se le estaba pidiendo al mapa todas las cafeterías
+ * de la ciudad para no enseñar ninguna.
+ *
+ * Ahora se pide lo que se va a enseñar y se guarda por separado. Son
+ * tres consultas pequeñas en vez de una enorme, y si una falla las
+ * otras dos siguen funcionando.
+ */
+export const tiposDe = (foco = 'todo') => TIPOS.filter((t) => enFoco(t.id, foco));
 
 const POR_ETIQUETA = {
   library: 'biblioteca',
@@ -129,13 +165,19 @@ export const RADIO_CERCA = 1200;
  * contorno del edificio y no como un punto, y sin `center` esos vuelven
  * sin coordenadas y no se pueden poner en un mapa.
  */
-export function consultaOverpass(centro, { radio = RADIO, tipos = TIPOS, espera = 25 } = {}) {
+export function consultaOverpass(centro, { radio = null, tipos = TIPOS, espera = 25 } = {}) {
   if (!centro || !Number.isFinite(centro.lat) || !Number.isFinite(centro.lon)) return null;
   const lat = centro.lat.toFixed(5);
   const lon = centro.lon.toFixed(5);
+  /* Un `radio` de fuera MANDA sobre el de cada clase: es lo que pasa
+     buscando cerca de ti, donde el círculo lo decide el paseo y no la
+     rareza de lo que se busca. Sin él, cada clase usa el suyo. */
   const cuerpo = tipos
-    .flatMap((t) => t.consulta)
-    .flatMap((filtro) => ['node', 'way'].map((q) => `  ${q}[${filtro}](around:${radio},${lat},${lon});`))
+    .flatMap((t) => {
+      const r = radio ?? t.radio ?? RADIO;
+      return t.consulta.flatMap((filtro) => ['node', 'way']
+        .map((q) => `  ${q}[${filtro}](around:${r},${lat},${lon});`));
+    })
     .join('\n');
   return `[out:json][timeout:${espera}];\n(\n${cuerpo}\n);\nout center 300;`;
 }
@@ -335,8 +377,24 @@ export const MOTIVOS = {
   'ciudad-caida': 'No hemos podido situar tu ciudad en el mapa ahora mismo. '
     + 'Si estás fuera de casa, prueba a buscar cerca de donde estás: '
     + 'ese camino no necesita este paso.',
-  'mapa-caido': 'El mapa no contesta ahora mismo. Vuelve a intentarlo en un rato: '
-    + 'no es que no haya sitios, es que no hemos podido preguntar.',
+  /* AQUÍ SE PROMETÍA UNA SALIDA QUE DABA AL MISMO MURO.
+
+       «Esa opción está apareciendo, pero cuando no encuentra nada a la
+        primera igual no funciona.»
+
+     Y tenía toda la razón. Debajo de este aviso se ofrecía «buscar cerca
+     de donde estoy» como si fuera otro camino, y no lo es: buscar cerca
+     de ti se salta a Nominatim —el que sitúa la ciudad— pero le pregunta
+     al MISMO Overpass que acaba de no contestar. Ofrecerlo aquí era
+     mandar a la gente contra la misma pared, con un botón bonito.
+
+     No es inútil del todo: la búsqueda de cerca es mucho más pequeña
+     —1,2 km alrededor de ti contra 4 km del centro— y una consulta
+     pequeña sí puede pasar donde la grande se atragantó. Pero eso hay
+     que DECIRLO, no dejar que se entienda que es otro servicio. */
+  'mapa-caido': 'El mapa no contesta ahora mismo. No es que no haya sitios: '
+    + 'es que no hemos podido preguntar. Buscar cerca de donde estás le pregunta '
+    + 'a lo mismo, pero mucho menos, y a veces por ahí sí pasa.',
   'sin-resultados': 'No encontramos cafeterías, librerías ni bibliotecas por el centro '
     + 'de tu ciudad. El mapa lo mantiene gente voluntaria y a veces falta.',
   /* «Aquí no hay nada» y «en esta ciudad no hay nada» no son lo mismo, y

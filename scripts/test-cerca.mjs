@@ -121,7 +121,9 @@ globalThis.fetch = async (url, opciones = {}) => {
 
 const store = await import('../src/store.js');
 const lugaresui = await import('../src/lugaresui.js');
-const { RADIO, RADIO_CERCA, MOTIVOS } = await import('../src/lugares-core.js');
+const {
+  RADIO, RADIO_CERCA, RADIO_CAFE, RADIO_RARO, MOTIVOS,
+} = await import('../src/lugares-core.js');
 
 let pasaron = 0;
 let fallaron = 0;
@@ -149,7 +151,13 @@ async function abrir(cual, { estado = 'prompt', donde = { lat: 4.6510, lon: -74.
 }
 
 const alMapa = () => pedidos.filter((p) => p.que === 'mapa');
+const ultimaConsulta = () => alMapa().at(-1)?.consulta || '';
 const radioDe = (p) => Number(/around:(\d+)/.exec(p.consulta || '')?.[1]);
+/* Todos los radios de una consulta, en orden y sin repetir el de `node`
+   y el de `way`: ahora cada clase de sitio lleva el suyo. */
+const radiosDe = (p) => [...new Set(
+  [...String(p.consulta || '').matchAll(/around:(\d+)/g)].map((m) => Number(m[1])),
+)];
 
 /* ── LO QUE SE PIDIÓ ─────────────────────────────────────────── */
 
@@ -190,6 +198,56 @@ ok('O SEA MÁS DE DIEZ VECES MENOS MAPA que mirar',
   area(RADIO) / area(RADIO_CERCA) > 10,
   'el área va con el cuadrado del radio, no con el radio');
 
+/* ── LO QUE SE LE PIDE AL MAPA, Y LO QUE NO ──────────────────── */
+
+grupo('CADA ATAJO PIDE SOLO LO QUE VA A ENSEÑAR');
+
+/* Esta es la pantalla que se envió: «Dónde comprar libros», el mapa sin
+   contestar y tres servidores caídos en el detalle técnico. Se le
+   estaba pidiendo al mapa TODAS LAS CAFETERÍAS DE BOGOTÁ para enseñar
+   cuatro librerías y ninguna cafetería. */
+await abrir('openDondeComprar', { estado: 'denied' });
+const paraComprar = ultimaConsulta();
+
+ok('«dónde comprar libros» pide librerías', paraComprar.includes('"shop"="books"'));
+ok('Y NO PIDE NINGUNA CAFETERÍA', !paraComprar.includes('"amenity"="cafe"'),
+  'era la parte cara de la consulta, y ni siquiera se iba a enseñar');
+ok('ni bibliotecas', !paraComprar.includes('"amenity"="library"'));
+
+await abrir('openDondeTomarCafe', { estado: 'denied' });
+const paraCafe = ultimaConsulta();
+ok('y «dónde tomar café» pide cafeterías', paraCafe.includes('"amenity"="cafe"'));
+ok('y nada más', !paraCafe.includes('"shop"="books"'));
+
+/* ── LA SALIDA QUE NO LLEVABA A NINGUNA PARTE ────────────────── */
+
+grupo('CON EL MAPA CAÍDO, NO SE PROMETE LO QUE NO SE PUEDE DAR');
+
+/*   «Esa opción está apareciendo, pero cuando no encuentra nada a la
+      primera igual no funciona.»
+
+   Buscar cerca de ti se salta a Nominatim, pero le pregunta al MISMO
+   Overpass. Ofrecerlo como si fuera otro camino era mandar a la gente
+   contra la misma pared. */
+overpassResponde = () => new Error('caído');
+const caido = await abrir('openDondeComprar', { estado: 'denied' });
+
+ok('se dice que no se ha podido preguntar', caido.includes('no hemos podido preguntar'));
+ok('SE AVISA DE QUE CERCA DE TI PREGUNTA A LO MISMO',
+  caido.includes('le pregunta') && caido.includes('a lo mismo'),
+  'no puede parecer otro servicio, porque no lo es');
+ok('y aun así se ofrece, porque la consulta pequeña sí puede pasar',
+  caido.includes('buscarCercaDeMi()'));
+ok('con el detalle técnico, que es lo que permitió arreglar esto',
+  caido.includes('Detalle técnico'));
+
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 1, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: 'Café de al lado' } },
+    { type: 'node', id: 2, lat: 4.6515, lon: -74.0553, tags: { shop: 'books', name: 'Librería de al lado' } },
+  ],
+});
+
 /* ── SIN PERMISO NO SE ROMPE NADA ────────────────────────────── */
 
 grupo('SI DICE QUE NO, LOS DEL CENTRO COMO SIEMPRE');
@@ -199,7 +257,8 @@ const sinPermiso = await abrir('openDondeTomarCafe', { estado: 'denied' });
 ok('NO se enseña la ventana del permiso otra vez', veces === 0,
   'con el permiso bloqueado el navegador no la enseña: solo se espera');
 ok('se sitúa la ciudad', pedidos.some((p) => p.que === 'ciudad'));
-ok('y se busca por el centro', radioDe(alMapa()[0]) === RADIO);
+ok('y se busca por el centro, con el radio del café',
+  radioDe(alMapa()[0]) === RADIO_CAFE, `salió ${radioDe(alMapa()[0])}`);
 ok('salen sitios igual, que es lo que había antes',
   sinPermiso.includes('Café de al lado'));
 ok('y sigue estando el botón para intentarlo cuando se pueda',
@@ -226,8 +285,9 @@ await abrir('openLugares');
 
 ok('NO SE PIDE LA UBICACIÓN', veces === 0);
 ok('se sitúa la ciudad, como siempre', pedidos.some((p) => p.que === 'ciudad'));
-ok('y se busca por el centro, con el radio de siempre',
-  radioDe(alMapa()[0]) === RADIO);
+ok('y se busca por el centro, con los radios de cada clase',
+  radiosDe(alMapa()[0]).join() === [RADIO_RARO, RADIO_CAFE].join(),
+  radiosDe(alMapa()[0]).join(' · '));
 
 /* ── SIN CIUDAD PERO CON GPS ─────────────────────────────────── */
 
@@ -300,16 +360,23 @@ ok('y lo guardado es el centro público de Bogotá, no tu posición',
 
 await abrir('openDondeTomarCafe');
 
-/* Pero tampoco se puede preguntar tres veces por lo mismo al cambiar de
-   pestaña: eso es machacar un servicio gratuito para enseñar tres
-   recortes de una respuesta que ya teníamos. */
-grupo('CAMBIAR DE PESTAÑA NO VUELVE A PREGUNTARLE AL MAPA');
+/* Cada pestaña pide LO SUYO —esa es la mitad del arreglo— pero volver a
+   una ya vista no puede preguntar otra vez: eso sería machacar un
+   servicio gratuito para enseñar algo que ya teníamos. */
+grupo('CADA PESTAÑA PIDE LO SUYO, Y SOLO UNA VEZ');
 
-const antes = alMapa().length;
+const trasCafe = alMapa().length;
 await lugaresui.verLugares('comprar');
+ok('la pestaña de librerías es otra consulta', alMapa().length === trasCafe + 1);
+ok('Y NO ARRASTRA LAS CAFETERÍAS', !ultimaConsulta().includes('"amenity"="cafe"'),
+  ultimaConsulta().replace(/\n/g, ' '));
+
 await lugaresui.verLugares('todo');
-ok('tres pestañas, una sola consulta', alMapa().length === antes,
-  `${alMapa().length - antes} consultas de más`);
+const trasTodo = alMapa().length;
+await lugaresui.verLugares('cafe');
+await lugaresui.verLugares('comprar');
+ok('volver a una pestaña ya vista no vuelve a preguntar',
+  alMapa().length === trasTodo, `${alMapa().length - trasTodo} consultas de más`);
 
 /* Y al cerrar, se olvida: es lo que promete el pie de la pantalla
    mientras se pide el permiso. */
