@@ -713,6 +713,31 @@ body:not(.signed-in) .fab { display: none; }
    promete un final que no se puede calcular. */
 .trabajo-bar.sin-fin i { width: 40% !important; animation: slide 1.2s ease-in-out infinite; transition: none; }
 
+/* ── DÓNDE QUEDAR  ·  historia #157 ──────────────────────────
+   Cada sitio es una fila que se toca entera para proponerlo, con el
+   mapa aparte a la derecha. Separados a propósito: abrir el mapa y
+   proponer el sitio son cosas distintas y una no debe llevar a la
+   otra por error. */
+/* Aire entre la explicación y el primer grupo: sin él, «no se manda
+   hasta que le des a Enviar» y «BIBLIOTECAS» se leen como un mismo
+   bloque. */
+.lugares-intro { margin: 0 0 20px; }
+
+.sitio {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--border-soft);
+}
+.sitio:last-child { border-bottom: 0; }
+.sitio-elegir {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;
+  padding: 0; border: 0; background: transparent; cursor: pointer;
+  text-align: left; font: inherit; color: inherit;
+}
+.sitio-nombre { font-size: 14px; color: var(--text); line-height: 1.35; }
+.sitio-datos { font-size: 11.5px; color: var(--muted); }
+.sitio-horario { font-size: 11px; color: var(--lilac); font-style: italic; }
+.sitio .btn-mini { flex-shrink: 0; text-decoration: none; }
+
 /* La foto recién tomada, que es la prueba de que salió. */
 .foto-tomada {
   border-radius: var(--radius-sm); overflow: hidden;
