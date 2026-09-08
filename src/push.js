@@ -52,7 +52,7 @@ import { settings, updateSettings } from './store.js';
  *
  * Vacía = no hay notificaciones, y el interruptor ni aparece.
  */
-const VAPID_PUBLICA = '';
+const VAPID_PUBLICA = 'BCMCk19F16wf7bLNniqoXoOZyCI8XdOQNRuIxPxBFmePdL5b2R3Et0eBbaR5IP7S1sV28ifVIPi0ADl2DUra0p8';
 
 /** ¿Este navegador y este despliegue pueden con esto? */
 export const pushDisponible = () => Boolean(VAPID_PUBLICA)
