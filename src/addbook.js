@@ -23,6 +23,7 @@ import { $, esc, toast, closeSheet, openSheet } from './ui.js';
 import { refreshAll } from './views.js';
 import { ico } from './icons.js';
 import { lomoHtml } from './lomo.js';
+import { mejorLinea } from './text-core.js';
 
 let mode = 'titulo';       // titulo · camara · manual
 let draft = null;          // el candidato elegido, antes de guardar
@@ -229,14 +230,23 @@ export function agruparCodigo(code) {
   return `${d[0]} ${d.slice(1, 7)} ${d.slice(7)}`;
 }
 
-/** El estado de debajo del vídeo: girando o quieto, y con qué texto. */
-function estado(texto, { girando = true, codigo = '' } = {}) {
+/**
+ * El estado de debajo del vídeo: girando o quieto, y con qué texto.
+ *
+ * `detalle` es lo que dijeron los catálogos al fallar, en letra
+ * pequeña. Va en pantalla por lo mismo que en la hoja de los cafés: sin
+ * él, lo único que se puede contar de vuelta es «no funcionó», y con
+ * eso no se arregla nada. Con el detalle del mapa se encontró la causa
+ * real en una tarde.
+ */
+function estado(texto, { girando = true, codigo = '', detalle = '' } = {}) {
   const caja = $('scan-estado');
   if (!caja) return;
   caja.innerHTML = `
     ${girando ? '<span class="trabajo-giro" aria-hidden="true"></span>' : ''}
     <span class="trabajo-txt" id="scan-hint">
       ${codigo ? `<b class="scan-codigo">${esc(agruparCodigo(codigo))}</b>` : ''}${esc(texto)}
+      ${detalle ? `<span class="lugares-detalle">Detalle técnico: ${esc(detalle)}</span>` : ''}
     </span>`;
 }
 
@@ -457,8 +467,14 @@ export async function usarCodigo(code) {
       'isbn-invalido': ' · no es un ISBN válido. Prueba con la foto de la portada.',
       'catalogos-caidos': ' · lo leímos bien, pero los catálogos no contestan ahora mismo. '
         + 'Vuelve a intentarlo en un rato.',
-    }[res.reason] || ' · no está en los catálogos. Prueba con la foto de la portada.',
-    { girando: false, codigo: code });
+      /* «No está» y «no está en el que pudo contestar» no son lo mismo,
+         y mandar a por la portada en el segundo caso es mandar a la
+         misma consulta que acaba de fallar. */
+      'no-encontrado-a-medias': ' · lo leímos bien, pero uno de los dos catálogos no contestó '
+        + 'y el otro no lo tiene. Vuelve a intentarlo en un rato antes de darlo por perdido.',
+    }[res.reason] || ' · no está en los catálogos. Prueba con la foto de la portada, '
+      + 'o escribe el título a mano.',
+    { girando: false, codigo: code, detalle: res.detalle });
     /* Y SE VUELVE A MIRAR. Sin esto, un código que no está en los
        catálogos dejaba la cámara encendida y ciega: el mensaje decía
        qué pasó y luego no pasaba nada nunca más, ni con ese libro ni
@@ -487,8 +503,27 @@ export async function shootCover() {
     return;
   }
 
-  const canvas = grabFrame(v);
-  const photo = frameToDataUrl(canvas);
+  /* DOS LIENZOS, Y NO ES DERROCHE.
+
+     Uno GRANDE para leer y uno pequeño para guardar, porque lo que
+     necesita cada cosa es distinto:
+
+     · Tesseract quiere unos 20-25 píxeles de altura por letra. En la
+       foto que se envió, la portada ocupaba como un tercio del ancho:
+       a 900 píxeles de lienzo el título queda JUSTO EN EL LÍMITE, unos
+       veinte. No es que estuviera claramente por debajo —no puedo
+       afirmar que fuera la causa de que saliera `\ a — DE`— pero
+       trabajar en el filo del mínimo es pedir que cualquier cosa
+       (un poco de desenfoque, el brillo del plastificado, un ángulo)
+       lo tire por debajo. A 1800 hay margen.
+
+     · La portada que se guarda, en cambio, se enseña en una ficha de
+       unos 120 píxeles. Guardar 1800 sería meter medio mega en un
+       documento que se sincroniza, para verlo del tamaño de un sello.
+
+     Se dispara UNA sola vez y se reduce: la foto es la misma. */
+  const canvas = grabFrame(v, 1800);
+  const photo = frameToDataUrl(grabFrame(v, 900));
   /* Se para TODO, no solo la cámara: el bucle de códigos seguiría
      pidiéndole cuadros a un vídeo apagado durante todo el OCR. */
   pararEscaner();
@@ -522,6 +557,28 @@ export async function shootCover() {
   }
   if (!trabajo) return;                 // se canceló mientras leía
 
+  /* ¿LEYÓ ALGO, DE VERDAD?
+
+     De una portada nítida el OCR devolvió `\ a — DE`. Con eso se
+     consultaba igual a los catálogos, se le preguntaba al agente, y al
+     final se decía «no lo reconocimos» — que es falso: no es que nadie
+     reconociera el libro, es que no llegamos a leer su nombre.
+
+     Se corta aquí. Ni se gasta una consulta en basura ni se cuenta
+     luego una cosa por otra. */
+  if (!mejorLinea(text)) {
+    trabajo = null;
+    mode = 'manual';
+    draft = {
+      title: '', author: '', pages: '—', cover: photo,
+      genre: 'Novela contemporánea', source: 'foto',
+    };
+    render();
+    toast('La foto salió bien, pero no pudimos leer el texto de la portada. '
+      + 'Prueba con más luz y de frente, o pon el título a mano.', 'error');
+    return;
+  }
+
   trabajo.frase = 'Buscando el libro en los catálogos…';
   trabajo.parte = null;
   pintarTrabajo();
@@ -542,18 +599,30 @@ export async function shootCover() {
      ellos— ni tiene sentido mandarla a rellenar la ficha a mano: la
      foto ya está tomada y dentro de un rato esta misma búsqueda
      funciona. */
-  if (res.reason === 'catalogos-caidos') {
+  if (res.reason === 'catalogos-caidos' || res.reason === 'sin-coincidencia-a-medias') {
     /* La foto tampoco se tira aquí. Se vuelve a la cámara, pero con el
        libro ya en la ficha y la foto puesta: si los catálogos no
        contestan, al menos queda guardarlo a mano sin repetir la foto. */
     trabajo = null;
     mode = 'manual';
     draft = {
-      title: text.split('\n').map((l) => l.trim()).filter(Boolean)[0] || '',
+      /* LA MEJOR LÍNEA, Y SOLO SI PARECE TEXTO.
+
+         Antes se cogía la PRIMERA línea sin mirar, y así es como
+         `\ a — DE` acabó escrito en el campo del título de una foto
+         perfectamente legible. Un campo vacío se rellena; uno con
+         basura hay que vaciarlo primero. */
+      title: mejorLinea(text),
       author: '', pages: '—', cover: photo, genre: 'Novela contemporánea', source: 'foto',
     };
     render();
-    toast('La foto salió bien, pero los catálogos no contestan. Revisa los datos y guárdalo.', 'error');
+    /* La foto salió bien: lo que falló es el otro lado. Decirlo así
+       importa, porque «no lo reconocimos» invita a repetir la foto —y
+       repetirla no va a arreglar un catálogo que no contesta. */
+    toast(res.reason === 'catalogos-caidos'
+      ? 'La foto salió bien, pero los catálogos no contestan. Revisa los datos y guárdalo.'
+      : 'La foto salió bien, pero uno de los catálogos no contestó y el otro no lo tiene. '
+        + 'Revisa los datos y guárdalo, o inténtalo en un rato.', 'error');
     return;
   }
 
@@ -580,11 +649,14 @@ export async function shootCover() {
   trabajo = null;
   mode = 'manual';
   draft = {
-    title: text.split('\n').map((l) => l.trim()).filter(Boolean)[0] || '',
+    /* La mejor línea, no la primera: en una portada la primera suele
+       ser la editorial o un adorno, y la más larga suele ser el
+       título. */
+    title: mejorLinea(text),
     author: '', pages: '—', cover: photo, genre: 'Novela contemporánea', source: 'foto',
   };
   render();
-  toast('No lo reconocimos. Revisa los datos y guárdalo.');
+  toast('Leímos la portada, pero no encontramos el libro. Revisa los datos y guárdalo.');
 }
 
 /* ── GUARDAR ─────────────────────────────────────────────────── */
