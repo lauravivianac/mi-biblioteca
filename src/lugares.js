@@ -64,16 +64,34 @@ const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
    nada: solo se le pregunta al siguiente si los anteriores no han
    contestado todavía. Un día bueno se sigue gastando UNA consulta.
 
-   Los dos últimos no los he podido probar desde donde escribo esto
-   —aquí los espejos están bloqueados—, así que van al final: si alguno
-   no sirviera, solo se le llama cuando ya no queda nada mejor, y el
-   detalle técnico de la pantalla dirá exactamente qué contestó. */
+   ── Y POR QUÉ VOLVIERON A SER TRES ──────────────────────────
+
+   Añadí `overpass.osm.jp` y `overpass.osm.ch` diciendo que no los podía
+   probar. Dos horas después, la misma búsqueda que traía siete
+   cafeterías a 300 metros contestaba «no hay cafeterías a menos de
+   3 km de donde estás».
+
+   Esos dos son instancias REGIONALES —las mantienen las asociaciones de
+   OpenStreetMap de Japón y de Suiza— y lo normal en una réplica así es
+   que su base de datos cubra su región y nada más. Preguntarle por
+   Bogotá no da un error: da un 200 con la lista vacía. Y una lista
+   vacía es SIEMPRE la respuesta más rápida, porque no hay nada que
+   buscar ni que enviar — así que ganaba la carrera y tapaba a los que
+   sí tenían los cafés.
+
+   No he podido confirmarlo mirando, porque desde aquí los cinco están
+   bloqueados. Pero la regla que me salté está clara: no se meten
+   servidores que no se han podido comprobar, y menos en una carrera
+   donde el primero que hable manda. Se quedan los tres de siempre, que
+   sirven el planeta entero y llevan meses funcionando.
+
+   Lo otro que hacía falta —que un cero no le gane a unos datos— está
+   arreglado más abajo, y hace falta igual: cualquier espejo puede
+   quedarse un día con la base a medias. */
 export const OVERPASS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
-  'https://overpass.osm.jp/api/interpreter',
-  'https://overpass.osm.ch/api/interpreter',
 ];
 
 /* ── LAS ESPERAS, DESPUÉS DE MEDIRLAS ────────────────────────
@@ -389,6 +407,25 @@ export async function preguntarAOverpass(centro, {
   const abortos = [];
   let preguntando = 0;
   let ganador = null;
+  /* UNA LISTA VACÍA NO GANA LA CARRERA, PERO NO SE TIRA.
+     ─────────────────────────────────────────────────
+     Un espejo puede contestar «cero sitios» rapidísimo y con toda
+     razón —porque de verdad no hay nada— o porque su base de datos no
+     cubre esa parte del mundo. Desde aquí las dos cosas se ven igual:
+     un 200 con `elements: []`.
+
+     Y el vacío es SIEMPRE el más rápido, porque no hay nada que buscar
+     ni que mandar. Así que en una carrera gana siempre, y tapa al
+     espejo que sí tenía los cafés. Eso es lo que pasó de verdad: la
+     misma búsqueda que a las 10:24 traía siete cafeterías a 300 m
+     contestó «no hay cafeterías a menos de 3 km de donde estás».
+
+     Un cero se guarda aparte y solo se devuelve si NADIE trae nada
+     mejor. Cuesta esperar un poco más justo cuando la respuesta iba a
+     ser «no hay nada» — que es exactamente cuando vale la pena
+     asegurarse, porque es la respuesta que hace que alguien deje de
+     buscar. */
+  let vacio = null;
   /* Cómo se entera el bucle de que algo ha pasado —alguien contestó o
      alguien se murió— sin tener que ir preguntando cada poco. */
   let avisar = () => {};
@@ -402,7 +439,14 @@ export async function preguntarAOverpass(centro, {
     const corta = setTimeout(() => { e.estado = TARDO; ac.abort(); }, red);
     unServidor(e.url, consulta, ac.signal)
       .then(
-        (lugares) => { e.estado = 'contestó'; if (!ganador) ganador = lugares; },
+        (lugares) => {
+          if (lugares.length) { e.estado = 'contestó'; if (!ganador) ganador = lugares; } else {
+            /* Se dice en el detalle: un espejo que siempre contesta cero
+               para tu ciudad es un espejo que no te sirve, y así se ve. */
+            e.estado = 'contestó sin nada';
+            if (!vacio) vacio = lugares;
+          }
+        },
         /* Si ya lo habíamos cortado nosotros, el error que llega es el
            aborto: lo interesante es que tardó, no cómo se llama. */
         (err) => { if (e.estado === PREGUNTANDO) e.estado = String(err?.message || err); },
@@ -428,7 +472,7 @@ export async function preguntarAOverpass(centro, {
         lanzar(espejos[siguiente]);
         siguiente += 1;
       } else if (!quedan && preguntando === 0) {
-        break;                                   // no queda nadie a quien esperar
+        break;             // no queda nadie a quien preguntar ni a quien esperar
       } else {
         /* Se espera a que pase algo, pero nunca más allá del próximo
            turno ni del final: si el aviso se perdiera por una carrera,
@@ -442,6 +486,9 @@ export async function preguntarAOverpass(centro, {
     }
 
     if (ganador) return ganador;
+    /* Nadie trajo nada, pero alguien llegó a contestar: entonces «no hay
+       cafeterías por aquí» es una respuesta de verdad y no un fallo. */
+    if (vacio) return vacio;
   } finally {
     for (const ac of abortos) ac.abort();
   }

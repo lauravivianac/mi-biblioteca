@@ -899,11 +899,15 @@ const detalleDe = async (esperas) => {
 comoResponde = () => ({ tarda: 0, error: 'caído' });
 const todosCaidos = await detalleDe({ red: 300, total: 3000, adelantar: 100 });
 
-ok('se preguntó a los cinco espejos', cuandoSePregunto.length === 5,
-  `${cuandoSePregunto.length} consultas`);
+/* El número sale de OVERPASS y no escrito a mano: una prueba que lleva
+   el «5» dentro se pone roja cuando cambia la lista, y lo que hay que
+   comprobar es que se pregunta a TODOS, no que sean cinco. */
+ok('se preguntó a todos los espejos', cuandoSePregunto.length === OVERPASS.length,
+  `${cuandoSePregunto.length} de ${OVERPASS.length}`);
 ok('Y LOS CINCO SALEN EN EL DETALLE',
   cuandoSePregunto.every((p) => todosCaidos.includes(p.cual)), todosCaidos);
-ok('con el motivo de cada uno', (todosCaidos.match(/caído/g) || []).length === 5, todosCaidos);
+ok('con el motivo de cada uno',
+  (todosCaidos.match(/caído/g) || []).length === OVERPASS.length, todosCaidos);
 ok('y se dice que no contestó ninguno', todosCaidos.includes('ninguno pudo contestar'),
   todosCaidos);
 
@@ -919,10 +923,70 @@ ok('EL QUE SEGUÍA PREGUNTANDO TAMBIÉN SALE, y dice que seguía',
   aMedias.includes(PREGUNTANDO), aMedias);
 ok('y el que no llegó a preguntarse lo dice, en vez de desaparecer',
   aMedias.includes(SIN_EMPEZAR), aMedias);
-ok('los cinco espejos están nombrados, pasara lo que pasara',
+ok('todos los espejos están nombrados, pasara lo que pasara',
   OVERPASS_NOMBRES.every((n) => aMedias.includes(n)), aMedias);
 ok('y se dice que se agotó la espera, con cuánta era',
   /se agotó la espera \(0\.6 s\)/.test(aMedias), aMedias);
+
+/* ─────────────────────────────────────────────────────────────
+   UN CERO NO LE GANA A UNOS DATOS
+
+     «No hay cafeterías a menos de 3 km de donde estás.»
+
+   Dos horas antes, esa misma búsqueda traía siete cafeterías a 300
+   metros. Lo que había cambiado era que yo metí dos espejos regionales
+   —los de Japón y Suiza— sin poder probarlos. Preguntarle por Bogotá a
+   una réplica que solo tiene Japón no da error: da un 200 con la lista
+   vacía.
+
+   Y el vacío es SIEMPRE lo más rápido, porque no hay nada que buscar ni
+   que mandar. Así que en una carrera gana siempre y tapa al que sí
+   tenía los datos. La conclusión que le llega a quien lo usa —«en mi
+   barrio no hay cafeterías»— es falsa y hace que deje de buscar.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('UN CERO NO LE GANA A UNOS DATOS');
+
+comoResponde = (cual) => (cual === 'overpass-api.de'
+  ? { tarda: 0, elements: [] }                 // el regional: rapidísimo y vacío
+  : { tarda: 120, elements: [{ type: 'node', id: 7, lat: 4.65, lon: -74.05, tags: { amenity: 'cafe', name: 'Café de verdad' } }] });
+
+cuandoSePregunto.length = 0;
+const conCafes = await lugares.preguntarAOverpass(AQUI, {
+  foco: 'cafe', esperas: { red: 4000, total: 6000, adelantar: 200 },
+});
+
+ok('GANA EL QUE TRAE CAFÉS, no el que contesta cero',
+  conCafes.length === 1 && conCafes[0].nombre === 'Café de verdad',
+  `devolvió ${conCafes.length} sitios`);
+ok('y para eso hubo que preguntarle a más de uno',
+  cuandoSePregunto.length >= 2, `${cuandoSePregunto.length} consultas`);
+
+/* Pero un cero SÍ es una respuesta cuando de verdad no hay nada: si
+   todos contestan cero, es que no hay cafeterías por ahí, y eso hay que
+   decirlo en vez de tratarlo como una avería. */
+comoResponde = () => ({ tarda: 0, elements: [] });
+cuandoSePregunto.length = 0;
+const deVerdadNada = await lugares.preguntarAOverpass(AQUI, {
+  foco: 'cafe', esperas: { red: 4000, total: 4000, adelantar: 100 },
+});
+ok('pero si TODOS dicen cero, entonces es que no hay nada',
+  Array.isArray(deVerdadNada) && deVerdadNada.length === 0,
+  JSON.stringify(deVerdadNada));
+ok('y eso no se cuenta como que el mapa esté caído',
+  cuandoSePregunto.length === OVERPASS.length,
+  `${cuandoSePregunto.length} de ${OVERPASS.length} espejos`);
+
+/* Y los espejos que no había podido probar se fueron: no se meten
+   servidores sin comprobar en una carrera donde el primero que habla
+   manda. Los tres que quedan sirven el planeta entero. */
+grupo('SOLO ESPEJOS COMPROBADOS');
+
+ok('no queda ningún espejo regional sin comprobar',
+  !OVERPASS_NOMBRES.some((n) => /osm\.jp|osm\.ch/.test(n)),
+  OVERPASS_NOMBRES.join(' · '));
+ok('y quedan al menos tres, para que uno pueda faltar',
+  OVERPASS.length >= 3, String(OVERPASS.length));
 
 grupo('UN ESPEJO QUE SE MUERE NO CUESTA CUATRO SEGUNDOS');
 
