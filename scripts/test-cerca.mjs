@@ -143,7 +143,7 @@ const store = await import('../src/store.js');
 const lugaresui = await import('../src/lugaresui.js');
 const {
   RADIO, RADIO_CERCA, RADIO_CAFE, RADIO_RARO, MOTIVOS,
-  DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe,
+  DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe, DESDE,
 } = await import('../src/lugares-core.js');
 
 let pasaron = 0;
@@ -718,6 +718,23 @@ ok('Y NO DICE «de donde estás», que no se lo hemos dicho',
 ok('salen los sitios de allí', enChapinero.includes('Café del Parque'));
 ok('y se puede quitar sin cerrar la hoja', enChapinero.includes('quitarSitio()'));
 
+/* ── Y CADA FILA DICE DESDE DÓNDE SE MIDIÓ ───────────────────
+   Esto se me escapó, y salió en una captura: el título decía «a menos
+   de 3 km de UPZ Niza» y debajo cada café decía «A 300 m DE TI». De las
+   dos frases una sobra, y sobra la que habla de dónde estás — porque en
+   esa búsqueda no se usó tu posición para nada.
+
+   La prueba que tenía comprobaba `distanciaTexto(km, 'sitio')` en el
+   módulo puro, y esa pasaba: lo que no comprobaba nadie era que la
+   pantalla LLAMARA a esa función con 'sitio'. Probar la función y no
+   la llamada deja el hueco justo por donde se coló. */
+ok('NINGUNA FILA DICE «de ti» buscando por un barrio',
+  !enChapinero.includes('de ti'),
+  enChapinero.slice(enChapinero.indexOf('sitio-datos'), enChapinero.indexOf('sitio-datos') + 120));
+ok('y la distancia se mide desde el barrio',
+  enChapinero.includes(DESDE.sitio),
+  `debería decir «${DESDE.sitio}»`);
+
 /* Y las distancias siguen mandando: es el mismo control, otro centro. */
 const antesDeAmpliarBarrio = alMapa().length;
 await lugaresui.verHasta('lejos');
@@ -943,6 +960,61 @@ ok('se rinde a los 800 ms, no a los 800 más los adelantos',
   total < 1200, `tardó ${total} ms; con el reloj mal puesto se iría a 1400`);
 
 globalThis.fetch = fetchNormal;
+
+/* ─────────────────────────────────────────────────────────────
+   «CERCA DE DONDE ESTOY» TIENE QUE MOVERSE DE SITIO
+
+   Con un barrio escrito, `centroElegido()` lo prefiere sobre tu
+   posición — quien escribe dónde quiere buscar, quiere buscar ahí. Así
+   que tocar «buscar cerca de donde estoy» pedía el permiso, esperaba al
+   GPS, volvía a preguntarle al mapa… y enseñaba otra vez los del
+   barrio. Todo ese rato para no moverse del sitio, y encima las filas
+   pasaban a decir «de ti» porque `aqui` ya valía algo.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('CON UN BARRIO PUESTO, «CERCA DE MÍ» SÍ SE MUEVE');
+
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 30, lat: 4.6490, lon: -74.0630, tags: { amenity: 'cafe', name: 'Café del Parque' } },
+  ],
+});
+sitioResponde = (q) => (/chapinero/i.test(q)
+  ? [{ lat: CHAPINERO.lat, lon: CHAPINERO.lon, display_name: 'Chapinero, Bogotá, Colombia' }]
+  : []);
+
+const MI_SITIO = { lat: 4.7050, lon: -74.0300 };   // lejos de Chapinero, a propósito
+await abrir('openDondeTomarCafe', { estado: 'denied' });
+await lugaresui.buscarPorSitio('Chapinero');
+ok('primero se busca por Chapinero',
+  alMapa().at(-1).consulta.includes(CHAPINERO.lat.toFixed(5)),
+  alMapa().at(-1).consulta.replace(/\n/g, ' ').slice(0, 90));
+
+permiso = 'prompt';
+posicion = MI_SITIO;
+pedidos.length = 0;
+await lugaresui.buscarCercaDeMi();
+
+/* Sin `.at(-1).consulta` a pelo: con el fallo puesto NO SE PREGUNTA
+   NADA —el centro sigue siendo Chapinero, así que la respuesta sale de
+   la memoria— y una prueba que revienta se lleva por delante las que
+   vienen detrás, además de no explicar qué pasó. */
+const trasCercaDeMi = alMapa().at(-1);
+ok('AHORA SÍ SE BUSCA DONDE ESTÁS, no otra vez en Chapinero',
+  Boolean(trasCercaDeMi)
+    && trasCercaDeMi.consulta.includes(MI_SITIO.lat.toFixed(5))
+    && !trasCercaDeMi.consulta.includes(CHAPINERO.lat.toFixed(5)),
+  trasCercaDeMi
+    ? trasCercaDeMi.consulta.replace(/\n/g, ' ').slice(0, 90)
+    : 'no se le preguntó NADA al mapa: el centro seguía siendo Chapinero '
+      + 'y la lista salió de la memoria');
+
+const cercaDeMi = nodos.get('lugares-body').innerHTML;
+ok('el barrio se suelta y la caja se vacía',
+  !cercaDeMi.includes('quitarSitio()')
+    && /id="lugares-sitio"[^>]*value=""/.test(cercaDeMi),
+  cercaDeMi.slice(0, 200));
+ok('y AHORA sí se mide desde ti', cercaDeMi.includes(DESDE.ti), cercaDeMi.slice(0, 200));
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);
