@@ -212,6 +212,18 @@ function renderCamara() {
       <span class="trabajo-giro" aria-hidden="true"></span>
       <span class="trabajo-txt" id="scan-hint">Buscando el código…</span>
     </div>
+    ${/* LO QUE PASÓ CON UN CÓDIGO VA APARTE DE LO QUE ESTÁ PASANDO.
+
+          Estaban en el mismo sitio, y por eso el aviso de «no lo tiene
+          ningún catálogo» —con su botón para escribirlo a mano— duraba
+          dos segundos y medio: lo que tardaba la cámara en volver a
+          mirar y escribir «Buscando el código…» encima.
+
+          Un botón que aparece y desaparece cada tres segundos no es un
+          botón. Así que la cámara habla en `#scan-estado`, que es
+          efímero, y lo que le pasó a un código concreto se queda aquí
+          hasta que haya otro código u otra decisión. */''}
+    <div id="scan-fallo"></div>
     <div class="scan-otro">
       <p class="set-fineprint">¿Este libro no tiene código de barras?</p>
       <button class="btn-ghost full" onclick="shootCover()">
@@ -239,9 +251,7 @@ export function agruparCodigo(code) {
  * eso no se arregla nada. Con el detalle del mapa se encontró la causa
  * real en una tarde.
  */
-function estado(texto, {
-  girando = true, codigo = '', detalle = '', salida = false,
-} = {}) {
+function estado(texto, { girando = true, codigo = '', detalle = '' } = {}) {
   const caja = $('scan-estado');
   if (!caja) return;
   caja.innerHTML = `
@@ -249,24 +259,39 @@ function estado(texto, {
     <span class="trabajo-txt" id="scan-hint">
       ${codigo ? `<b class="scan-codigo">${esc(agruparCodigo(codigo))}</b>` : ''}${esc(texto)}
       ${detalle ? `<span class="lugares-detalle">Detalle técnico: ${esc(detalle)}</span>` : ''}
-    </span>
-    ${/* UNA SALIDA, CUANDO EL CÓDIGO SE LEYÓ BIEN Y NADIE LO TIENE.
+    </span>`;
+}
 
-          Sin esto la pantalla era un callejón: decía «vuelve a
-          intentarlo en un rato» y volvía a encender la cámara sobre el
-          mismo libro, que va a dar el mismo código y el mismo resultado
-          las veces que haga falta.
-
-          Y para muchos libros «en un rato» no llega nunca: una edición
-          colombiana puede no estar en ningún catálogo internacional, y
-          eso no se arregla esperando. Lo que hace falta es poder
-          escribirlo — sin perder el código, que ya está bien leído y es
-          justo el dato más pesado de teclear. */''}
+/**
+ * Lo que le pasó a UN código, y que se queda en pantalla.
+ *
+ * Aparte del estado de la cámara a propósito: ahí escribe «Buscando el
+ * código…» cada vez que vuelve a mirar, y eso borraba este aviso —y su
+ * botón— a los dos segundos y medio.
+ *
+ * ── LA SALIDA, CUANDO SE LEYÓ BIEN Y NADIE LO TIENE ─────────
+ *
+ * Sin ella la pantalla es un callejón: dice «vuelve a intentarlo en un
+ * rato» y vuelve a mirar el mismo libro, que va a dar el mismo código y
+ * el mismo resultado las veces que haga falta. Y para muchos libros «en
+ * un rato» no llega nunca: una edición colombiana puede no estar en
+ * ningún catálogo internacional, y eso no se arregla esperando.
+ */
+function avisoDeFallo(texto, { codigo = '', detalle = '', salida = false } = {}) {
+  const caja = $('scan-fallo');
+  if (!caja) return;
+  caja.innerHTML = `
+    <p class="scan-fallo-txt">
+      ${codigo ? `<b class="scan-codigo">${esc(agruparCodigo(codigo))}</b>` : ''}${esc(texto)}
+      ${detalle ? `<span class="lugares-detalle">Detalle técnico: ${esc(detalle)}</span>` : ''}
+    </p>
     ${salida && codigo ? `
-      <button class="btn-ghost full" style="margin-top:10px" onclick="escribirEsteLibro('${esc(codigo)}')">
+      <button class="btn-ghost full" onclick="escribirEsteLibro('${esc(codigo)}')">
         Escribir este libro a mano
       </button>` : ''}`;
 }
+
+const limpiarFallo = () => { const c = $('scan-fallo'); if (c) c.innerHTML = ''; };
 
 /**
  * Salir del escáner y rellenar la ficha a mano, con el código puesto.
@@ -420,9 +445,17 @@ export function discardDraft() { draft = null; trabajo = null; render(); }
    al cambiar de pestaña y al encontrar un código: una cámara mirando
    detrás de una pantalla cerrada gasta batería y no sirve a nadie. */
 let mirando = false;
+/* El último código que se leyó bien y que ningún catálogo tenía. Sirve
+   para no volver a preguntar por él mientras la cámara siga apuntando
+   al mismo libro. Se olvida al salir de la cámara. */
+let ultimoFallido = null;
 
 export function pararEscaner() {
   mirando = false;
+  /* Al apagar la cámara se olvida en qué código nos quedamos: la
+     próxima vez que se abra hay que volver a preguntar, porque puede
+     que el catálogo que no contestaba ya conteste. */
+  ultimoFallido = null;
   closeCamera();
 }
 
@@ -475,6 +508,18 @@ async function buscarCodigoSinParar() {
   if (!code || !mirando) { mirando = false; return; }
   mirando = false;
 
+  /* EL MISMO DE ANTES NO SE VUELVE A PREGUNTAR. Con la cámara apuntando
+     al mismo libro, este bucle lee el mismo código una y otra vez; sin
+     esta línea, cada vuelta eran dos consultas más a los catálogos por
+     un libro que ya sabemos que no tienen. Se sigue mirando —para eso
+     está el bucle— pero en silencio y sin gastar red. */
+  if (code === ultimoFallido) {
+    setTimeout(() => { if ($('scan-video')) buscarCodigoSinParar(); }, 600);
+    return;
+  }
+  /* Un código distinto: lo de antes ya no viene a cuento. */
+  limpiarFallo();
+
   /* Que se NOTE que lo encontró. Con la cámara siempre mirando, el
      único momento en que pasa algo es este, y sin un golpecito se
      confunde con el mensaje anterior. */
@@ -503,7 +548,17 @@ export async function usarCodigo(code) {
 
        El código se sigue enseñando en los tres casos: si no coincide
        con el del libro, ahí está el fallo y se ve solo. */
-    estado({
+    /* Se apunta para no volver a preguntar por él. La cámara sigue
+       mirando —hay que poder escanear el siguiente libro— y si no fuera
+       por esto volvería a leer ESTE, volvería a consultar los dos
+       catálogos, volvería a fallar, y otra vez cada tres segundos
+       mientras el teléfono siga apuntando al mismo sitio.
+       Eso no es solo ruido: son dos consultas cada tres segundos a un
+       servicio que limita por IP, o sea la forma más rápida de ganarse
+       el 429 que sale en el detalle técnico. */
+    ultimoFallido = code;
+    estado('Buscando el código…');
+    avisoDeFallo({
       'isbn-invalido': ' · no es un ISBN válido. Prueba con la foto de la portada.',
       'catalogos-caidos': ' · lo leímos bien, pero los catálogos no contestan ahora mismo. '
         + 'Vuelve a intentarlo en un rato.',
@@ -518,15 +573,13 @@ export async function usarCodigo(code) {
        ISBN inválido no: ahí lo que hay que arreglar es la lectura, y
        guardar un código que no es no le sirve a nadie. */
     {
-      girando: false, codigo: code, detalle: res.detalle,
+      codigo: code, detalle: res.detalle,
       salida: res.reason !== 'isbn-invalido',
     });
-    /* Y SE VUELVE A MIRAR. Sin esto, un código que no está en los
-       catálogos dejaba la cámara encendida y ciega: el mensaje decía
-       qué pasó y luego no pasaba nada nunca más, ni con ese libro ni
-       con el siguiente. Se espera un momento para que el mensaje se
-       pueda leer antes de que lo pise «Buscando el código…». */
-    setTimeout(() => { if ($('scan-video')) buscarCodigoSinParar(); }, 2500);
+    /* Y SE VUELVE A MIRAR, para poder escanear el siguiente libro. El
+       aviso de arriba ya no se pierde por esto: vive en su propia caja.
+       Sin espera, además, porque ya no hay nada que leer a contrarreloj. */
+    if ($('scan-video')) buscarCodigoSinParar();
     return;
   }
   pararEscaner();

@@ -377,16 +377,31 @@ console.log('\n─── UN CÓDIGO QUE NADIE TIENE ───');
   });
   await p.waitForTimeout(120);
 
-  const salida = await p.evaluate(() => {
-    const caja = document.getElementById('scan-estado');
-    const boton = caja?.querySelector('button');
-    return { texto: caja?.textContent || '', boton: boton?.textContent?.trim() || '' };
+  const mirarFallo = () => p.evaluate(() => {
+    const caja = document.getElementById('scan-fallo');
+    return {
+      texto: caja?.textContent || '',
+      boton: caja?.querySelector('button')?.textContent?.trim() || '',
+    };
   });
 
+  const salida = await mirarFallo();
   ok('el código leído se sigue enseñando', /457812/.test(salida.texto), salida.texto.slice(0, 80));
   ok('Y HAY UNA SALIDA, no solo «vuelve a intentarlo»',
     /a mano/i.test(salida.boton),
     salida.boton || 'no había ningún botón: la pantalla es un callejón');
+
+  /* ── Y AQUÍ ESTABA EL FALLO DE VERDAD ──────────────────────
+     El botón existía y duraba dos segundos y medio: lo que tardaba la
+     cámara en volver a mirar y escribir «Buscando el código…» encima.
+     En la pantalla de un teléfono eso es un botón que no se puede
+     tocar. Se espera MÁS de esos 2,5 s a propósito. */
+  await p.waitForTimeout(3200);
+  const despues = await mirarFallo();
+  ok('EL BOTÓN SIGUE AHÍ cuando la cámara ya volvió a mirar',
+    /a mano/i.test(despues.boton),
+    despues.boton || 'desapareció: el estado de la cámara lo pisó');
+  ok('y el código también', /457812/.test(despues.texto), despues.texto.slice(0, 80));
 
   await p.evaluate(() => { window.__addbook.escribirEsteLibro('9789585457812'); });
   await p.waitForTimeout(80);
