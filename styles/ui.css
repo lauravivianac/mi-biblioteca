@@ -774,6 +774,21 @@ body:not(.signed-in) .atajos { display: none; }
 
    Los metros van en una línea aparte y más pequeños: se leen al elegir
    y estorban al volver a mirar. */
+/* DECIR DÓNDE BUSCAR. La caja y su botón en una línea: escribir el
+   barrio y buscarlo son un solo gesto, y partirlos en dos filas hace
+   que el botón parezca de otra cosa. */
+.lugares-donde { margin-bottom: 14px; }
+.lugares-donde-caja { display: flex; gap: 8px; align-items: stretch; }
+.lugares-donde-caja .finput { flex: 1; min-width: 0; }
+.lugares-donde-caja .btn-mini { flex: 0 0 auto; padding-inline: 14px; }
+.lugares-donde-pie { margin: 6px 0 0; }
+/* «Quitar» es texto y no botón a propósito: deshacer no puede pesar
+   más que hacer. */
+.lugares-quitar {
+  padding: 0; border: 0; background: none; font: inherit; cursor: pointer;
+  color: var(--gold); text-decoration: underline;
+}
+
 .lugares-lejos { margin-bottom: 14px; }
 .lugares-lejos .auth-tab { flex-direction: column; gap: 1px; line-height: 1.25; }
 .lugares-lejos-km { display: block; font-size: .74rem; opacity: .7; font-weight: 400; }

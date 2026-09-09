@@ -155,6 +155,34 @@ export function nombresDe(foco = 'todo') {
 /** Para empezar una frase con ello. */
 export const conMayuscula = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);
 
+/**
+ * El nombre corto de un sitio que devuelve Nominatim.
+ *
+ * Lo que vuelve de ahí es la dirección entera, y es larguísima:
+ *
+ *   «Chapinero, Localidad Chapinero, Bogotá, Bogotá Distrito Capital,
+ *    Región Andina, 110221, Colombia»
+ *
+ * Puesto en un título eso no se lee, se sufre. Se cogen los dos
+ * primeros trozos, que son el sitio y dónde está, y ya. Es lo mismo que
+ * diría una persona: «Chapinero, Bogotá».
+ */
+export function nombreCorto(display, max = 2) {
+  const trozos = unSoloEspacio(display).split(',').map((t) => t.trim()).filter(Boolean);
+  if (!trozos.length) return '';
+  /* El segundo trozo se salta si es una repetición del primero
+     —Nominatim hace «Chapinero, Localidad Chapinero»— porque decir dos
+     veces lo mismo gasta el sitio del dato que sí importa. */
+  const fuera = [trozos[0]];
+  for (const t of trozos.slice(1)) {
+    if (fuera.length >= max) break;
+    const yaEsta = fuera.some((x) => sinTildes(t).includes(sinTildes(x))
+      || sinTildes(x).includes(sinTildes(t)));
+    if (!yaEsta) fuera.push(t);
+  }
+  return fuera.join(', ').slice(0, 60);
+}
+
 const POR_ETIQUETA = {
   library: 'biblioteca',
   books: 'libreria',
@@ -238,10 +266,19 @@ export const DISTANCIA_POR_DEFECTO = 'paseo';
 export const metrosDe = (id = DISTANCIA_POR_DEFECTO) =>
   (DISTANCIAS.find((d) => d.id === id) || DISTANCIAS[0]).radio;
 
-/** Cómo se dice en una frase: «a un paseo de donde estás», «a 3 km». */
-export function cercaniaTexto(id = DISTANCIA_POR_DEFECTO) {
+/**
+ * Cómo se dice en una frase: «a un paseo de donde estás», «a 3 km de
+ * Chapinero».
+ *
+ * El `donde` va como argumento y no dado por hecho porque el centro
+ * dejó de ser siempre el mismo: puede ser tu posición, o el barrio que
+ * escribiste. Decir «de donde estás» cuando se buscó por un barrio es
+ * mentir sobre lo que se hizo, y encima da a entender que la app sabe
+ * dónde estás cuando no se lo has dicho.
+ */
+export function cercaniaTexto(id = DISTANCIA_POR_DEFECTO, donde = 'donde estás') {
   const d = DISTANCIAS.find((x) => x.id === id) || DISTANCIAS[0];
-  return d.id === 'paseo' ? 'a un paseo de donde estás' : `a menos de ${d.sub} de donde estás`;
+  return d.id === 'paseo' ? `a un paseo de ${donde}` : `a menos de ${d.sub} de ${donde}`;
 }
 
 /* ── LA CONSULTA ─────────────────────────────────────────────── */
@@ -373,6 +410,9 @@ export const cuantos = (grupos) => grupos.reduce((n, g) => n + g.lugares.length,
 export const DESDE = {
   centro: 'del centro',
   ti: 'de ti',
+  /* Buscando por un barrio escrito a mano, ni «del centro» ni «de ti»
+     valen: el punto es un tercero que eligió quien busca. */
+  sitio: 'de ahí',
 };
 
 /** «A 400 m del centro», «A 2,1 km de ti». */
@@ -497,6 +537,16 @@ export const MOTIVOS = {
      alguien amplía a 8 km y el aviso sigue diciendo «a un paseo», el
      botón que acaba de tocar parece no haber hecho nada. */
   'sin-resultados-cerca': 'No hay {sitios} {cerca}, o el mapa no las tiene todavía.',
+  /* TRES FORMAS DE FALLAR BUSCANDO UN BARRIO, Y HAY QUE SEPARARLAS.
+     «No existe» se arregla escribiéndolo de otra forma; «no pudimos
+     preguntar» se arregla volviendo a intentarlo; y no distinguirlas
+     manda a corregir una palabra que estaba bien escrita. Es el mismo
+     error de siempre —contar un servicio caído como un resultado
+     vacío— aplicado a un sitio en vez de a una ciudad. */
+  'sitio-desconocido': 'No hemos encontrado ese sitio en el mapa. Prueba con el nombre '
+    + 'del barrio, o con una calle y el número.',
+  'sitio-caido': 'No hemos podido buscar ese sitio ahora mismo. Vuelve a intentarlo, '
+    + 'o mira los de tu ciudad mientras tanto.',
 };
 
 /**
@@ -507,15 +557,16 @@ export const MOTIVOS = {
  * tres clases de sitio cuando solo se pidió una es lo que hacía pensar
  * que la app estaba buscando otra cosa.
  */
-export function textoMotivo(motivo, foco = 'todo', distancia = DISTANCIA_POR_DEFECTO) {
+export function textoMotivo(motivo, foco = 'todo', distancia = DISTANCIA_POR_DEFECTO, donde) {
   const base = MOTIVOS[motivo] || MOTIVOS['sin-resultados'];
   return base
     .replaceAll('{sitios}', nombresDe(foco))
-    .replaceAll('{cerca}', cercaniaTexto(distancia));
+    .replaceAll('{cerca}', cercaniaTexto(distancia, donde));
 }
 
 /** ¿Este fracaso se arregla volviendo a intentarlo? */
-export const sePuedeReintentar = (motivo) => motivo === 'mapa-caido' || motivo === 'ciudad-caida';
+export const sePuedeReintentar = (motivo) => motivo === 'mapa-caido'
+  || motivo === 'ciudad-caida' || motivo === 'sitio-caido';
 
 /* De dónde salen los datos. Va en pantalla porque la licencia lo pide y
    porque está bien decir quién ha hecho el trabajo. */

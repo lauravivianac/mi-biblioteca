@@ -33,8 +33,9 @@
 
 import {
   consultaOverpass, leerRespuesta, agrupar, tiposDe, FOCOS,
-  metrosDe, DISTANCIA_POR_DEFECTO,
+  metrosDe, DISTANCIA_POR_DEFECTO, nombreCorto,
 } from './lugares-core.js';
+import { sinTildes } from './text-core.js';
 import { normalizarLugar } from './place-core.js';
 
 const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
@@ -121,7 +122,7 @@ function guardar(clave, dato) {
    tres consultas idénticas al mapa para enseñar tres recortes de la
    misma respuesta. Así que se recuerda UNA, en una variable, sin fecha
    y sin disco: se va al recargar la página, como tiene que irse. */
-const ultimas = new Map();   // `${foco}|${radio}` → { lat, lon, lugares }
+const ultimas = new Map();   // `${foco}|${radio}|${lat}|${lon}` → lugares
 
 /* UNA BÚSQUEDA QUE SALIÓ ANTES DE CERRAR NO PUEDE ESCRIBIR DESPUÉS.
    ─────────────────────────────────────────────────────────────
@@ -136,23 +137,23 @@ const ultimas = new Map();   // `${foco}|${radio}` → { lat, lon, lugares }
    contador, y todo lo que venía de camino se cae solo. */
 let generacion = 0;
 
-/* El radio va en la clave: ampliar de 1,2 a 8 km es OTRA búsqueda, y
-   sin esto ampliar habría devuelto la lista corta de antes. */
-const enClave = (foco, radio) => `${foco}|${radio}`;
+/* QUÉ ENTRA EN LA CLAVE, Y POR QUÉ CADA COSA.
+   El radio, porque ampliar de 1,2 a 8 km es OTRA búsqueda y sin esto
+   ampliar habría devuelto la lista corta de antes. Y el punto, porque
+   ahora el centro puede ser lo que escribiste: sin él, ir de Chapinero
+   a «cerca de mí» y volver preguntaría las dos veces por lo mismo.
 
-/* Redondeado a tres decimales, unos 100 metros: moverse un poco por la
+   Redondeado a tres decimales, unos 100 metros: moverse un poco por la
    calle no vuelve a preguntar, y cruzar el barrio sí. */
-const cerca = (a, b) => a && b
-  && a.lat.toFixed(3) === b.lat.toFixed(3)
-  && a.lon.toFixed(3) === b.lon.toFixed(3);
+const enClave = (punto, foco, radio) =>
+  `${foco}|${radio}|${punto.lat.toFixed(3)}|${punto.lon.toFixed(3)}`;
 
-const enMemoria = (punto, foco, radio) => {
-  const ya = ultimas.get(enClave(foco, radio));
-  return cerca(ya, punto) ? ya.lugares : null;
-};
+const enMemoria = (punto, foco, radio) =>
+  (punto ? ultimas.get(enClave(punto, foco, radio)) ?? null : null);
+
 const recordar = (punto, foco, radio, lugares, gen) => {
   if (!punto || gen !== generacion) return;
-  ultimas.set(enClave(foco, radio), { lat: punto.lat, lon: punto.lon, lugares });
+  ultimas.set(enClave(punto, foco, radio), lugares);
 };
 
 /** Al cerrar la hoja: lo que no se recuerda no se puede filtrar. */
@@ -190,6 +191,89 @@ export async function centroDe(city, country = '') {
      que va a seguir sin encontrarse. */
   guardar(clave, centro);
   return centro;
+}
+
+/* ── Y DÓNDE ESTÁ ESO QUE HAS ESCRITO ────────────────────────
+
+     «Me gustaría que las personas pudieran decidir dónde buscar:
+      ponerle un sitio, un barrio, o decir cerca mío.»
+
+   Hasta aquí solo había dos centros posibles, y los dos los elegía la
+   app: el de tu ciudad, o donde diga el GPS. Ninguno sirve para «voy a
+   estar por Chapinero el sábado», que es la pregunta normal.
+
+   ── POR QUÉ ESTO NO SE GUARDA EN EL DISCO ───────────────────
+
+   La ciudad sí se guarda —lleva guardándose desde el principio, es un
+   dato público y lo has puesto tú en tus ajustes—. Esto no, y la razón
+   es que AQUÍ NO SÉ QUÉ ME ESTÁS ESCRIBIENDO. Puede ser un barrio, y
+   puede ser tu propia calle con el número. Guardar en el teléfono una
+   lista de las direcciones que alguien buscó es exactamente lo que
+   place-core.js promete no hacer, solo que escrito por la puerta de al
+   lado.
+
+   Así que vive en memoria mientras la hoja está abierta, igual que tu
+   posición, y se va al cerrarla. Lo que no está guardado no se puede
+   filtrar. */
+const sitiosVistos = new Map();   // lo escrito → { lat, lon, nombre } | null
+
+/** Lo mismo que olvidar dónde estás: se va con la hoja. */
+export function olvidarSitiosBuscados() { sitiosVistos.clear(); }
+
+async function unNominatim(consulta) {
+  const url = `${NOMINATIM}?${new URLSearchParams({
+    q: consulta, format: 'json', limit: '1', addressdetails: '0',
+  })}`;
+  const r = await fetch(url, { headers: { Accept: 'application/json' }, signal: timeout(ESPERA_CIUDAD) });
+  if (!r.ok) throw new Error(`Nominatim HTTP ${r.status}`);
+  const datos = await r.json();
+  const uno = Array.isArray(datos) ? datos[0] : null;
+  if (!uno || !Number.isFinite(Number(uno.lat)) || !Number.isFinite(Number(uno.lon))) return null;
+  return {
+    lat: Number(uno.lat),
+    lon: Number(uno.lon),
+    nombre: nombreCorto(uno.display_name || consulta),
+  };
+}
+
+/**
+ * Situar en el mapa un barrio, una calle o un sitio escrito a mano.
+ *
+ * Devuelve `{ lat, lon, nombre }`, o null si no existe. Lanza si el
+ * servicio no contesta, que es otra cosa: «no encontramos ese barrio»
+ * se arregla escribiéndolo de otra forma y «no pudimos preguntar» se
+ * arregla volviendo a intentarlo, y confundirlos manda a corregir una
+ * palabra que estaba bien escrita.
+ *
+ * SE PREGUNTA DOS VECES Y EN ESTE ORDEN. Primero con tu ciudad pegada
+ * detrás —«Chapinero» hay uno en Bogotá y quien escribe eso no está
+ * pensando en ningún otro— y, si así no sale, tal cual: si escribes
+ * «Medellín» viviendo en Bogotá, «Medellín, Bogotá» no existe y el
+ * segundo intento es el que te vale.
+ */
+export async function situarSitio(texto, pista = {}) {
+  const q = String(texto ?? '').trim();
+  if (!q) return null;
+
+  const ciudad = String(pista.city ?? '').trim();
+  const clave = `${normalizarLugar(q)}|${normalizarLugar(ciudad)}`;
+  if (sitiosVistos.has(clave)) return sitiosVistos.get(clave);
+
+  const intentos = [];
+  if (ciudad && !sinTildes(q.toLowerCase()).includes(sinTildes(ciudad.toLowerCase()))) {
+    intentos.push([q, ciudad, String(pista.country ?? '').trim()].filter(Boolean).join(', '));
+  }
+  intentos.push(q);
+
+  let encontrado = null;
+  for (const intento of intentos) {
+    encontrado = await unNominatim(intento);
+    if (encontrado) break;
+  }
+  /* El «no existe» también se recuerda: sin esto, darle otra vez al
+     botón con la misma palabra mal escrita vuelve a preguntar. */
+  sitiosVistos.set(clave, encontrado);
+  return encontrado;
 }
 
 /* ── QUÉ HAY ALREDEDOR ───────────────────────────────────────── */

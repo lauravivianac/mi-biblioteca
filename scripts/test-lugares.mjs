@@ -39,6 +39,7 @@ import {
   MOTIVOS, PROPOSITOS, sePuedeReintentar, FOCOS, PESTANAS, enFoco,
   TOPE_ENFOCADO, topeDe, textoMotivo,
   DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe, cercaniaTexto, RADIO_CERCA,
+  nombreCorto,
 } from '../src/lugares-core.js';
 import { geohash, PRECISION } from '../src/place-core.js';
 
@@ -480,6 +481,70 @@ ok('no queda ningún hueco sin rellenar',
 ok('y cada distancia se dice distinto',
   new Set(DISTANCIAS.map((d) => cercaniaTexto(d.id))).size === DISTANCIAS.length,
   DISTANCIAS.map((d) => cercaniaTexto(d.id)).join(' · '));
+
+/* ─────────────────────────────────────────────────────────────
+   «PONERLE UN SITIO, UN BARRIO, O DECIR CERCA MÍO»
+
+   Había dos centros posibles y los dos los elegía la app: el de tu
+   ciudad, o donde diga el GPS. Ninguno sirve para «voy a estar por
+   Chapinero el sábado», que es la pregunta normal.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('EL NOMBRE DE UN SITIO, EN CORTO');
+
+/* Lo que devuelve Nominatim es la dirección entera y no se lee: */
+const LARGO = 'Chapinero, Localidad Chapinero, Bogotá, Bogotá Distrito Capital, '
+  + 'Región Andina, 110221, Colombia';
+
+ok('la dirección larguísima se queda en dos trozos',
+  nombreCorto(LARGO) === 'Chapinero, Bogotá', nombreCorto(LARGO));
+ok('Y NO SE REPITE «Chapinero, Localidad Chapinero»',
+  !/Chapinero.*Chapinero/.test(nombreCorto(LARGO)), nombreCorto(LARGO));
+ok('un sitio con un solo trozo se queda igual', nombreCorto('Usaquén') === 'Usaquén');
+ok('sin nada, nada', nombreCorto('') === '' && nombreCorto(null) === '');
+ok('y nunca se pasa de largo', nombreCorto(`${'x'.repeat(200)}, y`).length <= 60);
+
+grupo('LA FRASE DICE ALREDEDOR DE QUÉ SE BUSCÓ');
+
+/* Decir «de donde estás» cuando se buscó por un barrio es mentir sobre
+   lo que se hizo, y encima da a entender que la app sabe dónde estás
+   cuando no se lo has dicho. */
+ok('por defecto sigue siendo donde estás',
+  cercaniaTexto('paseo').includes('donde estás'), cercaniaTexto('paseo'));
+ok('PERO CON UN BARRIO, DICE EL BARRIO',
+  cercaniaTexto('paseo', 'Chapinero') === 'a un paseo de Chapinero',
+  cercaniaTexto('paseo', 'Chapinero'));
+ok('y no cuela «donde estás» por detrás',
+  !cercaniaTexto('lejos', 'Chapinero').includes('donde estás'),
+  cercaniaTexto('lejos', 'Chapinero'));
+
+const nadaEnBarrio = textoMotivo('sin-resultados-cerca', 'cafe', 'paseo', 'Chapinero');
+ok('y el aviso de que no hay nada también',
+  nadaEnBarrio.includes('Chapinero') && !nadaEnBarrio.includes('donde estás'), nadaEnBarrio);
+
+grupo('«NO EXISTE» Y «NO PUDIMOS PREGUNTAR» SON DISTINTOS');
+
+/* El mismo error de siempre —contar un servicio caído como un resultado
+   vacío— aplicado a un barrio en vez de a una ciudad. No distinguirlos
+   manda a corregir una palabra que estaba bien escrita. */
+ok('son dos avisos distintos',
+  MOTIVOS['sitio-desconocido'] !== MOTIVOS['sitio-caido']);
+ok('el de «no existe» dice cómo escribirlo mejor',
+  /barrio|calle/.test(MOTIVOS['sitio-desconocido']), MOTIVOS['sitio-desconocido']);
+ok('y NO se ofrece reintentar lo que no existe',
+  !sePuedeReintentar('sitio-desconocido'),
+  'un botón que no puede cambiar nada es peor que ninguno');
+ok('pero sí lo que no se pudo preguntar', sePuedeReintentar('sitio-caido'));
+
+grupo('Y LA DISTANCIA SE MIDE DESDE DONDE TOCA');
+
+ok('desde el centro de la ciudad se dice',
+  distanciaTexto(0.4, 'centro').includes('del centro'), distanciaTexto(0.4, 'centro'));
+ok('desde ti también', distanciaTexto(0.4, 'ti').includes('de ti'));
+ok('Y DESDE UN BARRIO NO DICE NI UNA COSA NI LA OTRA',
+  !distanciaTexto(0.4, 'sitio').includes('de ti')
+    && !distanciaTexto(0.4, 'sitio').includes('del centro'),
+  distanciaTexto(0.4, 'sitio'));
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);

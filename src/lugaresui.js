@@ -28,6 +28,7 @@
 
 import {
   buscarSitios, olvidarSitios, dondeEstoy, permisoDeUbicacion, olvidarDondeEstoy,
+  situarSitio, olvidarSitiosBuscados,
 } from './lugares.js';
 import {
   distanciaTexto, enlaceMapa, propuesta, textoMotivo, CREDITO, PROPOSITOS,
@@ -61,6 +62,22 @@ let foco = 'todo';
    Solo significa algo buscando cerca de ti: por el centro de la ciudad
    el radio lo decide la clase de sitio. */
 let distancia = DISTANCIA_POR_DEFECTO;
+/* EL BARRIO O EL SITIO QUE SE ESCRIBIÓ, si se escribió alguno.
+   `{ texto, lat, lon, nombre }`. Manda sobre tu posición: si te has
+   molestado en escribir dónde quieres buscar, es que quieres buscar
+   ahí y no donde estás.
+   Tampoco se guarda en el disco, y el porqué está en lugares.js: desde
+   aquí no se sabe si lo escrito es un barrio o tu propia calle. */
+let sitio = null;
+/* Lo último que se escribió en la caja, para que siga ahí después de
+   repintar. `pintar()` rehace el HTML entero, así que sin esto la caja
+   se vaciaría sola en cuanto llegara la respuesta — y quien quisiera
+   corregir una letra tendría que escribirlo todo otra vez. */
+let escrito = '';
+/* Mientras se busca el sitio escrito en el mapa. Es una espera distinta
+   de la del mapa y de la del permiso, y por lo mismo: es lo único que
+   hay en pantalla mientras dura. */
+let situandoSitio = false;
 /* Mientras el navegador tiene la ventana del permiso en pantalla. Es
    una espera distinta de la del mapa y tiene que decirlo: si mientras
    se pregunta «¿permites saber dónde estás?» debajo pone «buscando
@@ -95,6 +112,8 @@ async function abrir(cual, cualFoco = 'todo') {
   grupos = [];
   aqui = null;
   detalle = '';
+  sitio = null;
+  escrito = '';
   /* Al abrir se vuelve al paseo: ampliar a 8 km es una consulta cara y
      una decisión de ese momento, no un ajuste que se queda puesto. */
   distancia = DISTANCIA_POR_DEFECTO;
@@ -160,7 +179,12 @@ export const closeLugares = (e) => {
      de la pantalla mientras se pide el permiso, y una promesa así se
      cumple borrando, no diciéndolo. */
   aqui = null;
+  sitio = null;
+  escrito = '';
   olvidarDondeEstoy();
+  /* Y lo que se escribió también se va, por la misma razón y con más
+     motivo: desde aquí no se sabe si era un barrio o tu propia calle. */
+  olvidarSitiosBuscados();
   /* Y la búsqueda que iba de camino deja de mandar: si no, al volver
      pintaría sobre una hoja cerrada, y la siguiente vez que se abriera
      se encontraría un «cargando» que ya no carga nada. */
@@ -170,9 +194,15 @@ export const closeLugares = (e) => {
 
 /** Volver a preguntar cuando el mapa estaba caído. */
 export async function reintentarLugares() {
+  /* Lo que falló fue SITUAR EL SITIO que se escribió, así que reintentar
+     es volver a situarlo. Sin esto, «volver a intentarlo» buscaría
+     alrededor del centro de antes y el barrio escrito se quedaría sin
+     estrenar, con la caja llena y sin que pasara nada. */
+  if (escrito && !sitio) { await buscarPorSitio(escrito); return; }
+
   /* Reintentar tiene que tirar lo cacheado, o «volver a intentarlo»
      vuelve a enseñar exactamente lo mismo sin preguntar nada. */
-  if (aqui) olvidarDondeEstoy();
+  if (aqui || sitio) olvidarDondeEstoy();
   else if (ciudad?.city) olvidarSitios(ciudad.city);
   await cargar();
 }
@@ -203,10 +233,74 @@ export async function buscarCercaDeMi() {
   await cargar();
 }
 
-/** Volver a los sitios del centro, y olvidar tu posición. */
-export async function volverAlCentro() {
+/**
+ * Buscar por un barrio, una calle o un sitio escrito a mano.
+ *
+ *   «Me gustaría que las personas pudieran decidir dónde buscar:
+ *    ponerle un sitio, un barrio, o decir cerca mío.»
+ *
+ * Es el tercer centro posible, y el único que no elige la app: ni tu
+ * ciudad ni el GPS sirven para «voy a estar por Chapinero el sábado».
+ *
+ * Manda sobre tu posición mientras esté puesto — quien se molesta en
+ * escribir dónde quiere buscar, quiere buscar ahí.
+ */
+export async function buscarPorSitio(texto) {
+  const q = String(texto ?? '').trim();
+  if (!q) { toast('Escribe un barrio, una calle o un sitio.', 'error'); return; }
+
+  situandoSitio = true;
+  escrito = q;
+  pintar();
+
+  let punto;
+  try {
+    punto = await situarSitio(q, ciudad || {});
+  } catch (e) {
+    situandoSitio = false;
+    /* «No pudimos preguntar» y «no existe» son cosas distintas y se
+       arreglan de forma distinta: una volviendo a intentarlo y la otra
+       escribiéndolo de otra forma. */
+    detalle = String(e?.message || e);
+    pintar('sitio-caido');
+    return;
+  }
+  situandoSitio = false;
+
+  if (!punto) { pintar('sitio-desconocido'); return; }
+
+  sitio = { texto: q, ...punto };
+  /* Tu posición se suelta al buscar por un sitio: no se está usando
+     para nada y lo que no hace falta no se guarda. */
   aqui = null;
   await cargar();
+}
+
+/** Quitar el sitio escrito y volver a lo de antes. */
+export async function quitarSitio() {
+  sitio = null;
+  escrito = '';
+  await cargar();
+}
+
+/** Volver a los sitios del centro, y olvidar tu posición y el sitio. */
+export async function volverAlCentro() {
+  aqui = null;
+  sitio = null;
+  escrito = '';
+  await cargar();
+}
+
+/**
+ * El punto alrededor del cual se busca, y cómo se llama en una frase.
+ *
+ * Tres, y en este orden: lo que escribiste, dónde estás, y el centro de
+ * tu ciudad. El orden es el de cuánto lo has elegido tú.
+ */
+function centroElegido() {
+  if (sitio) return { punto: { lat: sitio.lat, lon: sitio.lon }, desde: 'sitio', nombre: sitio.nombre || sitio.texto };
+  if (aqui) return { punto: aqui, desde: 'ti', nombre: 'donde estás' };
+  return { punto: null, desde: 'centro', nombre: `el centro de ${ciudad?.city || 'tu ciudad'}` };
 }
 
 /**
@@ -243,7 +337,12 @@ async function cargar() {
   cargaActual = mia;
   cargando = true;
   pintar();
-  const r = await buscarSitios(ciudad, { desdeAqui: aqui, foco, distancia });
+  /* El centro puede ser lo que escribiste, dónde estás o el de tu
+     ciudad. Los dos primeros son «un punto y ya», que es justo lo que
+     `desdeAqui` significa aquí abajo: busca alrededor de ESTO, con el
+     radio que se haya elegido, y no lo guardes en el disco. */
+  const { punto } = centroElegido();
+  const r = await buscarSitios(ciudad, { desdeAqui: punto, foco, distancia });
   /* Llegó tarde: mientras iba, se cambió de pestaña, de distancia, o se
      cerró la hoja. Pintar ahora sería enseñar la respuesta a una
      pregunta que ya nadie hizo. */
@@ -260,7 +359,7 @@ function pintar(motivo = null) {
   const cuerpo = $('lugares-body');
   if (!cuerpo) return;
 
-  if (situando || cargando) {
+  if (situando || situandoSitio || cargando) {
     cuerpo.innerHTML = `
       <div class="trabajo">
         <span class="trabajo-giro" aria-hidden="true"></span>
@@ -283,12 +382,17 @@ function pintar(motivo = null) {
        no se ofrece reintentar: un botón que no puede cambiar nada es
        peor que ninguno. */
     const modoError = PROPOSITOS[proposito];
+    const { punto, nombre } = centroElegido();
     cuerpo.innerHTML = `
-      <p class="planner-hint">${esc(textoMotivo(motivo, foco, distancia))}</p>
-      ${/* Buscando cerca, «no hay nada» casi nunca es el final: casi
-            siempre es que el círculo era pequeño. Ofrecer ampliar aquí
-            es más útil que reintentar lo mismo. */''}
-      ${aqui && motivo === 'sin-resultados-cerca' ? distanciasChips() : ''}
+      <p class="planner-hint">${esc(textoMotivo(motivo, foco, distancia, nombre))}</p>
+      ${/* Que no salga nada NO puede dejar sin la caja de buscar: si
+            «Chapinero» no existe, lo que hace falta es poder escribir
+            otra cosa, no un botón de reintentar lo mismo. */''}
+      ${modoError.cercaDeMi && motivo !== 'sin-ciudad' ? cajaDeSitio() : ''}
+      ${/* Buscando alrededor de un punto, «no hay nada» casi nunca es el
+            final: casi siempre es que el círculo era pequeño. Ofrecer
+            ampliar aquí es más útil que reintentar lo mismo. */''}
+      ${punto && motivo === 'sin-resultados-cerca' ? distanciasChips() : ''}
       ${sePuedeReintentar(motivo)
     ? '<button class="btn-ghost full" onclick="reintentarLugares()">Volver a intentarlo</button>'
     : ''}
@@ -296,7 +400,7 @@ function pintar(motivo = null) {
     ? `<button class="btn-magic full" style="margin-top:8px" onclick="buscarCercaDeMi()">
          📍 Buscar cerca de donde estoy
        </button>` : ''}
-      ${aqui && tieneCiudad(ciudad)
+      ${punto && tieneCiudad(ciudad)
     ? `<button class="btn-magic full" style="margin-top:8px" onclick="volverAlCentro()">
          Ver los del centro de ${esc(ciudad.city)}
        </button>` : ''}
@@ -308,13 +412,15 @@ function pintar(motivo = null) {
   }
 
   const modo = PROPOSITOS[proposito];
+  const { punto, nombre } = centroElegido();
   cuerpo.innerHTML = `
-    <p class="planner-lede">${esc(aqui
-    ? `${conMayuscula(nombresDe(foco))} ${cercaniaTexto(distancia)}.`
+    <p class="planner-lede">${esc(punto
+    ? `${conMayuscula(nombresDe(foco))} ${cercaniaTexto(distancia, nombre)}.`
     : modo.lede(ciudad?.city || 'tu ciudad', foco))}</p>
     <p class="set-fineprint lugares-intro">${esc(modo.pie)}</p>
     ${modo.cercaDeMi ? pestanas() : ''}
-    ${aqui ? distanciasChips() : ''}
+    ${modo.cercaDeMi ? cajaDeSitio() : ''}
+    ${punto ? distanciasChips() : ''}
     ${modo.cercaDeMi ? cambiarDeCentro() : ''}
     ${grupos.map((g) => `
       <div class="prof-sec">
@@ -330,13 +436,49 @@ function pintar(motivo = null) {
    pareciendo un aviso de otra cosa. */
 const esperando = () => {
   if (situando) return 'Mirando dónde estás…';
+  if (situandoSitio) return `Buscando «${escrito}» en el mapa…`;
   /* «Buscando sitios» era demasiado vago para el único momento en que
      el texto es lo ÚNICO que hay en pantalla. Si se entró por la taza,
      que diga cafeterías. */
   const que = proposito === 'quedar' ? 'sitios' : nombresDe(foco);
+  if (sitio) return `Buscando ${que} por ${sitio.nombre || sitio.texto}…`;
   if (aqui) return `Buscando ${que} cerca de ti…`;
   return `Buscando ${que} por ${ciudad?.city || 'tu ciudad'}…`;
 };
+
+/* ── DECIR DÓNDE BUSCAR ──────────────────────────────────────
+   Tres caminos, y el orden en pantalla es el de cuánto los eliges tú:
+   escribir un barrio, decir «cerca de mí», o el centro de tu ciudad.
+
+   La caja va ARRIBA del todo, encima de las distancias, porque primero
+   se decide dónde y luego hasta dónde. Al revés no se entiende: un
+   «8 km» solo significa algo cuando ya sabes 8 km de qué.
+
+   El valor se vuelve a poner en cada repintado —`pintar()` rehace el
+   HTML entero— o la caja se vaciaría sola en cuanto llegara la
+   respuesta, y corregir una letra obligaría a escribirlo todo otra
+   vez. */
+const cajaDeSitio = () => `
+  <div class="lugares-donde">
+    <div class="lugares-donde-caja">
+      <input class="finput" id="lugares-sitio" autocomplete="off" enterkeyhint="search"
+             placeholder="Un barrio, una calle, un sitio…"
+             aria-label="Dónde quieres buscar"
+             value="${esc(escrito)}"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();buscarPorSitio(this.value)}">
+      <button class="btn-mini" onclick="buscarPorSitio(document.getElementById('lugares-sitio').value)">
+        Buscar
+      </button>
+    </div>
+    ${sitio ? `
+      <p class="set-fineprint lugares-donde-pie">
+        Buscando por ${esc(sitio.nombre || sitio.texto)}.
+        <button class="lugares-quitar" onclick="quitarSitio()">Quitar</button>
+      </p>` : `
+      <p class="set-fineprint lugares-donde-pie">
+        No se guarda: vive mientras esta hoja está abierta.
+      </p>`}
+  </div>`;
 
 /* Entrar por el atajo del café no puede dejarte encerrada en los cafés:
    aquí se cambia de idea sin volver a salir. */
@@ -367,14 +509,24 @@ const distanciasChips = () => `
   </div>`;
 
 /* Un botón y no un interruptor permanente: pedir la ubicación es algo
-   que se hace cuando hace falta, no un ajuste que se queda encendido. */
-const cambiarDeCentro = () => (aqui
-  ? `<button class="btn-ghost full" style="margin-bottom:14px" onclick="volverAlCentro()">
-       Ver los del centro de ${esc(ciudad?.city || 'la ciudad')}
-     </button>`
-  : `<button class="btn-ghost full" style="margin-bottom:14px" onclick="buscarCercaDeMi()">
-       📍 Buscar cerca de donde estoy
-     </button>`);
+   que se hace cuando hace falta, no un ajuste que se queda encendido.
+
+   Se enseña lo que NO estás viendo ya: buscando por un barrio escrito
+   caben los dos —cerca de ti y el centro—, y estando en uno de esos
+   dos sobra el que ya estás mirando. Un botón que te lleva donde ya
+   estás no es una salida, es ruido. */
+const cambiarDeCentro = () => {
+  const { punto } = centroElegido();
+  return `
+    ${!aqui ? `
+      <button class="btn-ghost full" style="margin-bottom:14px" onclick="buscarCercaDeMi()">
+        📍 Buscar cerca de donde estoy
+      </button>` : ''}
+    ${punto && tieneCiudad(ciudad) ? `
+      <button class="btn-ghost full" style="margin-bottom:14px" onclick="volverAlCentro()">
+        Ver los del centro de ${esc(ciudad.city)}
+      </button>` : ''}`;
+};
 
 function fila(l) {
   const desde = aqui ? 'ti' : 'centro';
