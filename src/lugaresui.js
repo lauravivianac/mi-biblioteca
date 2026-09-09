@@ -230,6 +230,14 @@ export async function buscarCercaDeMi() {
     return;
   }
   cargando = false;
+  /* Y SE SUELTA EL BARRIO ESCRITO, que si no este botón no hace nada.
+     `centroElegido()` prefiere el barrio sobre tu posición —quien
+     escribe dónde quiere buscar, quiere buscar ahí—, así que pedir
+     «cerca de donde estoy» con un barrio puesto pedía el permiso,
+     esperaba al GPS, volvía a preguntarle al mapa… y enseñaba otra vez
+     los del barrio. Todo ese rato para no moverse del sitio. */
+  sitio = null;
+  escrito = '';
   await cargar();
 }
 
@@ -382,7 +390,7 @@ function pintar(motivo = null) {
        no se ofrece reintentar: un botón que no puede cambiar nada es
        peor que ninguno. */
     const modoError = PROPOSITOS[proposito];
-    const { punto, nombre } = centroElegido();
+    const { punto, nombre, desde } = centroElegido();
     cuerpo.innerHTML = `
       <p class="planner-hint">${esc(textoMotivo(motivo, foco, distancia, nombre))}</p>
       ${/* Que no salga nada NO puede dejar sin la caja de buscar: si
@@ -396,7 +404,7 @@ function pintar(motivo = null) {
       ${sePuedeReintentar(motivo)
     ? '<button class="btn-ghost full" onclick="reintentarLugares()">Volver a intentarlo</button>'
     : ''}
-      ${modoError.cercaDeMi && !aqui && motivo !== 'sin-ciudad'
+      ${modoError.cercaDeMi && desde !== 'ti' && motivo !== 'sin-ciudad'
     ? `<button class="btn-magic full" style="margin-top:8px" onclick="buscarCercaDeMi()">
          📍 Buscar cerca de donde estoy
        </button>` : ''}
@@ -516,9 +524,9 @@ const distanciasChips = () => `
    dos sobra el que ya estás mirando. Un botón que te lleva donde ya
    estás no es una salida, es ruido. */
 const cambiarDeCentro = () => {
-  const { punto } = centroElegido();
+  const { punto, desde } = centroElegido();
   return `
-    ${!aqui ? `
+    ${desde !== 'ti' ? `
       <button class="btn-ghost full" style="margin-bottom:14px" onclick="buscarCercaDeMi()">
         📍 Buscar cerca de donde estoy
       </button>` : ''}
@@ -529,7 +537,14 @@ const cambiarDeCentro = () => {
 };
 
 function fila(l) {
-  const desde = aqui ? 'ti' : 'centro';
+  /* DE DÓNDE SE MIDE LO DICE `centroElegido()`, Y NO `aqui`.
+     Esto decía `aqui ? 'ti' : 'centro'`, de cuando solo había dos
+     centros posibles. Al aparecer el tercero —un barrio escrito— se
+     quedó sin enterarse, y la pantalla acabó diciendo «A 300 m de ti»
+     debajo de un título que decía «a menos de 3 km de UPZ Niza».
+     De las dos frases una sobra, y la que sobra es la que habla de
+     dónde estás, porque en esa búsqueda no se usó tu posición. */
+  const { desde } = centroElegido();
   return `
     <div class="sitio">
       <button class="sitio-elegir" onclick="elegirLugar('${esc(l.id)}')">

@@ -43,13 +43,37 @@ const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 /* VARIOS SERVIDORES DE OVERPASS, y por la misma razón que hay dos
    catálogos de libros: para que uno pueda faltar. El primero es el
    oficial y también el más cargado del mundo —devuelve 429 y 504 con
-   toda naturalidad a media tarde—, y los otros dos son espejos
-   públicos que sirven exactamente los mismos datos. Se prueban en
-   orden y basta con que conteste uno. */
-const OVERPASS = [
+   toda naturalidad a media tarde—, y los demás son espejos públicos que
+   sirven exactamente los mismos datos.
+
+   ── POR QUÉ CINCO Y NO TRES ─────────────────────────────────
+
+   Desde un teléfono en Bogotá, con los tres de antes, salía esto:
+
+     overpass-api.de: Load failed · overpass.kumi.systems: Fetch is
+     aborted · se agotó la espera
+
+   «Load failed» en Safari es un fallo de RED, no un código de error, y
+   es lo que se ve cuando un servidor contesta 429 sin las cabeceras de
+   CORS: el navegador ni siquiera deja leer la respuesta, así que desde
+   aquí un «estás preguntando demasiado» y un «no existe ese servidor»
+   son indistinguibles.
+
+   Con tres espejos y uno de ellos siempre saturado, quedan dos. Con
+   cinco, la probabilidad de quedarse sin ninguno baja mucho y no cuesta
+   nada: solo se le pregunta al siguiente si los anteriores no han
+   contestado todavía. Un día bueno se sigue gastando UNA consulta.
+
+   Los dos últimos no los he podido probar desde donde escribo esto
+   —aquí los espejos están bloqueados—, así que van al final: si alguno
+   no sirviera, solo se le llama cuando ya no queda nada mejor, y el
+   detalle técnico de la pantalla dirá exactamente qué contestó. */
+export const OVERPASS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass.private.coffee/api/interpreter',
+  'https://overpass.osm.jp/api/interpreter',
+  'https://overpass.osm.ch/api/interpreter',
 ];
 
 /* ── LAS ESPERAS, DESPUÉS DE MEDIRLAS ────────────────────────
@@ -70,8 +94,14 @@ const OVERPASS = [
    y esperar más rara vez cambia el resultado — solo cambia cuánto rato
    se mira una ruedecita. */
 const ESPERA_CONSULTA = 10;        // segundos, dentro de la consulta
-const ESPERA_RED = 15000;          // milisegundos, lo que se le da a UN servidor
-const ESPERA_TOTAL = 25000;        // y a la búsqueda entera, pase lo que pase
+const ESPERA_RED = 20000;          // milisegundos, lo que se le da a UN servidor
+/* Y A LA BÚSQUEDA ENTERA, CONTANDO DESDE EL PRINCIPIO.
+   Antes este reloj se ponía en marcha DESPUÉS de lanzar el último
+   espejo, así que los veinticinco segundos empezaban en el segundo
+   ocho y en realidad eran treinta y tres. La cuenta de arriba estaba
+   mal por ese lado, y encima el número escrito aquí no era el que se
+   cumplía — que es lo peor que puede hacer una constante. */
+const ESPERA_TOTAL = 25000;
 const ESPERA_CIUDAD = 10000;       // situar una ciudad es una consulta pequeña
 
 /* Cuánto se espera a un servidor antes de preguntarle TAMBIÉN al
@@ -295,65 +325,133 @@ async function unServidor(servidor, consulta, señal) {
   return leerRespuesta(datos);
 }
 
+/* Cómo se llama cada estado en el detalle técnico. Son las palabras que
+   se leen en la pantalla cuando algo falla, y con eso —y solo con eso—
+   hay que poder decir qué pasó desde el otro lado de un teléfono. */
+export const SIN_EMPEZAR = 'no hizo falta preguntarle';
+export const PREGUNTANDO = 'seguía intentándolo';
+export const TARDO = 'tardó demasiado';
+
 /**
  * Preguntar al mapa, sin hacer esperar por una máquina que va mal.
  *
- * Se le pregunta al primer servidor. Si a los cuatro segundos no ha
- * contestado, se le pregunta TAMBIÉN al segundo —el primero sigue vivo
- * y vale si acaba llegando— y a los ocho, al tercero. Gana el primero
- * que traiga datos y los demás se abortan.
+ * Se le pregunta al primero. Si a los cuatro segundos no ha contestado
+ * —o si se muere antes, que entonces es ya mismo— se le pregunta TAMBIÉN
+ * al siguiente; el anterior sigue vivo y vale si acaba llegando. Gana el
+ * primero que traiga datos y los demás se abortan.
  *
- * Antes se probaban en fila: el primero hasta 45 s, luego el segundo,
- * luego el tercero, con un techo de 60. Con un servidor encolado eso es
- * un minuto de ruedecita ANTES de la primera palabra, y multiplicado por
- * las tres pestañas fueron los cinco minutos que se contaron.
+ * ── LO QUE SE APRENDIÓ MIRANDO UN FALLO DE VERDAD ───────────
+ *
+ * Desde un teléfono en Bogotá, la pantalla decía exactamente esto:
+ *
+ *   overpass-api.de: Load failed · overpass.kumi.systems: Fetch is
+ *   aborted · se agotó la espera
+ *
+ * Tres cosas ahí, y dos eran fallos de esta función:
+ *
+ *   1 · SOLO SALÍAN DOS ESPEJOS DE TRES. El tercero seguía preguntando
+ *       cuando se acabó la espera, y como el motivo solo se apuntaba al
+ *       fallar, el tercero no aparecía en ninguna parte. Leer eso es
+ *       creer que solo se intentó dos veces.
+ *
+ *   2 · «Load failed» es inmediato, y aun así se esperaban los cuatro
+ *       segundos enteros antes de preguntarle al segundo. El bucle de
+ *       antes tenía un comentario diciendo que eso no pasaba. Pasaba: un
+ *       fallo se convertía en una promesa que no se resolvía nunca, así
+ *       que la carrera no se enteraba de que ya no quedaba nadie.
+ *
+ * Ahora cada espejo lleva su estado escrito, se nombran TODOS pase lo
+ * que pase, y morir cuenta como noticia: si no queda nadie preguntando,
+ * el siguiente sale sin esperar su turno.
  */
-async function preguntarAOverpass(centro, { radio = null, foco = 'todo' } = {}) {
+export async function preguntarAOverpass(centro, {
+  radio = null, foco = 'todo',
+  /* Las esperas se pueden cambiar desde fuera POR UNA RAZÓN: si no, la
+     única forma de comprobar qué se enseña cuando se acaba el tiempo
+     sería una prueba que tarda veinticinco segundos, y una prueba que
+     tarda eso no se ejecuta — se comenta. Con esto se puede provocar el
+     mismo caso en medio segundo. La app no le pasa nunca este
+     argumento: usa los números medidos de arriba. */
+  esperas = {},
+} = {}) {
+  const {
+    red = ESPERA_RED, total = ESPERA_TOTAL, adelantar = ADELANTAR,
+  } = esperas;
   const consulta = consultaOverpass(centro, {
     radio, tipos: tiposDe(foco), espera: ESPERA_CONSULTA,
   });
 
-  const fallos = [];
-  const abortos = [];
-  let vivos = 0;
+  /* Un renglón por espejo, siempre, desde el principio. */
+  const espejos = OVERPASS.map((url) => ({
+    url, nombre: new URL(url).hostname, estado: SIN_EMPEZAR,
+  }));
 
-  const lanzar = (servidor) => {
+  const abortos = [];
+  let preguntando = 0;
+  let ganador = null;
+  /* Cómo se entera el bucle de que algo ha pasado —alguien contestó o
+     alguien se murió— sin tener que ir preguntando cada poco. */
+  let avisar = () => {};
+  const algoPasa = () => new Promise((r) => { avisar = r; });
+
+  const lanzar = (e) => {
     const ac = new AbortController();
     abortos.push(ac);
-    vivos += 1;
-    const corta = setTimeout(() => ac.abort(), ESPERA_RED);
-    return unServidor(servidor, consulta, ac.signal)
-      .finally(() => { clearTimeout(corta); vivos -= 1; })
-      .catch((e) => {
-        fallos.push(`${new URL(servidor).hostname}: ${e?.message || e}`);
-        /* Una promesa que nunca se resuelve: así `Promise.race` no la
-           elige y sigue esperando a las que quedan. Sin esto, el primer
-           fallo ganaría la carrera y se perdería la respuesta buena que
-           venía detrás. */
-        return new Promise(() => {});
-      });
+    preguntando += 1;
+    e.estado = PREGUNTANDO;
+    const corta = setTimeout(() => { e.estado = TARDO; ac.abort(); }, red);
+    unServidor(e.url, consulta, ac.signal)
+      .then(
+        (lugares) => { e.estado = 'contestó'; if (!ganador) ganador = lugares; },
+        /* Si ya lo habíamos cortado nosotros, el error que llega es el
+           aborto: lo interesante es que tardó, no cómo se llama. */
+        (err) => { if (e.estado === PREGUNTANDO) e.estado = String(err?.message || err); },
+      )
+      .finally(() => { clearTimeout(corta); preguntando -= 1; avisar(); });
   };
 
-  const carrera = [lanzar(OVERPASS[0])];
   const espera = (ms) => new Promise((r) => { setTimeout(r, ms); });
+  const arranque = Date.now();
+  const llevamos = () => Date.now() - arranque;
 
   try {
-    for (let i = 1; i < OVERPASS.length; i++) {
-      const gano = await Promise.race([carrera.length ? Promise.race(carrera) : null, espera(ADELANTAR)]
-        .filter(Boolean));
-      if (Array.isArray(gano)) return gano;
-      /* Si ya no queda ninguno vivo, no hay a quién esperar: se lanza el
-         siguiente sin agotar el adelanto. */
-      carrera.push(lanzar(OVERPASS[i]));
+    lanzar(espejos[0]);
+    let siguiente = 1;
+
+    while (!ganador && llevamos() < total) {
+      const quedan = siguiente < espejos.length;
+      /* A los 4 s el segundo, a los 8 el tercero… o antes, si ya no hay
+         nadie preguntando: esperar el turno de alguien que no existe es
+         mirar la ruedecita por deporte. */
+      const suTurno = siguiente * adelantar;
+      if (quedan && (preguntando === 0 || llevamos() >= suTurno)) {
+        lanzar(espejos[siguiente]);
+        siguiente += 1;
+      } else if (!quedan && preguntando === 0) {
+        break;                                   // no queda nadie a quien esperar
+      } else {
+        /* Se espera a que pase algo, pero nunca más allá del próximo
+           turno ni del final: si el aviso se perdiera por una carrera,
+           el bucle se despierta igual y vuelve a mirar. */
+        const hasta = Math.min(
+          quedan ? suTurno - llevamos() : Infinity,
+          total - llevamos(),
+        );
+        await Promise.race([algoPasa(), espera(Math.max(20, hasta))]);
+      }
     }
 
-    const gano = await Promise.race([Promise.race(carrera), espera(ESPERA_TOTAL)]);
-    if (Array.isArray(gano)) return gano;
-    if (!vivos) fallos.push('ninguno pudo contestar');
-    else fallos.push('se agotó la espera');
+    if (ganador) return ganador;
   } finally {
     for (const ac of abortos) ac.abort();
   }
+
+  /* Los que seguían preguntando cuando se acabó el tiempo se quedan con
+     su `PREGUNTANDO`, que es la verdad: no fallaron, no les dio tiempo. */
+  const fallos = espejos.map((e) => `${e.nombre}: ${e.estado}`);
+  fallos.push(preguntando
+    ? `se agotó la espera (${Math.round(total / 100) / 10} s)`
+    : 'ninguno pudo contestar');
 
   /* Ninguno contestó. El motivo viaja hacia arriba para que se pueda
      LEER EN LA PANTALLA: sin eso, «no funciona» es todo lo que se puede

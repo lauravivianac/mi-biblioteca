@@ -143,7 +143,7 @@ const store = await import('../src/store.js');
 const lugaresui = await import('../src/lugaresui.js');
 const {
   RADIO, RADIO_CERCA, RADIO_CAFE, RADIO_RARO, MOTIVOS,
-  DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe,
+  DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe, DESDE,
 } = await import('../src/lugares-core.js');
 
 let pasaron = 0;
@@ -718,6 +718,23 @@ ok('Y NO DICE «de donde estás», que no se lo hemos dicho',
 ok('salen los sitios de allí', enChapinero.includes('Café del Parque'));
 ok('y se puede quitar sin cerrar la hoja', enChapinero.includes('quitarSitio()'));
 
+/* ── Y CADA FILA DICE DESDE DÓNDE SE MIDIÓ ───────────────────
+   Esto se me escapó, y salió en una captura: el título decía «a menos
+   de 3 km de UPZ Niza» y debajo cada café decía «A 300 m DE TI». De las
+   dos frases una sobra, y sobra la que habla de dónde estás — porque en
+   esa búsqueda no se usó tu posición para nada.
+
+   La prueba que tenía comprobaba `distanciaTexto(km, 'sitio')` en el
+   módulo puro, y esa pasaba: lo que no comprobaba nadie era que la
+   pantalla LLAMARA a esa función con 'sitio'. Probar la función y no
+   la llamada deja el hueco justo por donde se coló. */
+ok('NINGUNA FILA DICE «de ti» buscando por un barrio',
+  !enChapinero.includes('de ti'),
+  enChapinero.slice(enChapinero.indexOf('sitio-datos'), enChapinero.indexOf('sitio-datos') + 120));
+ok('y la distancia se mide desde el barrio',
+  enChapinero.includes(DESDE.sitio),
+  `debería decir «${DESDE.sitio}»`);
+
 /* Y las distancias siguen mandando: es el mismo control, otro centro. */
 const antesDeAmpliarBarrio = alMapa().length;
 await lugaresui.verHasta('lejos');
@@ -826,6 +843,178 @@ ok('REINTENTAR VUELVE A SITUAR EL BARRIO, no busca por el centro',
   aSitios().map((p) => p.q).join(' · ') || 'no se preguntó por ningún sitio');
 ok('y ahora sí sale', nodos.get('lugares-body').innerHTML.includes('Café del Parque'),
   nodos.get('lugares-body').innerHTML.slice(0, 200));
+
+/* ─────────────────────────────────────────────────────────────
+   LOS ESPEJOS DEL MAPA, Y LO QUE SE CUENTA CUANDO FALLAN
+
+   Esta pantalla, en un teléfono en Bogotá:
+
+     El mapa no contesta ahora mismo.
+     Detalle técnico: overpass-api.de: Load failed ·
+     overpass.kumi.systems: Fetch is aborted · se agotó la espera
+
+   Ese renglón es lo ÚNICO que hay para saber qué pasó desde el otro
+   lado de un teléfono, y tenía dos fallos:
+
+     · nombraba dos espejos de tres, porque el tercero seguía
+       preguntando y el motivo solo se apuntaba al fallar. Leerlo es
+       creer que solo se intentó dos veces;
+     · «Load failed» es inmediato y aun así se esperaban los cuatro
+       segundos enteros antes de preguntarle al siguiente.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('CUANDO FALLAN, SE NOMBRAN TODOS');
+
+const lugares = await import('../src/lugares.js');
+const { SIN_EMPEZAR, PREGUNTANDO, OVERPASS } = lugares;
+const OVERPASS_NOMBRES = OVERPASS.map((u) => new URL(u).hostname);
+const AQUI = { lat: 4.6510, lon: -74.0550 };
+
+/* Un mapa que se puede programar espejo a espejo: cuánto tarda y qué
+   contesta. Es lo que permite provocar «uno se muere ya y otro se queda
+   colgado» sin depender de la red de verdad. */
+let comoResponde = () => ({ tarda: 0, error: 'caído' });
+const cuandoSePregunto = [];
+globalThis.fetch = async (url, opciones = {}) => {
+  const dir = String(url);
+  if (dir.includes('nominatim')) return fetchNormal(dir, opciones);
+  const cual = new URL(dir).hostname;
+  cuandoSePregunto.push({ cual, cuando: Date.now() });
+  const { tarda = 0, error = null, elements = [] } = comoResponde(cual);
+  await new Promise((r) => { setTimeout(r, tarda); });
+  if (opciones.signal?.aborted) throw new Error('Fetch is aborted');
+  if (error) throw new Error(error);
+  return { ok: true, status: 200, json: async () => ({ elements }) };
+};
+
+const detalleDe = async (esperas) => {
+  cuandoSePregunto.length = 0;
+  try {
+    await lugares.preguntarAOverpass(AQUI, { foco: 'cafe', esperas });
+    return null;
+  } catch (e) { return e.detalle || ''; }
+};
+
+/* Todos se caen al instante. */
+comoResponde = () => ({ tarda: 0, error: 'caído' });
+const todosCaidos = await detalleDe({ red: 300, total: 3000, adelantar: 100 });
+
+ok('se preguntó a los cinco espejos', cuandoSePregunto.length === 5,
+  `${cuandoSePregunto.length} consultas`);
+ok('Y LOS CINCO SALEN EN EL DETALLE',
+  cuandoSePregunto.every((p) => todosCaidos.includes(p.cual)), todosCaidos);
+ok('con el motivo de cada uno', (todosCaidos.match(/caído/g) || []).length === 5, todosCaidos);
+ok('y se dice que no contestó ninguno', todosCaidos.includes('ninguno pudo contestar'),
+  todosCaidos);
+
+/* Y AHORA EL CASO DE LA PANTALLA: uno se cae, otro sigue colgado
+   cuando se acaba el tiempo, y a los últimos no les da tiempo a nada. */
+comoResponde = (cual) => (cual === 'overpass-api.de'
+  ? { tarda: 0, error: 'Load failed' }
+  : { tarda: 60000 });                 // colgado para siempre
+const aMedias = await detalleDe({ red: 5000, total: 600, adelantar: 300 });
+
+ok('el que se cayó sale con su error', aMedias.includes('overpass-api.de: Load failed'), aMedias);
+ok('EL QUE SEGUÍA PREGUNTANDO TAMBIÉN SALE, y dice que seguía',
+  aMedias.includes(PREGUNTANDO), aMedias);
+ok('y el que no llegó a preguntarse lo dice, en vez de desaparecer',
+  aMedias.includes(SIN_EMPEZAR), aMedias);
+ok('los cinco espejos están nombrados, pasara lo que pasara',
+  OVERPASS_NOMBRES.every((n) => aMedias.includes(n)), aMedias);
+ok('y se dice que se agotó la espera, con cuánta era',
+  /se agotó la espera \(0\.6 s\)/.test(aMedias), aMedias);
+
+grupo('UN ESPEJO QUE SE MUERE NO CUESTA CUATRO SEGUNDOS');
+
+/* El primero se cae al instante y el segundo contesta. Con el bucle de
+   antes, el fallo se convertía en una promesa que no se resolvía nunca,
+   así que la carrera no se enteraba de que ya no quedaba nadie y se
+   esperaba el adelanto entero. */
+comoResponde = (cual) => (cual === 'overpass-api.de'
+  ? { tarda: 0, error: 'Load failed' }
+  : { tarda: 0, elements: [{ type: 'node', id: 1, lat: 4.65, lon: -74.05, tags: { amenity: 'cafe', name: 'Café' } }] });
+
+cuandoSePregunto.length = 0;
+const salio = await lugares.preguntarAOverpass(AQUI, {
+  foco: 'cafe', esperas: { red: 5000, total: 9000, adelantar: 3000 },
+});
+
+ok('el segundo espejo contesta y sale el café', salio.length === 1, JSON.stringify(salio));
+const tardanza = cuandoSePregunto[1].cuando - cuandoSePregunto[0].cuando;
+ok('Y SE LE PREGUNTÓ ENSEGUIDA, no a los tres segundos',
+  tardanza < 1000, `tardó ${tardanza} ms en preguntarle al segundo`);
+ok('y a los que ya no hacían falta no se les preguntó',
+  cuandoSePregunto.length === 2, `${cuandoSePregunto.length} consultas`);
+
+grupo('Y EL RELOJ CUENTA DESDE EL PRINCIPIO');
+
+/* La espera total se ponía en marcha DESPUÉS de lanzar el último
+   espejo, así que los 25 s escritos eran 33 s de verdad. Con cinco
+   espejos habrían sido 41. Aquí se mide de punta a punta. */
+comoResponde = () => ({ tarda: 60000 });
+const arranque = Date.now();
+await detalleDe({ red: 30000, total: 800, adelantar: 150 });
+const total = Date.now() - arranque;
+
+ok('se rinde a los 800 ms, no a los 800 más los adelantos',
+  total < 1200, `tardó ${total} ms; con el reloj mal puesto se iría a 1400`);
+
+globalThis.fetch = fetchNormal;
+
+/* ─────────────────────────────────────────────────────────────
+   «CERCA DE DONDE ESTOY» TIENE QUE MOVERSE DE SITIO
+
+   Con un barrio escrito, `centroElegido()` lo prefiere sobre tu
+   posición — quien escribe dónde quiere buscar, quiere buscar ahí. Así
+   que tocar «buscar cerca de donde estoy» pedía el permiso, esperaba al
+   GPS, volvía a preguntarle al mapa… y enseñaba otra vez los del
+   barrio. Todo ese rato para no moverse del sitio, y encima las filas
+   pasaban a decir «de ti» porque `aqui` ya valía algo.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('CON UN BARRIO PUESTO, «CERCA DE MÍ» SÍ SE MUEVE');
+
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 30, lat: 4.6490, lon: -74.0630, tags: { amenity: 'cafe', name: 'Café del Parque' } },
+  ],
+});
+sitioResponde = (q) => (/chapinero/i.test(q)
+  ? [{ lat: CHAPINERO.lat, lon: CHAPINERO.lon, display_name: 'Chapinero, Bogotá, Colombia' }]
+  : []);
+
+const MI_SITIO = { lat: 4.7050, lon: -74.0300 };   // lejos de Chapinero, a propósito
+await abrir('openDondeTomarCafe', { estado: 'denied' });
+await lugaresui.buscarPorSitio('Chapinero');
+ok('primero se busca por Chapinero',
+  alMapa().at(-1).consulta.includes(CHAPINERO.lat.toFixed(5)),
+  alMapa().at(-1).consulta.replace(/\n/g, ' ').slice(0, 90));
+
+permiso = 'prompt';
+posicion = MI_SITIO;
+pedidos.length = 0;
+await lugaresui.buscarCercaDeMi();
+
+/* Sin `.at(-1).consulta` a pelo: con el fallo puesto NO SE PREGUNTA
+   NADA —el centro sigue siendo Chapinero, así que la respuesta sale de
+   la memoria— y una prueba que revienta se lleva por delante las que
+   vienen detrás, además de no explicar qué pasó. */
+const trasCercaDeMi = alMapa().at(-1);
+ok('AHORA SÍ SE BUSCA DONDE ESTÁS, no otra vez en Chapinero',
+  Boolean(trasCercaDeMi)
+    && trasCercaDeMi.consulta.includes(MI_SITIO.lat.toFixed(5))
+    && !trasCercaDeMi.consulta.includes(CHAPINERO.lat.toFixed(5)),
+  trasCercaDeMi
+    ? trasCercaDeMi.consulta.replace(/\n/g, ' ').slice(0, 90)
+    : 'no se le preguntó NADA al mapa: el centro seguía siendo Chapinero '
+      + 'y la lista salió de la memoria');
+
+const cercaDeMi = nodos.get('lugares-body').innerHTML;
+ok('el barrio se suelta y la caja se vacía',
+  !cercaDeMi.includes('quitarSitio()')
+    && /id="lugares-sitio"[^>]*value=""/.test(cercaDeMi),
+  cercaDeMi.slice(0, 200));
+ok('y AHORA sí se mide desde ti', cercaDeMi.includes(DESDE.ti), cercaDeMi.slice(0, 200));
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);
