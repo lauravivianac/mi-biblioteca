@@ -768,6 +768,31 @@ body:not(.signed-in) .atajos { display: none; }
 .lugares-intro { margin: 0 0 20px; }
 .lugares-tabs { margin-bottom: 14px; }
 
+/* HASTA DÓNDE MIRAR. Debajo de las pestañas y con la misma forma,
+   porque son la misma clase de decisión —qué lista estoy viendo— y
+   inventarles otro aspecto sería hacerlas parecer un ajuste.
+
+   Los metros van en una línea aparte y más pequeños: se leen al elegir
+   y estorban al volver a mirar. */
+/* DECIR DÓNDE BUSCAR. La caja y su botón en una línea: escribir el
+   barrio y buscarlo son un solo gesto, y partirlos en dos filas hace
+   que el botón parezca de otra cosa. */
+.lugares-donde { margin-bottom: 14px; }
+.lugares-donde-caja { display: flex; gap: 8px; align-items: stretch; }
+.lugares-donde-caja .finput { flex: 1; min-width: 0; }
+.lugares-donde-caja .btn-mini { flex: 0 0 auto; padding-inline: 14px; }
+.lugares-donde-pie { margin: 6px 0 0; }
+/* «Quitar» es texto y no botón a propósito: deshacer no puede pesar
+   más que hacer. */
+.lugares-quitar {
+  padding: 0; border: 0; background: none; font: inherit; cursor: pointer;
+  color: var(--gold); text-decoration: underline;
+}
+
+.lugares-lejos { margin-bottom: 14px; }
+.lugares-lejos .auth-tab { flex-direction: column; gap: 1px; line-height: 1.25; }
+.lugares-lejos-km { display: block; font-size: .74rem; opacity: .7; font-weight: 400; }
+
 /* La estantería se toca ENTERA para abrirla; renombrar y borrar van a
    un lado y en pequeño, que es el peso que les toca. */
 .shelf-abrir {

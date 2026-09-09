@@ -155,6 +155,34 @@ export function nombresDe(foco = 'todo') {
 /** Para empezar una frase con ello. */
 export const conMayuscula = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);
 
+/**
+ * El nombre corto de un sitio que devuelve Nominatim.
+ *
+ * Lo que vuelve de ahí es la dirección entera, y es larguísima:
+ *
+ *   «Chapinero, Localidad Chapinero, Bogotá, Bogotá Distrito Capital,
+ *    Región Andina, 110221, Colombia»
+ *
+ * Puesto en un título eso no se lee, se sufre. Se cogen los dos
+ * primeros trozos, que son el sitio y dónde está, y ya. Es lo mismo que
+ * diría una persona: «Chapinero, Bogotá».
+ */
+export function nombreCorto(display, max = 2) {
+  const trozos = unSoloEspacio(display).split(',').map((t) => t.trim()).filter(Boolean);
+  if (!trozos.length) return '';
+  /* El segundo trozo se salta si es una repetición del primero
+     —Nominatim hace «Chapinero, Localidad Chapinero»— porque decir dos
+     veces lo mismo gasta el sitio del dato que sí importa. */
+  const fuera = [trozos[0]];
+  for (const t of trozos.slice(1)) {
+    if (fuera.length >= max) break;
+    const yaEsta = fuera.some((x) => sinTildes(t).includes(sinTildes(x))
+      || sinTildes(x).includes(sinTildes(t)));
+    if (!yaEsta) fuera.push(t);
+  }
+  return fuera.join(', ').slice(0, 60);
+}
+
 const POR_ETIQUETA = {
   library: 'biblioteca',
   books: 'libreria',
@@ -164,8 +192,28 @@ const POR_ETIQUETA = {
 /* Cuántos de cada clase. Sin tope, las cafeterías se comen la lista —de
    una biblioteca hay tres en una ciudad y de cafeterías, seiscientas— y
    entonces la función deja de servir para lo que se pidió, que era
-   encontrar un sitio para verse y no un listado de hostelería. */
+   encontrar un sitio para verse y no un listado de hostelería.
+
+   ── PERO SEIS SOLO TIENE SENTIDO CUANDO HAY TRES LISTAS ─────
+
+     «La ubicación solo muestra pocos.»
+
+   Y es verdad, y el motivo es que este número se pensó para la pantalla
+   que enseña LAS TRES CLASES a la vez: seis de cada una son dieciocho
+   sitios, que ya es una pantalla larga, y ahí recortar está bien.
+
+   Al entrar por la taza no hay tres listas: hay una. Seis cafeterías es
+   media pantalla y encima es un recorte INVISIBLE —no se dice que haya
+   más—, así que parece que en tu barrio hay seis cafeterías y ya. Con
+   una sola clase el recorte puede ser mucho más generoso sin que la
+   lista se vuelva un listado de hostelería, porque no está compitiendo
+   con nada por el sitio. */
 export const TOPE_POR_TIPO = 6;
+export const TOPE_ENFOCADO = 20;
+
+/** Cuántos caben de cada clase, según cuántas clases se estén enseñando. */
+export const topeDe = (foco = 'todo') =>
+  (tiposDe(foco).length === 1 ? TOPE_ENFOCADO : TOPE_POR_TIPO);
 
 /* EL RADIO NO PUEDE SER EL MISMO EN LOS DOS CASOS.
 
@@ -185,6 +233,53 @@ export const TOPE_POR_TIPO = 6;
    1,2 km es un paseo de quince minutos. */
 export const RADIO = 4000;
 export const RADIO_CERCA = 1200;
+
+/* ── HASTA DÓNDE MIRAR, QUE LO DECIDE QUIEN BUSCA ────────────
+
+     «No se puede parametrizar dónde quiero buscar.»
+
+   Hasta aquí el radio de «cerca de ti» era 1,2 km y punto: un número
+   escrito en este fichero, elegido por mí, igual para un barrio de
+   Bogotá lleno de cafés que para un pueblo donde la librería más
+   cercana está a cinco kilómetros. En el primer caso sobra y en el
+   segundo la respuesta es «no hay nada», que es falsa.
+
+   Y el número no era malo —a pie, quince minutos, sigue siendo el que
+   viene puesto—: lo malo era que fuera MÍO. Quien busca sabe si va
+   andando, si va a coger el bus o si le da igual cruzar la ciudad, y
+   eso no se puede adivinar desde aquí.
+
+   Se empieza por el más pequeño A PROPÓSITO. El círculo grande es una
+   consulta mucho más cara —todas las cafeterías en 200 km² del centro
+   de Bogotá es exactamente la consulta que se quedaba pensando— así que
+   se paga cuando se pide, no siempre. Cada uno dice sus metros, para
+   que ampliar sea una decisión y no una lotería. */
+export const DISTANCIAS = [
+  { id: 'paseo', label: 'A pie', sub: '1,2 km', radio: RADIO_CERCA },
+  { id: 'barrio', label: 'Por el barrio', sub: '3 km', radio: 3000 },
+  { id: 'lejos', label: 'Más lejos', sub: '8 km', radio: 8000 },
+];
+
+export const DISTANCIA_POR_DEFECTO = 'paseo';
+
+/** Los metros de una distancia elegida. Una que no existe cae en la primera. */
+export const metrosDe = (id = DISTANCIA_POR_DEFECTO) =>
+  (DISTANCIAS.find((d) => d.id === id) || DISTANCIAS[0]).radio;
+
+/**
+ * Cómo se dice en una frase: «a un paseo de donde estás», «a 3 km de
+ * Chapinero».
+ *
+ * El `donde` va como argumento y no dado por hecho porque el centro
+ * dejó de ser siempre el mismo: puede ser tu posición, o el barrio que
+ * escribiste. Decir «de donde estás» cuando se buscó por un barrio es
+ * mentir sobre lo que se hizo, y encima da a entender que la app sabe
+ * dónde estás cuando no se lo has dicho.
+ */
+export function cercaniaTexto(id = DISTANCIA_POR_DEFECTO, donde = 'donde estás') {
+  const d = DISTANCIAS.find((x) => x.id === id) || DISTANCIAS[0];
+  return d.id === 'paseo' ? `a un paseo de ${donde}` : `a menos de ${d.sub} de ${donde}`;
+}
 
 /* ── LA CONSULTA ─────────────────────────────────────────────── */
 
@@ -288,7 +383,7 @@ export function quitarRepetidos(lugares) {
  * centro es además el sitio neutral por defecto: es a donde va la gente
  * cuando queda con alguien a quien no conoce.
  */
-export function agrupar(lugares, centro, { tope = TOPE_POR_TIPO, foco = 'todo' } = {}) {
+export function agrupar(lugares, centro, { foco = 'todo', tope = topeDe(foco) } = {}) {
   const limpios = quitarRepetidos(lugares);
   return TIPOS.filter((t) => enFoco(t.id, foco)).map((t) => ({
     ...t,
@@ -315,6 +410,9 @@ export const cuantos = (grupos) => grupos.reduce((n, g) => n + g.lugares.length,
 export const DESDE = {
   centro: 'del centro',
   ti: 'de ti',
+  /* Buscando por un barrio escrito a mano, ni «del centro» ni «de ti»
+     valen: el punto es un tercero que eligió quien busca. */
+  sitio: 'de ahí',
 };
 
 /** «A 400 m del centro», «A 2,1 km de ti». */
@@ -435,8 +533,20 @@ export const MOTIVOS = {
      las diez de la noche— y decirle que su ciudad no tiene cafeterías es
      mentira y además no le deja ningún sitio a donde ir. Así que este
      aviso dice que se ha mirado cerca, y la pantalla ofrece el centro. */
-  'sin-resultados-cerca': 'No hay {sitios} a un paseo de donde estás, '
-    + 'o el mapa no las tiene todavía.',
+  /* El hueco `{cerca}` lleva la distancia que se eligió de verdad. Si
+     alguien amplía a 8 km y el aviso sigue diciendo «a un paseo», el
+     botón que acaba de tocar parece no haber hecho nada. */
+  'sin-resultados-cerca': 'No hay {sitios} {cerca}, o el mapa no las tiene todavía.',
+  /* TRES FORMAS DE FALLAR BUSCANDO UN BARRIO, Y HAY QUE SEPARARLAS.
+     «No existe» se arregla escribiéndolo de otra forma; «no pudimos
+     preguntar» se arregla volviendo a intentarlo; y no distinguirlas
+     manda a corregir una palabra que estaba bien escrita. Es el mismo
+     error de siempre —contar un servicio caído como un resultado
+     vacío— aplicado a un sitio en vez de a una ciudad. */
+  'sitio-desconocido': 'No hemos encontrado ese sitio en el mapa. Prueba con el nombre '
+    + 'del barrio, o con una calle y el número.',
+  'sitio-caido': 'No hemos podido buscar ese sitio ahora mismo. Vuelve a intentarlo, '
+    + 'o mira los de tu ciudad mientras tanto.',
 };
 
 /**
@@ -447,13 +557,16 @@ export const MOTIVOS = {
  * tres clases de sitio cuando solo se pidió una es lo que hacía pensar
  * que la app estaba buscando otra cosa.
  */
-export function textoMotivo(motivo, foco = 'todo') {
+export function textoMotivo(motivo, foco = 'todo', distancia = DISTANCIA_POR_DEFECTO, donde) {
   const base = MOTIVOS[motivo] || MOTIVOS['sin-resultados'];
-  return base.replaceAll('{sitios}', nombresDe(foco));
+  return base
+    .replaceAll('{sitios}', nombresDe(foco))
+    .replaceAll('{cerca}', cercaniaTexto(distancia, donde));
 }
 
 /** ¿Este fracaso se arregla volviendo a intentarlo? */
-export const sePuedeReintentar = (motivo) => motivo === 'mapa-caido' || motivo === 'ciudad-caida';
+export const sePuedeReintentar = (motivo) => motivo === 'mapa-caido'
+  || motivo === 'ciudad-caida' || motivo === 'sitio-caido';
 
 /* De dónde salen los datos. Va en pantalla porque la licencia lo pide y
    porque está bien decir quién ha hecho el trabajo. */

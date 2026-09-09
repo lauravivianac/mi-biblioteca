@@ -107,9 +107,29 @@ let overpassResponde = () => ({
   ],
 });
 
+/* Nominatim se usa para DOS cosas distintas y hay que poder mirarlas por
+   separado: situar tu ciudad (con `city=`) y situar el barrio que
+   escribiste (con `q=`). Chapinero existe; lo demás, no, salvo que la
+   prueba lo cambie. */
+const CHAPINERO = { lat: 4.6486, lon: -74.0628 };
+let sitioResponde = (q) => (/chapinero/i.test(q)
+  ? [{
+    lat: CHAPINERO.lat,
+    lon: CHAPINERO.lon,
+    display_name: 'Chapinero, Localidad Chapinero, Bogotá, Bogotá D.C., Colombia',
+  }]
+  : []);
+
 globalThis.fetch = async (url, opciones = {}) => {
   const dir = String(url);
   if (dir.includes('nominatim')) {
+    const q = new URL(dir).searchParams.get('q');
+    if (q !== null) {
+      pedidos.push({ que: 'sitio', url: dir, q });
+      const cuerpo = sitioResponde(q);
+      if (cuerpo instanceof Error) throw cuerpo;
+      return { ok: true, status: 200, json: async () => cuerpo };
+    }
     pedidos.push({ que: 'ciudad', url: dir });
     return { ok: true, status: 200, json: async () => [{ lat: CENTRO.lat, lon: CENTRO.lon }] };
   }
@@ -123,6 +143,7 @@ const store = await import('../src/store.js');
 const lugaresui = await import('../src/lugaresui.js');
 const {
   RADIO, RADIO_CERCA, RADIO_CAFE, RADIO_RARO, MOTIVOS,
+  DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe,
 } = await import('../src/lugares-core.js');
 
 let pasaron = 0;
@@ -151,6 +172,7 @@ async function abrir(cual, { estado = 'prompt', donde = { lat: 4.6510, lon: -74.
 }
 
 const alMapa = () => pedidos.filter((p) => p.que === 'mapa');
+const aSitios = () => pedidos.filter((p) => p.que === 'sitio');
 const ultimaConsulta = () => alMapa().at(-1)?.consulta || '';
 const radioDe = (p) => Number(/around:(\d+)/.exec(p.consulta || '')?.[1]);
 /* Todos los radios de una consulta, en orden y sin repetir el de `node`
@@ -444,6 +466,366 @@ await lugaresui.openDondeTomarCafe();
 ok('volver a abrirla vuelve a preguntar dónde estás', veces > 0);
 ok('y vuelve a preguntarle al mapa', alMapa().length > 0,
   'si no, la lista de antes seguiría viva después de cerrar');
+
+/* ─────────────────────────────────────────────────────────────
+   HASTA DÓNDE MIRAR  ·  «no se puede parametrizar dónde quiero buscar»
+   ───────────────────────────────────────────────────────────── */
+
+grupo('EL CÍRCULO LO ELIGE QUIEN BUSCA');
+
+const cerquita = await abrir('openDondeTomarCafe');
+
+ok('los botones de distancia están, buscando cerca de ti',
+  DISTANCIAS.every((d) => cerquita.includes(`verHasta('${d.id}')`)),
+  cerquita.slice(0, 200));
+ok('se empieza por el paseo, que es la consulta barata',
+  radioDe(alMapa()[0]) === metrosDe(DISTANCIA_POR_DEFECTO),
+  `salió ${radioDe(alMapa()[0])}`);
+
+const antesDeAmpliar = alMapa().length;
+await lugaresui.verHasta('lejos');
+ok('AMPLIAR PREGUNTA OTRA VEZ, con el círculo grande',
+  alMapa().length === antesDeAmpliar + 1
+    && radioDe(alMapa().at(-1)) === metrosDe('lejos'),
+  `${alMapa().length - antesDeAmpliar} consultas · radio ${radioDe(alMapa().at(-1))}`);
+
+/* Y la lista de 8 km no puede sobrescribir la de 1,2: son dos
+   respuestas distintas a dos preguntas distintas. */
+const trasAmpliar = alMapa().length;
+await lugaresui.verHasta('paseo');
+ok('y volver al paseo no vuelve a preguntar: cada radio guarda lo suyo',
+  alMapa().length === trasAmpliar, `${alMapa().length - trasAmpliar} consultas de más`);
+ok('pero sí vuelve a enseñar el paseo',
+  nodos.get('lugares-body').innerHTML.includes('a un paseo de donde estás'));
+
+/* Tocar el que ya está puesto no es una búsqueda nueva. */
+const trasVolver = alMapa().length;
+await lugaresui.verHasta('paseo');
+ok('tocar la distancia que ya está no pregunta nada', alMapa().length === trasVolver);
+
+/* Por el CENTRO de la ciudad el radio lo decide la clase de sitio —de
+   bibliotecas hay tres y de cafeterías seiscientas—, así que aquí un
+   control de distancia no mandaría sobre nada: enseñarlo sería mentir
+   con tres botones. */
+const porElCentro = await abrir('openDondeTomarCafe', { estado: 'denied' });
+ok('POR EL CENTRO NO SE ENSEÑAN, que ahí no mandarían sobre nada',
+  !porElCentro.includes('verHasta('), porElCentro.slice(0, 200));
+
+/* ─────────────────────────────────────────────────────────────
+   UNA RESPUESTA QUE LLEGA TARDE NO MANDA
+
+   Antes esto era `if (cargando) return`, y hacía dos cosas malas: una
+   búsqueda en marcha impedía empezar otra —cerrar y volver a abrir
+   dejaba una ruedecita eterna— y la que llegaba pintaba encima aunque
+   ya se hubiera cambiado de pestaña.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('LA ÚLTIMA BÚSQUEDA ES LA QUE MANDA');
+
+/* Un mapa que tarda: la respuesta se queda retenida hasta que se
+   suelta a mano. Sin esto no hay forma de tener dos búsquedas vivas a
+   la vez, que es justo el caso que se rompía. */
+let soltar = null;
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 9, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: 'Café lento' } },
+  ],
+});
+const lento = new Promise((r) => { soltar = r; });
+const fetchNormal = globalThis.fetch;
+globalThis.fetch = async (url, opciones) => {
+  const r = await fetchNormal(url, opciones);
+  if (String(url).includes('nominatim')) return r;
+  await lento;
+  return r;
+};
+
+/* En limpio y CON permiso: la prueba de antes lo dejó denegado, y sin
+   ubicación esto mediría la búsqueda por el centro, que es otra cosa.
+   No se puede usar `abrir()` aquí porque espera a que termine, y lo que
+   hay que provocar es justo una búsqueda a medias. */
+lugaresui.closeLugares();
+almacen.clear();
+pedidos.length = 0;
+veces = 0;
+permiso = 'prompt';
+posicion = { lat: 4.6510, lon: -74.0550 };
+const enMarcha = lugaresui.openDondeTomarCafe();
+
+/* HAY QUE ESPERAR A QUE LA CONSULTA HAYA SALIDO DE VERDAD.
+   La primera versión de esto cerraba la hoja en la línea de después de
+   abrirla, y eso no medía nada: la búsqueda todavía estaba pidiendo el
+   permiso de ubicación, así que se cerraba ANTES de empezar y lo que
+   venía después era una búsqueda normal y corriente. Se cierra cuando
+   la pregunta ya está en el aire, que es el caso que se rompía. */
+const hastaQue = async (cond, ms = 2000) => {
+  const fin = Date.now() + ms;
+  while (!cond() && Date.now() < fin) await new Promise((r) => { setTimeout(r, 5); });
+  return cond();
+};
+ok('la consulta sale antes de cerrar (si no, esta prueba no mide nada)',
+  await hastaQue(() => alMapa().length > 0), `${alMapa().length} consultas`);
+
+/* Ahora sí: se cierra la hoja MIENTRAS busca. Lo que venga de camino ya
+   no es de nadie: ni se pinta, ni —sobre todo— se queda en memoria. */
+lugaresui.closeLugares();
+soltar();
+await enMarcha;
+
+/* Lo primero, que no haya pintado sobre una hoja cerrada. */
+ok('la respuesta que llegó tarde NO pinta en la hoja cerrada',
+  !nodos.get('lugares-body').innerHTML.includes('Café lento'),
+  nodos.get('lugares-body').innerHTML.slice(0, 160));
+
+/* Y lo segundo, que es otra cosa: que tampoco se haya quedado
+   guardada. Se mide con un mapa que ahora contesta OTRA cosa — si la
+   lista de antes siguiera en memoria, saldría «Café lento» y no habría
+   consulta ninguna. */
+globalThis.fetch = fetchNormal;
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 10, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: 'Café nuevo' } },
+  ],
+});
+
+pedidos.length = 0;
+await lugaresui.openDondeTomarCafe();
+ok('cerrar mientras busca no deja la hoja atascada: se vuelve a buscar',
+  alMapa().length > 0,
+  'antes la búsqueda en marcha impedía empezar otra y quedaba una ruedecita eterna');
+ok('Y LA QUE LLEGÓ TARDE NO SE QUEDÓ EN MEMORIA',
+  nodos.get('lugares-body').innerHTML.includes('Café nuevo')
+    && !nodos.get('lugares-body').innerHTML.includes('Café lento'),
+  nodos.get('lugares-body').innerHTML.slice(0, 200));
+
+/* ─────────────────────────────────────────────────────────────
+   Y EL OTRO CASO, QUE NO SE ARREGLA SOLO CON CERRAR BIEN:
+   CAMBIAR DE DISTANCIA MIENTRAS BUSCA.
+
+   La hoja sigue abierta, así que nadie ha limpiado nada. Con el viejo
+   `if (cargando) return`, tocar «más lejos» mientras cargaba el paseo
+   no hacía NADA: ni preguntaba ni avisaba, y al llegar la respuesta del
+   paseo pintaba la lista corta debajo de un botón de 8 km encendido.
+
+   Aquí hacen falta dos consultas vivas a la vez, así que el mapa lento
+   ya no es una promesa sola: cada consulta se queda colgada hasta que
+   se la suelta a mano, y se sueltan AL REVÉS —primero la de 8 km y
+   después la del paseo— para que la que llega tarde sea la vieja.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('CAMBIAR DE DISTANCIA MIENTRAS BUSCA');
+
+const colgadas = [];
+globalThis.fetch = async (url, opciones) => {
+  const r = await fetchNormal(url, opciones);
+  if (String(url).includes('nominatim')) return r;
+  await new Promise((soltarla) => { colgadas.push(soltarla); });
+  return r;
+};
+/* Cada radio contesta un café distinto, que es lo que permite mirar la
+   pantalla y saber CUÁL de las dos respuestas mandó. */
+overpassResponde = () => {
+  const r = radioDe(alMapa().at(-1));
+  return {
+    elements: [
+      { type: 'node', id: r, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: `Café de ${r}` } },
+    ],
+  };
+};
+
+lugaresui.closeLugares();
+almacen.clear();
+pedidos.length = 0;
+permiso = 'prompt';
+posicion = { lat: 4.6510, lon: -74.0550 };
+
+const elPaseo = lugaresui.openDondeTomarCafe();
+ok('sale la consulta del paseo', await hastaQue(() => colgadas.length === 1),
+  `${colgadas.length} consultas colgadas`);
+
+/* Sin soltar la primera: se toca «más lejos». */
+const masLejos = lugaresui.verHasta('lejos');
+ok('TOCAR «MÁS LEJOS» MIENTRAS CARGA SÍ PREGUNTA',
+  await hastaQue(() => colgadas.length === 2),
+  'con el viejo «if (cargando) return» esto no hacía absolutamente nada');
+
+/* Al revés: primero la de 8 km, y la del paseo llega después. */
+colgadas[1]();
+colgadas[0]();
+await Promise.all([elPaseo, masLejos]);
+
+const alFinal = nodos.get('lugares-body').innerHTML;
+ok('Y MANDA LA ÚLTIMA, aunque la vieja llegue después',
+  alFinal.includes(`Café de ${metrosDe('lejos')}`)
+    && !alFinal.includes(`Café de ${metrosDe('paseo')}`),
+  alFinal.slice(0, 200));
+ok('el botón encendido y la lista dicen lo mismo',
+  alFinal.includes('aria-pressed="true"') && alFinal.includes(`verHasta('lejos')`),
+  nodos.get('lugares-body').innerHTML.slice(0, 200));
+
+/* ─────────────────────────────────────────────────────────────
+   ESCRIBIR DÓNDE BUSCAR
+
+     «Me gustaría que las personas pudieran decidir dónde buscar:
+      ponerle un sitio, un barrio, o decir cerca mío.»
+
+   Había dos centros y los dos los elegía la app: tu ciudad o el GPS.
+   Ninguno contesta a «voy a estar por Chapinero el sábado».
+   ───────────────────────────────────────────────────────────── */
+
+grupo('SE PUEDE ESCRIBIR UN BARRIO');
+
+globalThis.fetch = fetchNormal;
+overpassResponde = () => ({
+  elements: [
+    /* OJO CON EL NOMBRE DEL CAFÉ. La primera versión lo llamaba «Café de
+       Chapinero», y entonces la prueba de más abajo —que lo escrito no
+       llega al disco— buscaba «chapinero» en el almacén y lo encontraba
+       siempre: en el NOMBRE del café, que es un dato público del mapa y
+       no tiene nada que ver con lo que se escribió. O sea que se ponía
+       roja por una coincidencia de letras. Se llama de otra forma para
+       que encontrar «chapinero» ahí signifique lo que dice que
+       significa. */
+    { type: 'node', id: 20, lat: 4.6490, lon: -74.0630, tags: { amenity: 'cafe', name: 'Café del Parque' } },
+  ],
+});
+
+const conCaja = await abrir('openDondeTomarCafe', { estado: 'denied' });
+ok('la caja para escribir dónde está desde el principio',
+  conCaja.includes('buscarPorSitio('), conCaja.slice(0, 300));
+
+pedidos.length = 0;
+await lugaresui.buscarPorSitio('Chapinero');
+
+ok('se le pregunta a Nominatim por lo escrito', aSitios().length >= 1,
+  `${aSitios().length} consultas de sitio`);
+/* Se pregunta con la ciudad pegada detrás: «Chapinero» hay uno en
+   Bogotá y quien escribe eso no está pensando en ningún otro. */
+ok('CON TU CIUDAD PEGADA DETRÁS, que si no «Chapinero» hay muchos',
+  /Chapinero.*Bogot/i.test(aSitios()[0].q), aSitios()[0].q);
+
+const enChapinero = nodos.get('lugares-body').innerHTML;
+ok('y se busca ALREDEDOR DE CHAPINERO, no del centro de Bogotá',
+  alMapa().at(-1).consulta.includes(CHAPINERO.lat.toFixed(5)),
+  alMapa().at(-1).consulta.replace(/\n/g, ' '));
+ok('con el radio elegido y no el de la clase de sitio',
+  radioDe(alMapa().at(-1)) === metrosDe(DISTANCIA_POR_DEFECTO),
+  String(radioDe(alMapa().at(-1))));
+ok('la pantalla dice que está buscando por ahí',
+  enChapinero.includes('Chapinero'), enChapinero.slice(0, 200));
+ok('Y NO DICE «de donde estás», que no se lo hemos dicho',
+  !enChapinero.includes('donde estás'), enChapinero.slice(0, 300));
+ok('salen los sitios de allí', enChapinero.includes('Café del Parque'));
+ok('y se puede quitar sin cerrar la hoja', enChapinero.includes('quitarSitio()'));
+
+/* Y las distancias siguen mandando: es el mismo control, otro centro. */
+const antesDeAmpliarBarrio = alMapa().length;
+await lugaresui.verHasta('lejos');
+ok('ampliar también vale buscando por un barrio',
+  alMapa().length === antesDeAmpliarBarrio + 1
+    && radioDe(alMapa().at(-1)) === metrosDe('lejos')
+    && alMapa().at(-1).consulta.includes(CHAPINERO.lat.toFixed(5)),
+  `radio ${radioDe(alMapa().at(-1))}`);
+await lugaresui.verHasta('paseo');
+
+grupo('LO ESCRITO NO SE ESCRIBE EN EL DISCO');
+
+/* La ciudad sí se guarda —es pública y la pusiste tú en tus ajustes—.
+   Esto no, porque desde aquí NO SE SABE si lo escrito es un barrio o tu
+   propia calle con el número. Guardar una lista de direcciones buscadas
+   es lo que place-core.js promete no hacer, por la puerta de al lado. */
+const guardado = [...almacen.entries()].map(([k, v]) => `${k}=${v}`).join(' | ');
+ok('«Chapinero» no aparece en el almacén', !/chapinero/i.test(guardado), guardado.slice(0, 240));
+ok('ni el punto al que se situó', !guardado.includes(CHAPINERO.lat.toFixed(4))
+  && !guardado.includes(CHAPINERO.lon.toFixed(4)), guardado.slice(0, 240));
+
+/* Y al cerrar se va, igual que tu posición. Se mira LA CAJA, que es
+   donde estaría lo escrito si hubiera sobrevivido: mirar si la palabra
+   aparece en algún sitio del HTML mediría también el nombre de
+   cualquier café que se llamara parecido. */
+pedidos.length = 0;
+lugaresui.closeLugares();
+await lugaresui.openDondeTomarCafe();
+const alReabrir = nodos.get('lugares-body').innerHTML;
+const enLaCaja = /id="lugares-sitio"[^>]*value="([^"]*)"/.exec(alReabrir)?.[1];
+ok('AL CERRAR SE OLVIDA lo que se escribió: la caja vuelve vacía',
+  enLaCaja === '', JSON.stringify(enLaCaja));
+ok('y ya no se está buscando por ningún barrio',
+  !alReabrir.includes('quitarSitio()'), alReabrir.slice(0, 240));
+ok('ni se pregunta otra vez por él', aSitios().length === 0,
+  aSitios().map((p) => p.q).join(' · '));
+
+/* Y LO QUE HAY QUE MIRAR DE VERDAD ES LA MEMORIA, no la pantalla.
+   Vaciar la caja al reabrir lo hace ya `abrir()`, así que mirar solo eso
+   pasaría igual aunque cerrar no olvidara nada — lo comprobé quitando la
+   línea de cerrar y la prueba seguía verde, que es una prueba que
+   tranquiliza sin vigilar.
+   Lo que solo hace cerrar es tirar el apunte de dónde estaba ese barrio.
+   Se mide escribiendo LO MISMO otra vez: si se preguntó de nuevo, es que
+   no quedaba guardado. */
+pedidos.length = 0;
+await lugaresui.buscarPorSitio('Chapinero');
+ok('AL CERRAR TAMBIÉN SE OLVIDA DÓNDE ESTABA ESE BARRIO',
+  aSitios().length >= 1,
+  'si no se hubiera olvidado, saldría de memoria y no se preguntaría nada');
+
+/* Y se vuelve a cerrar antes de seguir: si «Chapinero» se quedara
+   apuntado, el escenario de abajo —el servicio caído— ni llegaría a
+   preguntar, saldría de memoria, y estaría comprobando otra cosa. */
+lugaresui.closeLugares();
+await lugaresui.openDondeTomarCafe();
+
+grupo('CUANDO LO ESCRITO NO SE ENCUENTRA');
+
+pedidos.length = 0;
+await lugaresui.buscarPorSitio('qwertyasdf');
+const noExiste = nodos.get('lugares-body').innerHTML;
+
+ok('se dice que no se encontró', noExiste.includes(MOTIVOS['sitio-desconocido'].slice(0, 40)),
+  noExiste.slice(0, 240));
+ok('Y NO SE OFRECE REINTENTAR lo que no existe',
+  !noExiste.includes('reintentarLugares()'),
+  'un botón que no puede cambiar nada solo hace perder el tiempo');
+ok('pero la caja sigue ahí para escribir otra cosa',
+  noExiste.includes('buscarPorSitio('), noExiste.slice(0, 300));
+ok('y no se le preguntó al mapa por un sitio que no existe', alMapa().length === 0);
+
+/* Se prueban las dos formas: con la ciudad detrás y a secas. Si
+   escribes «Medellín» viviendo en Bogotá, «Medellín, Bogotá» no existe
+   y el segundo intento es el que te vale. */
+ok('SE INTENTA TAMBIÉN SIN LA CIUDAD DETRÁS', aSitios().length === 2,
+  aSitios().map((p) => p.q).join(' · '));
+ok('y el segundo intento es lo escrito tal cual',
+  aSitios()[1].q === 'qwertyasdf', aSitios()[1].q);
+
+grupo('Y CUANDO NO SE PUEDE NI PREGUNTAR');
+
+sitioResponde = () => new Error('Nominatim caído');
+pedidos.length = 0;
+await lugaresui.buscarPorSitio('Chapinero');
+const sinPreguntar = nodos.get('lugares-body').innerHTML;
+
+ok('se dice que no se pudo preguntar, no que no exista',
+  sinPreguntar.includes(MOTIVOS['sitio-caido'].slice(0, 40))
+    && !sinPreguntar.includes(MOTIVOS['sitio-desconocido'].slice(0, 40)),
+  sinPreguntar.slice(0, 240));
+ok('Y AQUÍ SÍ SE OFRECE REINTENTAR', sinPreguntar.includes('reintentarLugares()'),
+  'esto sí se arregla volviendo a intentarlo');
+ok('con el detalle técnico, para poder contarlo',
+  sinPreguntar.includes('Detalle técnico'), sinPreguntar.slice(0, 240));
+
+/* Reintentar tiene que volver a SITUAR el barrio, no buscar alrededor
+   del centro de antes dejando la caja llena sin que pase nada. */
+sitioResponde = (q) => (/chapinero/i.test(q)
+  ? [{ lat: CHAPINERO.lat, lon: CHAPINERO.lon, display_name: 'Chapinero, Bogotá, Colombia' }]
+  : []);
+pedidos.length = 0;
+await lugaresui.reintentarLugares();
+ok('REINTENTAR VUELVE A SITUAR EL BARRIO, no busca por el centro',
+  aSitios().length >= 1 && /chapinero/i.test(aSitios()[0].q),
+  aSitios().map((p) => p.q).join(' · ') || 'no se preguntó por ningún sitio');
+ok('y ahora sí sale', nodos.get('lugares-body').innerHTML.includes('Café del Parque'),
+  nodos.get('lugares-body').innerHTML.slice(0, 200));
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);
