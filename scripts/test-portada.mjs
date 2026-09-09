@@ -337,6 +337,92 @@ console.log('\n─── LOS DÍGITOS, AGRUPADOS ───');
   await ctx.close();
 }
 
+/* ─────────────────────────────────────────────────────────────
+   EL CÓDIGO SE LEE BIEN Y NADIE LO TIENE
+
+   Pantalla real, con un ISBN colombiano:
+
+     9 789585 457812 · lo leímos bien, pero uno de los dos catálogos no
+     contestó y el otro no lo tiene. Vuelve a intentarlo en un rato.
+     Detalle técnico: Google Books: HTTP 429
+
+   Todo cierto, y aun así un callejón: volvía a encender la cámara sobre
+   el mismo libro, que va a dar el mismo código las veces que haga
+   falta. Y para una edición que no está en ningún catálogo
+   internacional, «en un rato» no llega nunca.
+   ───────────────────────────────────────────────────────────── */
+
+console.log('\n─── UN CÓDIGO QUE NADIE TIENE ───');
+{
+  const { p, ctx, errores } = await abrir();
+
+  /* Se ejecuta `usarCodigo`, que es EXACTAMENTE lo que llama el escáner
+     al leer uno: así se prueba lo que pasa después de leerlo sin
+     depender de que la cámara de mentira enfoque un código de verdad.
+     Y los catálogos contestan lo que contestaron ese día: Google con un
+     429 y OpenLibrary sin el libro. */
+  await p.evaluate(async () => {
+    const real = window.fetch;
+    window.fetch = async (u, o) => {
+      const dir = String(u);
+      if (dir.includes('googleapis')) {
+        return new Response(JSON.stringify({ error: { code: 429 } }), { status: 429 });
+      }
+      if (dir.includes('openlibrary')) {
+        return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return real(u, o);
+    };
+    await window.__addbook.usarCodigo('9789585457812');
+  });
+  await p.waitForTimeout(120);
+
+  const salida = await p.evaluate(() => {
+    const caja = document.getElementById('scan-estado');
+    const boton = caja?.querySelector('button');
+    return { texto: caja?.textContent || '', boton: boton?.textContent?.trim() || '' };
+  });
+
+  ok('el código leído se sigue enseñando', /457812/.test(salida.texto), salida.texto.slice(0, 80));
+  ok('Y HAY UNA SALIDA, no solo «vuelve a intentarlo»',
+    /a mano/i.test(salida.boton),
+    salida.boton || 'no había ningún botón: la pantalla es un callejón');
+
+  await p.evaluate(() => { window.__addbook.escribirEsteLibro('9789585457812'); });
+  await p.waitForTimeout(80);
+
+  const ficha = await p.evaluate(() => ({
+    hay: !!document.querySelector('.draft-head'),
+    fuente: document.querySelector('.draft-source')?.textContent?.trim() || '',
+    titulo: document.getElementById('f-title')?.value ?? null,
+  }));
+
+  ok('se llega a la ficha para escribirlo', ficha.hay);
+  ok('NO DICE «encontrado en el catálogo», porque no lo encontró nadie',
+    !/encontrado en el cat/i.test(ficha.fuente), `dice «${ficha.fuente}»`);
+  ok('y el título se deja vacío para escribirlo, sin basura que borrar',
+    ficha.titulo === '', JSON.stringify(ficha.titulo));
+
+  /* Y EL CÓDIGO NO SE PIERDE: es el dato más pesado de teclear y ya
+     estaba bien leído. Se comprueba guardando y mirando qué quedó. */
+  const guardado = await p.evaluate(async () => {
+    document.getElementById('f-title').value = 'Antes de que se enfríe el café';
+    document.getElementById('f-author').value = 'Toshikazu Kawaguchi';
+    window.__addbook.saveDraft();
+    await new Promise((r) => { setTimeout(r, 200); });
+    const store = await import('/src/store.js');
+    /* El ISBN vive en la ENTRADA y no en el libro —`commit` lo guarda
+       con `updateEntry`— así que hay que ir a buscarlo ahí. */
+    return store.everyBook().map((b) => ({ title: b.title, isbn: store.entry(b.id).isbn }));
+  });
+  ok('EL ISBN SE GUARDA CON EL LIBRO, para no volver a escanearlo',
+    guardado.some((b) => b.isbn === '9789585457812'),
+    JSON.stringify(guardado));
+
+  ok('sin errores de página', errores.length === 0, errores.join(' | '));
+  await ctx.close();
+}
+
 await navegador.close();
 servidor.close();
 
