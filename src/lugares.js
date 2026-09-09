@@ -32,7 +32,8 @@
    ───────────────────────────────────────────────────────────── */
 
 import {
-  consultaOverpass, leerRespuesta, agrupar, tiposDe, FOCOS, RADIO_CERCA,
+  consultaOverpass, leerRespuesta, agrupar, tiposDe, FOCOS,
+  metrosDe, DISTANCIA_POR_DEFECTO,
 } from './lugares-core.js';
 import { normalizarLugar } from './place-core.js';
 
@@ -50,29 +51,40 @@ const OVERPASS = [
   'https://overpass.private.coffee/api/interpreter',
 ];
 
-/* DOS ESPERAS, Y LA DEL CLIENTE TIENE QUE SER MAYOR.
+/* ── LAS ESPERAS, DESPUÉS DE MEDIRLAS ────────────────────────
 
-   Estaban las dos en 20 segundos: el `[timeout:20]` que va dentro de la
-   consulta —lo que Overpass se permite tardar EJECUTÁNDOLA— y el
-   nuestro. Pero el tiempo que pasa de verdad es la cola más la
-   ejecución, así que en cuanto el servidor tenía trabajo pendiente
-   nosotros cortábamos antes de que pudiera contestar, siempre. Cortar
-   a la vez que el otro termina es cortar siempre. */
-const ESPERA_CONSULTA = 25;        // segundos, dentro de la consulta
-const ESPERA_RED = 45000;          // milisegundos, lo que se le da a UN servidor
-const ESPERA_CIUDAD = 15000;       // situar una ciudad es una consulta pequeña
+     «Se está demorando muchísimo, casi 5 minutos buscando librerías y
+      cafés.»
 
-/* Y UN TECHO PARA LA ESPERA ENTERA.
+   Y salía la cuenta: 12 s de geolocalización + tres servidores EN SERIE
+   con hasta 60 s de techo = 72 s por búsqueda. Y como cada pestaña
+   consulta lo suyo —eso lo cambié yo, para no pedir las tres clases
+   cuando solo se enseña una— tocar las tres pestañas eran tres
+   búsquedas. Tres minutos y medio, más un reintento, son los cinco
+   minutos que contó.
 
-   Tres servidores a 45 segundos cada uno son dos minutos y cuarto de
-   ruedecita girando antes de decir la primera palabra. Nadie espera dos
-   minutos: se cierra la app y se cuenta que «se queda cargando», que es
-   exactamente lo que pasó.
+   El error de fondo era tratar la espera como si el problema fuera «no
+   darle tiempo». No lo es: Overpass sano contesta una consulta pequeña
+   en uno o dos segundos. Si a los doce no ha contestado, está encolado,
+   y esperar más rara vez cambia el resultado — solo cambia cuánto rato
+   se mira una ruedecita. */
+const ESPERA_CONSULTA = 10;        // segundos, dentro de la consulta
+const ESPERA_RED = 15000;          // milisegundos, lo que se le da a UN servidor
+const ESPERA_TOTAL = 25000;        // y a la búsqueda entera, pase lo que pase
+const ESPERA_CIUDAD = 10000;       // situar una ciudad es una consulta pequeña
 
-   Así que el reloj se pone UNA vez, al principio, y los tres servidores
-   se reparten lo que haya. Cuando se acaba, se acabó, y se dice. Es
-   mejor un «no hemos podido» al minuto que un acierto a los dos. */
-const ESPERA_TOTAL = 60000;
+/* Cuánto se espera a un servidor antes de preguntarle TAMBIÉN al
+   siguiente. No es reintentar: el primero sigue vivo y vale si acaba
+   contestando; simplemente deja de ser el único.
+
+   Así el caso normal sigue costando UNA consulta —contesta en dos
+   segundos y nadie más se entera— y el caso malo deja de costar un
+   minuto. Es lo que hace todo el mundo con réplicas lentas, y con
+   consultas tan pequeñas como estas no es abusar de un servicio
+   gratuito: es no tener a alguien esperando por una máquina que hoy va
+   mal. */
+const ADELANTAR = 4000;
+
 const MES = 30 * 24 * 3600 * 1000;
 const SEMANA = 7 * 24 * 3600 * 1000;
 
@@ -109,7 +121,24 @@ function guardar(clave, dato) {
    tres consultas idénticas al mapa para enseñar tres recortes de la
    misma respuesta. Así que se recuerda UNA, en una variable, sin fecha
    y sin disco: se va al recargar la página, como tiene que irse. */
-const ultimas = new Map();   // foco → { lat, lon, lugares }
+const ultimas = new Map();   // `${foco}|${radio}` → { lat, lon, lugares }
+
+/* UNA BÚSQUEDA QUE SALIÓ ANTES DE CERRAR NO PUEDE ESCRIBIR DESPUÉS.
+   ─────────────────────────────────────────────────────────────
+   Cerrar la hoja borra tu posición y la lista de alrededor. Pero una
+   consulta lanzada antes de cerrar sigue viva, y al llegar guardaba lo
+   suyo — o sea, volvía a dejar en memoria justo lo que se acababa de
+   borrar, unos milisegundos después y sin que nadie lo pidiera.
+   Con la red de un teléfono ese hueco no es teórico.
+
+   Así que cada búsqueda se lleva apuntado en qué generación salió, y al
+   volver solo escribe si sigue siendo la de ahora. Olvidar sube el
+   contador, y todo lo que venía de camino se cae solo. */
+let generacion = 0;
+
+/* El radio va en la clave: ampliar de 1,2 a 8 km es OTRA búsqueda, y
+   sin esto ampliar habría devuelto la lista corta de antes. */
+const enClave = (foco, radio) => `${foco}|${radio}`;
 
 /* Redondeado a tres decimales, unos 100 metros: moverse un poco por la
    calle no vuelve a preguntar, y cruzar el barrio sí. */
@@ -117,16 +146,20 @@ const cerca = (a, b) => a && b
   && a.lat.toFixed(3) === b.lat.toFixed(3)
   && a.lon.toFixed(3) === b.lon.toFixed(3);
 
-const enMemoria = (punto, foco) => {
-  const ya = ultimas.get(foco);
+const enMemoria = (punto, foco, radio) => {
+  const ya = ultimas.get(enClave(foco, radio));
   return cerca(ya, punto) ? ya.lugares : null;
 };
-const recordar = (punto, foco, lugares) => {
-  if (punto) ultimas.set(foco, { lat: punto.lat, lon: punto.lon, lugares });
+const recordar = (punto, foco, radio, lugares, gen) => {
+  if (!punto || gen !== generacion) return;
+  ultimas.set(enClave(foco, radio), { lat: punto.lat, lon: punto.lon, lugares });
 };
 
 /** Al cerrar la hoja: lo que no se recuerda no se puede filtrar. */
-export function olvidarDondeEstoy() { ultimas.clear(); }
+export function olvidarDondeEstoy() {
+  ultimas.clear();
+  generacion += 1;
+}
 
 /* ── DÓNDE ESTÁ ESA CIUDAD ───────────────────────────────────── */
 
@@ -161,39 +194,83 @@ export async function centroDe(city, country = '') {
 
 /* ── QUÉ HAY ALREDEDOR ───────────────────────────────────────── */
 
+/** Una consulta a UN servidor. Lanza con el motivo si no puede. */
+async function unServidor(servidor, consulta, señal) {
+  const r = await fetch(servidor, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: consulta,
+    signal: señal,
+  });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  /* Overpass contesta 200 con un texto de error cuando la consulta se
+     le atraganta, así que un 200 no basta: si no hay `elements` no ha
+     contestado, ha dicho que no puede. */
+  const datos = await r.json();
+  if (!Array.isArray(datos?.elements)) throw new Error('respuesta sin datos');
+  return leerRespuesta(datos);
+}
+
+/**
+ * Preguntar al mapa, sin hacer esperar por una máquina que va mal.
+ *
+ * Se le pregunta al primer servidor. Si a los cuatro segundos no ha
+ * contestado, se le pregunta TAMBIÉN al segundo —el primero sigue vivo
+ * y vale si acaba llegando— y a los ocho, al tercero. Gana el primero
+ * que traiga datos y los demás se abortan.
+ *
+ * Antes se probaban en fila: el primero hasta 45 s, luego el segundo,
+ * luego el tercero, con un techo de 60. Con un servidor encolado eso es
+ * un minuto de ruedecita ANTES de la primera palabra, y multiplicado por
+ * las tres pestañas fueron los cinco minutos que se contaron.
+ */
 async function preguntarAOverpass(centro, { radio = null, foco = 'todo' } = {}) {
   const consulta = consultaOverpass(centro, {
     radio, tipos: tiposDe(foco), espera: ESPERA_CONSULTA,
   });
+
   const fallos = [];
-  const limite = Date.now() + ESPERA_TOTAL;
+  const abortos = [];
+  let vivos = 0;
 
-  for (const servidor of OVERPASS) {
-    /* Menos de tres segundos no le da tiempo a nadie: intentarlo sería
-       gastar la última espera en un fallo seguro. */
-    const queda = limite - Date.now();
-    if (queda < 3000) { fallos.push('se agotó la espera'); break; }
-
-    try {
-      const r = await fetch(servidor, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-        body: consulta,
-        signal: timeout(Math.min(ESPERA_RED, queda)),
+  const lanzar = (servidor) => {
+    const ac = new AbortController();
+    abortos.push(ac);
+    vivos += 1;
+    const corta = setTimeout(() => ac.abort(), ESPERA_RED);
+    return unServidor(servidor, consulta, ac.signal)
+      .finally(() => { clearTimeout(corta); vivos -= 1; })
+      .catch((e) => {
+        fallos.push(`${new URL(servidor).hostname}: ${e?.message || e}`);
+        /* Una promesa que nunca se resuelve: así `Promise.race` no la
+           elige y sigue esperando a las que quedan. Sin esto, el primer
+           fallo ganaría la carrera y se perdería la respuesta buena que
+           venía detrás. */
+        return new Promise(() => {});
       });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      /* Overpass contesta 200 con un texto de error cuando la consulta
-         se le atraganta, así que un 200 no basta: si no hay `elements`
-         no ha contestado, ha dicho que no puede. */
-      const datos = await r.json();
-      if (!Array.isArray(datos?.elements)) throw new Error('respuesta sin datos');
-      return leerRespuesta(datos);
-    } catch (e) {
-      const corto = new URL(servidor).hostname;
-      fallos.push(`${corto}: ${e?.message || e}`);
-      console.warn(`Overpass ${corto} no pudo contestar:`, e?.message || e);
+  };
+
+  const carrera = [lanzar(OVERPASS[0])];
+  const espera = (ms) => new Promise((r) => { setTimeout(r, ms); });
+
+  try {
+    for (let i = 1; i < OVERPASS.length; i++) {
+      const gano = await Promise.race([carrera.length ? Promise.race(carrera) : null, espera(ADELANTAR)]
+        .filter(Boolean));
+      if (Array.isArray(gano)) return gano;
+      /* Si ya no queda ninguno vivo, no hay a quién esperar: se lanza el
+         siguiente sin agotar el adelanto. */
+      carrera.push(lanzar(OVERPASS[i]));
     }
+
+    const gano = await Promise.race([Promise.race(carrera), espera(ESPERA_TOTAL)]);
+    if (Array.isArray(gano)) return gano;
+    if (!vivos) fallos.push('ninguno pudo contestar');
+    else fallos.push('se agotó la espera');
+  } finally {
+    for (const ac of abortos) ac.abort();
   }
+
   /* Ninguno contestó. El motivo viaja hacia arriba para que se pueda
      LEER EN LA PANTALLA: sin eso, «no funciona» es todo lo que se puede
      contar de vuelta, y con eso no se arregla nada. */
@@ -210,7 +287,12 @@ async function preguntarAOverpass(centro, { radio = null, foco = 'todo' } = {}) 
  * y «no hemos podido preguntar» son cosas distintas y la pantalla tiene
  * que poder decir cuál de las dos pasó.
  */
-export async function buscarSitios(place, { desdeAqui = null, foco = 'todo' } = {}) {
+export async function buscarSitios(place, {
+  desdeAqui = null, foco = 'todo', distancia = DISTANCIA_POR_DEFECTO,
+} = {}) {
+  /* En qué generación salió esta búsqueda. Si la hoja se cierra mientras
+     va de camino, lo que traiga ya no se guarda. */
+  const gen = generacion;
   /* `?? {}` y no un valor por defecto en la firma: `myPlace()` devuelve
      NULL cuando no has dicho tu ciudad, y un valor por defecto solo
      cubre `undefined`. Ahora ese caso llega hasta aquí de verdad —quien
@@ -243,12 +325,13 @@ export async function buscarSitios(place, { desdeAqui = null, foco = 'todo' } = 
   /* La clave lleva el foco: cada pestaña pide lo suyo y guarda lo suyo.
      Antes había UNA lista por ciudad con las tres clases dentro, que es
      lo que obligaba a pedirlas siempre las tres. */
+  const metros = metrosDe(distancia);
   const clave = desdeAqui ? null : `lugares.sitios.${normalizarLugar(city)}.${foco}`;
-  let lugares = clave ? guardado(clave, SEMANA) : enMemoria(desdeAqui, foco);
+  let lugares = clave ? guardado(clave, SEMANA) : enMemoria(desdeAqui, foco, metros);
   if (!lugares) {
     try {
       lugares = await preguntarAOverpass(centro, {
-        radio: desdeAqui ? RADIO_CERCA : null, foco,
+        radio: desdeAqui ? metros : null, foco,
       });
     } catch (e) {
       console.warn('El mapa no pudo contestar:', e?.message || e);
@@ -260,7 +343,7 @@ export async function buscarSitios(place, { desdeAqui = null, foco = 'todo' } = 
        ciudades sin nada cartografiado— y volver a preguntar cada vez no
        la va a cambiar en una semana. */
     if (clave) guardar(clave, lugares);
-    else recordar(desdeAqui, foco, lugares);
+    else recordar(desdeAqui, foco, metros, lugares, gen);
   }
 
   const grupos = agrupar(lugares, centro, { foco });

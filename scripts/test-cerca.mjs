@@ -123,6 +123,7 @@ const store = await import('../src/store.js');
 const lugaresui = await import('../src/lugaresui.js');
 const {
   RADIO, RADIO_CERCA, RADIO_CAFE, RADIO_RARO, MOTIVOS,
+  DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe,
 } = await import('../src/lugares-core.js');
 
 let pasaron = 0;
@@ -444,6 +445,202 @@ await lugaresui.openDondeTomarCafe();
 ok('volver a abrirla vuelve a preguntar dónde estás', veces > 0);
 ok('y vuelve a preguntarle al mapa', alMapa().length > 0,
   'si no, la lista de antes seguiría viva después de cerrar');
+
+/* ─────────────────────────────────────────────────────────────
+   HASTA DÓNDE MIRAR  ·  «no se puede parametrizar dónde quiero buscar»
+   ───────────────────────────────────────────────────────────── */
+
+grupo('EL CÍRCULO LO ELIGE QUIEN BUSCA');
+
+const cerquita = await abrir('openDondeTomarCafe');
+
+ok('los botones de distancia están, buscando cerca de ti',
+  DISTANCIAS.every((d) => cerquita.includes(`verHasta('${d.id}')`)),
+  cerquita.slice(0, 200));
+ok('se empieza por el paseo, que es la consulta barata',
+  radioDe(alMapa()[0]) === metrosDe(DISTANCIA_POR_DEFECTO),
+  `salió ${radioDe(alMapa()[0])}`);
+
+const antesDeAmpliar = alMapa().length;
+await lugaresui.verHasta('lejos');
+ok('AMPLIAR PREGUNTA OTRA VEZ, con el círculo grande',
+  alMapa().length === antesDeAmpliar + 1
+    && radioDe(alMapa().at(-1)) === metrosDe('lejos'),
+  `${alMapa().length - antesDeAmpliar} consultas · radio ${radioDe(alMapa().at(-1))}`);
+
+/* Y la lista de 8 km no puede sobrescribir la de 1,2: son dos
+   respuestas distintas a dos preguntas distintas. */
+const trasAmpliar = alMapa().length;
+await lugaresui.verHasta('paseo');
+ok('y volver al paseo no vuelve a preguntar: cada radio guarda lo suyo',
+  alMapa().length === trasAmpliar, `${alMapa().length - trasAmpliar} consultas de más`);
+ok('pero sí vuelve a enseñar el paseo',
+  nodos.get('lugares-body').innerHTML.includes('a un paseo de donde estás'));
+
+/* Tocar el que ya está puesto no es una búsqueda nueva. */
+const trasVolver = alMapa().length;
+await lugaresui.verHasta('paseo');
+ok('tocar la distancia que ya está no pregunta nada', alMapa().length === trasVolver);
+
+/* Por el CENTRO de la ciudad el radio lo decide la clase de sitio —de
+   bibliotecas hay tres y de cafeterías seiscientas—, así que aquí un
+   control de distancia no mandaría sobre nada: enseñarlo sería mentir
+   con tres botones. */
+const porElCentro = await abrir('openDondeTomarCafe', { estado: 'denied' });
+ok('POR EL CENTRO NO SE ENSEÑAN, que ahí no mandarían sobre nada',
+  !porElCentro.includes('verHasta('), porElCentro.slice(0, 200));
+
+/* ─────────────────────────────────────────────────────────────
+   UNA RESPUESTA QUE LLEGA TARDE NO MANDA
+
+   Antes esto era `if (cargando) return`, y hacía dos cosas malas: una
+   búsqueda en marcha impedía empezar otra —cerrar y volver a abrir
+   dejaba una ruedecita eterna— y la que llegaba pintaba encima aunque
+   ya se hubiera cambiado de pestaña.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('LA ÚLTIMA BÚSQUEDA ES LA QUE MANDA');
+
+/* Un mapa que tarda: la respuesta se queda retenida hasta que se
+   suelta a mano. Sin esto no hay forma de tener dos búsquedas vivas a
+   la vez, que es justo el caso que se rompía. */
+let soltar = null;
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 9, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: 'Café lento' } },
+  ],
+});
+const lento = new Promise((r) => { soltar = r; });
+const fetchNormal = globalThis.fetch;
+globalThis.fetch = async (url, opciones) => {
+  const r = await fetchNormal(url, opciones);
+  if (String(url).includes('nominatim')) return r;
+  await lento;
+  return r;
+};
+
+/* En limpio y CON permiso: la prueba de antes lo dejó denegado, y sin
+   ubicación esto mediría la búsqueda por el centro, que es otra cosa.
+   No se puede usar `abrir()` aquí porque espera a que termine, y lo que
+   hay que provocar es justo una búsqueda a medias. */
+lugaresui.closeLugares();
+almacen.clear();
+pedidos.length = 0;
+veces = 0;
+permiso = 'prompt';
+posicion = { lat: 4.6510, lon: -74.0550 };
+const enMarcha = lugaresui.openDondeTomarCafe();
+
+/* HAY QUE ESPERAR A QUE LA CONSULTA HAYA SALIDO DE VERDAD.
+   La primera versión de esto cerraba la hoja en la línea de después de
+   abrirla, y eso no medía nada: la búsqueda todavía estaba pidiendo el
+   permiso de ubicación, así que se cerraba ANTES de empezar y lo que
+   venía después era una búsqueda normal y corriente. Se cierra cuando
+   la pregunta ya está en el aire, que es el caso que se rompía. */
+const hastaQue = async (cond, ms = 2000) => {
+  const fin = Date.now() + ms;
+  while (!cond() && Date.now() < fin) await new Promise((r) => { setTimeout(r, 5); });
+  return cond();
+};
+ok('la consulta sale antes de cerrar (si no, esta prueba no mide nada)',
+  await hastaQue(() => alMapa().length > 0), `${alMapa().length} consultas`);
+
+/* Ahora sí: se cierra la hoja MIENTRAS busca. Lo que venga de camino ya
+   no es de nadie: ni se pinta, ni —sobre todo— se queda en memoria. */
+lugaresui.closeLugares();
+soltar();
+await enMarcha;
+
+/* Lo primero, que no haya pintado sobre una hoja cerrada. */
+ok('la respuesta que llegó tarde NO pinta en la hoja cerrada',
+  !nodos.get('lugares-body').innerHTML.includes('Café lento'),
+  nodos.get('lugares-body').innerHTML.slice(0, 160));
+
+/* Y lo segundo, que es otra cosa: que tampoco se haya quedado
+   guardada. Se mide con un mapa que ahora contesta OTRA cosa — si la
+   lista de antes siguiera en memoria, saldría «Café lento» y no habría
+   consulta ninguna. */
+globalThis.fetch = fetchNormal;
+overpassResponde = () => ({
+  elements: [
+    { type: 'node', id: 10, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: 'Café nuevo' } },
+  ],
+});
+
+pedidos.length = 0;
+await lugaresui.openDondeTomarCafe();
+ok('cerrar mientras busca no deja la hoja atascada: se vuelve a buscar',
+  alMapa().length > 0,
+  'antes la búsqueda en marcha impedía empezar otra y quedaba una ruedecita eterna');
+ok('Y LA QUE LLEGÓ TARDE NO SE QUEDÓ EN MEMORIA',
+  nodos.get('lugares-body').innerHTML.includes('Café nuevo')
+    && !nodos.get('lugares-body').innerHTML.includes('Café lento'),
+  nodos.get('lugares-body').innerHTML.slice(0, 200));
+
+/* ─────────────────────────────────────────────────────────────
+   Y EL OTRO CASO, QUE NO SE ARREGLA SOLO CON CERRAR BIEN:
+   CAMBIAR DE DISTANCIA MIENTRAS BUSCA.
+
+   La hoja sigue abierta, así que nadie ha limpiado nada. Con el viejo
+   `if (cargando) return`, tocar «más lejos» mientras cargaba el paseo
+   no hacía NADA: ni preguntaba ni avisaba, y al llegar la respuesta del
+   paseo pintaba la lista corta debajo de un botón de 8 km encendido.
+
+   Aquí hacen falta dos consultas vivas a la vez, así que el mapa lento
+   ya no es una promesa sola: cada consulta se queda colgada hasta que
+   se la suelta a mano, y se sueltan AL REVÉS —primero la de 8 km y
+   después la del paseo— para que la que llega tarde sea la vieja.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('CAMBIAR DE DISTANCIA MIENTRAS BUSCA');
+
+const colgadas = [];
+globalThis.fetch = async (url, opciones) => {
+  const r = await fetchNormal(url, opciones);
+  if (String(url).includes('nominatim')) return r;
+  await new Promise((soltarla) => { colgadas.push(soltarla); });
+  return r;
+};
+/* Cada radio contesta un café distinto, que es lo que permite mirar la
+   pantalla y saber CUÁL de las dos respuestas mandó. */
+overpassResponde = () => {
+  const r = radioDe(alMapa().at(-1));
+  return {
+    elements: [
+      { type: 'node', id: r, lat: 4.6512, lon: -74.0551, tags: { amenity: 'cafe', name: `Café de ${r}` } },
+    ],
+  };
+};
+
+lugaresui.closeLugares();
+almacen.clear();
+pedidos.length = 0;
+permiso = 'prompt';
+posicion = { lat: 4.6510, lon: -74.0550 };
+
+const elPaseo = lugaresui.openDondeTomarCafe();
+ok('sale la consulta del paseo', await hastaQue(() => colgadas.length === 1),
+  `${colgadas.length} consultas colgadas`);
+
+/* Sin soltar la primera: se toca «más lejos». */
+const masLejos = lugaresui.verHasta('lejos');
+ok('TOCAR «MÁS LEJOS» MIENTRAS CARGA SÍ PREGUNTA',
+  await hastaQue(() => colgadas.length === 2),
+  'con el viejo «if (cargando) return» esto no hacía absolutamente nada');
+
+/* Al revés: primero la de 8 km, y la del paseo llega después. */
+colgadas[1]();
+colgadas[0]();
+await Promise.all([elPaseo, masLejos]);
+
+const alFinal = nodos.get('lugares-body').innerHTML;
+ok('Y MANDA LA ÚLTIMA, aunque la vieja llegue después',
+  alFinal.includes(`Café de ${metrosDe('lejos')}`)
+    && !alFinal.includes(`Café de ${metrosDe('paseo')}`),
+  alFinal.slice(0, 200));
+ok('el botón encendido y la lista dicen lo mismo',
+  alFinal.includes('aria-pressed="true"') && alFinal.includes(`verHasta('lejos')`),
+  nodos.get('lugares-body').innerHTML.slice(0, 200));
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);

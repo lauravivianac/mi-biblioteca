@@ -32,6 +32,7 @@ import {
 import {
   distanciaTexto, enlaceMapa, propuesta, textoMotivo, CREDITO, PROPOSITOS,
   sePuedeReintentar, FOCOS, PESTANAS, nombresDe, conMayuscula,
+  DISTANCIAS, DISTANCIA_POR_DEFECTO, cercaniaTexto,
 } from './lugares-core.js';
 import { tieneCiudad } from './place-core.js';
 import { MAX_MENSAJE } from './chat-core.js';
@@ -55,6 +56,11 @@ let detalle = '';
    lo suyo — un atajo que te deja delante de una lista donde todavía hay
    que buscar no es un atajo. */
 let foco = 'todo';
+/* Hasta dónde mirar alrededor de ti. Empieza en el paseo y lo cambia
+   quien busca — el porqué está en lugares-core.js, junto a DISTANCIAS.
+   Solo significa algo buscando cerca de ti: por el centro de la ciudad
+   el radio lo decide la clase de sitio. */
+let distancia = DISTANCIA_POR_DEFECTO;
 /* Mientras el navegador tiene la ventana del permiso en pantalla. Es
    una espera distinta de la del mapa y tiene que decirlo: si mientras
    se pregunta «¿permites saber dónde estás?» debajo pone «buscando
@@ -75,7 +81,11 @@ export function verLugares(cual) {
   foco = cual;
   const titulo = $('lugares-titulo');
   if (titulo) titulo.textContent = FOCOS[foco]?.titulo || FOCOS.todo.titulo;
-  cargar();
+  /* Se DEVUELVE la promesa. Al `onclick` le da igual, pero sin esto no
+     hay forma de esperar a que termine —ni desde una prueba ni desde
+     ningún sitio— y lo que no se puede esperar solo se puede comprobar
+     con suerte. */
+  return cargar();
 }
 
 async function abrir(cual, cualFoco = 'todo') {
@@ -85,6 +95,9 @@ async function abrir(cual, cualFoco = 'todo') {
   grupos = [];
   aqui = null;
   detalle = '';
+  /* Al abrir se vuelve al paseo: ampliar a 8 km es una consulta cara y
+     una decisión de ese momento, no un ajuste que se queda puesto. */
+  distancia = DISTANCIA_POR_DEFECTO;
   const titulo = $('lugares-titulo');
   if (titulo) {
     titulo.textContent = proposito === 'quedar'
@@ -148,6 +161,11 @@ export const closeLugares = (e) => {
      cumple borrando, no diciéndolo. */
   aqui = null;
   olvidarDondeEstoy();
+  /* Y la búsqueda que iba de camino deja de mandar: si no, al volver
+     pintaría sobre una hoja cerrada, y la siguiente vez que se abriera
+     se encontraría un «cargando» que ya no carga nada. */
+  cargaActual += 1;
+  cargando = false;
 };
 
 /** Volver a preguntar cuando el mapa estaba caído. */
@@ -191,11 +209,45 @@ export async function volverAlCentro() {
   await cargar();
 }
 
+/**
+ * Hasta dónde mirar.
+ *
+ * Cambiar la distancia es OTRA búsqueda, no un filtro de la que ya está:
+ * los sitios de 8 km no estaban en la respuesta de 1,2 km, así que
+ * recortar la lista de antes solo podría enseñar menos. Se vuelve a
+ * preguntar, y `lugares.js` guarda cada radio por separado para que ir
+ * y volver entre dos distancias no pregunte dos veces por lo mismo.
+ */
+export async function verHasta(cual) {
+  if (cual === distancia) return;
+  distancia = cual;
+  await cargar();
+}
+
+/* CUÁL DE LAS BÚSQUEDAS MANDA.
+   ────────────────────────────
+   Antes esto era `if (cargando) return`, y eso hacía dos cosas malas a
+   la vez. La de fuera: cerrar la hoja mientras buscaba y volver a
+   abrirla no buscaba nada —había una búsqueda en marcha, así que la
+   nueva se descartaba— y quedaba una ruedecita eterna que acababa
+   enseñando la lista de la vez anterior. La de dentro: cambiar de
+   pestaña o de distancia mientras cargaba tampoco hacía nada.
+
+   La respuesta correcta no es «no dejar empezar otra»: es que la
+   ÚLTIMA es la que manda. Cada búsqueda se lleva su número y, al
+   volver, la que ya no es la última se calla y no pinta. */
+let cargaActual = 0;
+
 async function cargar() {
-  if (cargando) return;
+  const mia = cargaActual + 1;
+  cargaActual = mia;
   cargando = true;
   pintar();
-  const r = await buscarSitios(ciudad, { desdeAqui: aqui, foco });
+  const r = await buscarSitios(ciudad, { desdeAqui: aqui, foco, distancia });
+  /* Llegó tarde: mientras iba, se cambió de pestaña, de distancia, o se
+     cerró la hoja. Pintar ahora sería enseñar la respuesta a una
+     pregunta que ya nadie hizo. */
+  if (mia !== cargaActual) return;
   cargando = false;
   grupos = r.grupos;
   detalle = r.detalle || '';
@@ -232,7 +284,11 @@ function pintar(motivo = null) {
        peor que ninguno. */
     const modoError = PROPOSITOS[proposito];
     cuerpo.innerHTML = `
-      <p class="planner-hint">${esc(textoMotivo(motivo, foco))}</p>
+      <p class="planner-hint">${esc(textoMotivo(motivo, foco, distancia))}</p>
+      ${/* Buscando cerca, «no hay nada» casi nunca es el final: casi
+            siempre es que el círculo era pequeño. Ofrecer ampliar aquí
+            es más útil que reintentar lo mismo. */''}
+      ${aqui && motivo === 'sin-resultados-cerca' ? distanciasChips() : ''}
       ${sePuedeReintentar(motivo)
     ? '<button class="btn-ghost full" onclick="reintentarLugares()">Volver a intentarlo</button>'
     : ''}
@@ -254,10 +310,11 @@ function pintar(motivo = null) {
   const modo = PROPOSITOS[proposito];
   cuerpo.innerHTML = `
     <p class="planner-lede">${esc(aqui
-    ? `${conMayuscula(nombresDe(foco))} a un paseo de donde estás.`
+    ? `${conMayuscula(nombresDe(foco))} ${cercaniaTexto(distancia)}.`
     : modo.lede(ciudad?.city || 'tu ciudad', foco))}</p>
     <p class="set-fineprint lugares-intro">${esc(modo.pie)}</p>
     ${modo.cercaDeMi ? pestanas() : ''}
+    ${aqui ? distanciasChips() : ''}
     ${modo.cercaDeMi ? cambiarDeCentro() : ''}
     ${grupos.map((g) => `
       <div class="prof-sec">
@@ -288,6 +345,24 @@ const pestanas = () => `
     ${PESTANAS.map((p) => `
       <button class="auth-tab ${foco === p.id ? 'active' : ''}" onclick="verLugares('${p.id}')">
         ${esc(p.label)}
+      </button>`).join('')}
+  </div>`;
+
+/* HASTA DÓNDE MIRAR, y solo cuando hay un «dónde estás» que ampliar.
+   Por el centro de la ciudad el radio lo decide la clase de sitio —de
+   bibliotecas hay tres y de cafeterías seiscientas— y enseñar aquí un
+   control que no manda sobre eso sería mentir con tres botones.
+
+   Cada uno dice sus metros: ampliar tiene un precio —la consulta es más
+   grande y tarda más— y quien lo toca merece saber cuánto está pidiendo
+   antes de esperar. */
+const distanciasChips = () => `
+  <div class="auth-tabs lugares-lejos">
+    ${DISTANCIAS.map((d) => `
+      <button class="auth-tab ${distancia === d.id ? 'active' : ''}"
+              aria-pressed="${distancia === d.id}"
+              onclick="verHasta('${esc(d.id)}')">
+        ${esc(d.label)} <span class="lugares-lejos-km">${esc(d.sub)}</span>
       </button>`).join('')}
   </div>`;
 

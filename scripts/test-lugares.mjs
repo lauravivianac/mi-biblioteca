@@ -37,6 +37,8 @@ import {
   TIPOS, TOPE_POR_TIPO, consultaOverpass, leerRespuesta, distanciaKm,
   quitarRepetidos, agrupar, cuantos, distanciaTexto, enlaceMapa, propuesta,
   MOTIVOS, PROPOSITOS, sePuedeReintentar, FOCOS, PESTANAS, enFoco,
+  TOPE_ENFOCADO, topeDe, textoMotivo,
+  DISTANCIAS, DISTANCIA_POR_DEFECTO, metrosDe, cercaniaTexto, RADIO_CERCA,
 } from '../src/lugares-core.js';
 import { geohash, PRECISION } from '../src/place-core.js';
 
@@ -381,6 +383,103 @@ ok('son las que ya recomienda la hoja de seguridad',
   TIPOS.map((t) => t.id).sort().join() === 'biblioteca,cafe,libreria');
 ok('cada una con su icono y su nombre',
   TIPOS.every((t) => t.icono && t.label && t.consulta.length));
+
+/* ─────────────────────────────────────────────────────────────
+   «SOLO MUESTRA POCOS»
+
+   Seis de cada clase se pensó para la pantalla que enseña las tres a la
+   vez: seis bibliotecas, seis librerías y seis cafeterías son dieciocho
+   sitios, y ahí recortar está bien.
+
+   Entrando por la taza no hay tres listas, hay una. Seis cafeterías es
+   media pantalla, y encima el recorte no se ve —no dice que haya más—,
+   así que parece que en tu barrio hay seis cafés y ya.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('CON UNA SOLA CLASE EN PANTALLA CABEN MÁS');
+
+ok('mirándolo todo, seis de cada una', topeDe('todo') === TOPE_POR_TIPO, String(topeDe('todo')));
+ok('pero por la taza, que es una sola lista, muchos más',
+  topeDe('cafe') === TOPE_ENFOCADO && TOPE_ENFOCADO > TOPE_POR_TIPO,
+  `${topeDe('cafe')} contra ${TOPE_POR_TIPO}`);
+ok('y por la tienda igual', topeDe('comprar') === TOPE_ENFOCADO, String(topeDe('comprar')));
+
+/* Doce cafeterías de verdad, a distancias distintas para que el orden
+   no sea un empate. Con el tope viejo se verían seis. */
+const DOCE = Array.from({ length: 12 }, (_, i) => ({
+  type: 'node',
+  id: 100 + i,
+  lat: 4.65 + i / 1000,
+  lon: -74.05,
+  tags: { amenity: 'cafe', name: `Café ${i}` },
+}));
+const doceLeidas = leerRespuesta({ elements: DOCE });
+
+ok('las doce se leen', doceLeidas.length === 12, String(doceLeidas.length));
+ok('ENTRANDO POR LA TAZA SALEN LAS DOCE, no seis',
+  cuantos(agrupar(doceLeidas, { lat: 4.65, lon: -74.05 }, { foco: 'cafe' })) === 12,
+  String(cuantos(agrupar(doceLeidas, { lat: 4.65, lon: -74.05 }, { foco: 'cafe' }))));
+ok('y mirándolo todo siguen siendo seis, que ahí compiten con las otras clases',
+  cuantos(agrupar(doceLeidas, { lat: 4.65, lon: -74.05 }, { foco: 'todo' })) === TOPE_POR_TIPO,
+  String(cuantos(agrupar(doceLeidas, { lat: 4.65, lon: -74.05 }, { foco: 'todo' }))));
+ok('un tope dicho a mano sigue mandando sobre los dos',
+  cuantos(agrupar(doceLeidas, { lat: 4.65, lon: -74.05 }, { foco: 'cafe', tope: 3 })) === 3);
+
+/* ─────────────────────────────────────────────────────────────
+   «NO SE PUEDE PARAMETRIZAR DÓNDE QUIERO BUSCAR»
+
+   El radio de «cerca de ti» era 1,2 km y punto, elegido aquí dentro,
+   igual para un barrio de Bogotá lleno de cafés que para un pueblo
+   donde la librería está a cinco kilómetros. En el segundo caso la
+   respuesta era «no hay nada», que es mentira.
+   ───────────────────────────────────────────────────────────── */
+
+grupo('HASTA DÓNDE MIRAR LO ELIGE QUIEN BUSCA');
+
+ok('hay más de una distancia que elegir', DISTANCIAS.length >= 3, String(DISTANCIAS.length));
+ok('cada una dice su nombre y sus metros',
+  DISTANCIAS.every((d) => d.id && d.label && d.sub && Number.isFinite(d.radio)));
+ok('van de menos a más, que es como se leen',
+  DISTANCIAS.every((d, i) => i === 0 || d.radio > DISTANCIAS[i - 1].radio),
+  DISTANCIAS.map((d) => d.radio).join(' · '));
+
+/* Se empieza por el pequeño A PROPÓSITO: el círculo grande es la
+   consulta cara —todas las cafeterías en 200 km² del centro de Bogotá—
+   y esa se paga cuando se pide, no siempre. */
+ok('se empieza por la más corta', DISTANCIA_POR_DEFECTO === DISTANCIAS[0].id);
+ok('y la más corta sigue siendo el paseo de siempre',
+  metrosDe(DISTANCIA_POR_DEFECTO) === RADIO_CERCA, String(metrosDe(DISTANCIA_POR_DEFECTO)));
+ok('la más larga es de verdad más larga',
+  metrosDe(DISTANCIAS.at(-1).id) > RADIO_CERCA * 3,
+  String(metrosDe(DISTANCIAS.at(-1).id)));
+ok('una distancia que no existe cae en la corta, no en la cara',
+  metrosDe('inventada') === RADIO_CERCA && metrosDe() === RADIO_CERCA);
+
+/* El radio elegido tiene que llegar HASTA LA CONSULTA. Un control que
+   se pinta y no cambia lo que se pregunta es peor que no tenerlo. */
+const lejos = consultaOverpass({ lat: 4.65, lon: -74.05 }, { radio: metrosDe('lejos') });
+ok('Y LLEGA A LA CONSULTA DEL MAPA',
+  lejos.includes(`around:${metrosDe('lejos')},`), lejos.replace(/\n/g, ' '));
+ok('mandando sobre el radio propio de cada clase',
+  !lejos.includes('around:1500,') && !lejos.includes('around:4000,'));
+
+grupo('Y LO QUE SE DICE CUANDO NO HAY NADA LO NOMBRA');
+
+/* Si alguien amplía a 8 km y el aviso sigue diciendo «a un paseo», el
+   botón que acaba de tocar parece no haber hecho nada. */
+const nadaCerca = textoMotivo('sin-resultados-cerca', 'cafe', 'paseo');
+const nadaLejos = textoMotivo('sin-resultados-cerca', 'cafe', 'lejos');
+ok('a pie se dice «a un paseo»', nadaCerca.includes('paseo'), nadaCerca);
+ok('y ampliando NO, que si no el botón parece no hacer nada',
+  !nadaLejos.includes('paseo') && nadaLejos.includes(DISTANCIAS.at(-1).sub), nadaLejos);
+ok('los dos siguen nombrando lo que se buscaba',
+  nadaCerca.includes('cafeterías') && nadaLejos.includes('cafeterías'));
+ok('no queda ningún hueco sin rellenar',
+  !nadaLejos.includes('{') && !textoMotivo('sin-resultados', 'todo').includes('{'),
+  nadaLejos);
+ok('y cada distancia se dice distinto',
+  new Set(DISTANCIAS.map((d) => cercaniaTexto(d.id))).size === DISTANCIAS.length,
+  DISTANCIAS.map((d) => cercaniaTexto(d.id)).join(' · '));
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);
