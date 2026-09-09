@@ -408,9 +408,23 @@ function pintar(motivo = null) {
     ? `<button class="btn-magic full" style="margin-top:8px" onclick="buscarCercaDeMi()">
          📍 Buscar cerca de donde estoy
        </button>` : ''}
+      ${/* EL CENTRO NO ES EL BOTÓN GORDO, Y NO LO HA PEDIDO NADIE.
+
+             «Dice que en el centro de Bogotá. Yo nunca dije que quería
+              ver en el centro de Bogotá ni estoy en el centro.»
+
+            Y así estaba: relleno, del ancho de la pantalla y el último,
+            que es como se pinta la acción principal. Quien busca un café
+            estando en Suba no quiere el centro de Bogotá — está a hora y
+            media— y ofrecérselo como si fuera lo que toca hacer es
+            responder a una pregunta que no hizo.
+
+            Sigue estando, porque a veces es lo que se quiere; pero como
+            lo que es: una salida más, del mismo peso que las demás, y
+            diciendo que lleva a OTRO SITIO y no a más de lo mismo. */''}
       ${punto && tieneCiudad(ciudad)
-    ? `<button class="btn-magic full" style="margin-top:8px" onclick="volverAlCentro()">
-         Ver los del centro de ${esc(ciudad.city)}
+    ? `<button class="btn-ghost full" style="margin-top:8px" onclick="volverAlCentro()">
+         Buscar por el centro de ${esc(ciudad.city)}, en vez de por aquí
        </button>` : ''}
       ${motivo === 'sin-ciudad'
     ? '<button class="btn-magic full" style="margin-top:8px" onclick="openPlace()">Decir en qué ciudad estoy</button>'
@@ -532,7 +546,7 @@ const cambiarDeCentro = () => {
       </button>` : ''}
     ${punto && tieneCiudad(ciudad) ? `
       <button class="btn-ghost full" style="margin-bottom:14px" onclick="volverAlCentro()">
-        Ver los del centro de ${esc(ciudad.city)}
+        Buscar por el centro de ${esc(ciudad.city)}, en vez de por aquí
       </button>` : ''}`;
 };
 
