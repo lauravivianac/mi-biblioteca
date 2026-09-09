@@ -239,7 +239,9 @@ export function agruparCodigo(code) {
  * eso no se arregla nada. Con el detalle del mapa se encontró la causa
  * real en una tarde.
  */
-function estado(texto, { girando = true, codigo = '', detalle = '' } = {}) {
+function estado(texto, {
+  girando = true, codigo = '', detalle = '', salida = false,
+} = {}) {
   const caja = $('scan-estado');
   if (!caja) return;
   caja.innerHTML = `
@@ -247,7 +249,40 @@ function estado(texto, { girando = true, codigo = '', detalle = '' } = {}) {
     <span class="trabajo-txt" id="scan-hint">
       ${codigo ? `<b class="scan-codigo">${esc(agruparCodigo(codigo))}</b>` : ''}${esc(texto)}
       ${detalle ? `<span class="lugares-detalle">Detalle técnico: ${esc(detalle)}</span>` : ''}
-    </span>`;
+    </span>
+    ${/* UNA SALIDA, CUANDO EL CÓDIGO SE LEYÓ BIEN Y NADIE LO TIENE.
+
+          Sin esto la pantalla era un callejón: decía «vuelve a
+          intentarlo en un rato» y volvía a encender la cámara sobre el
+          mismo libro, que va a dar el mismo código y el mismo resultado
+          las veces que haga falta.
+
+          Y para muchos libros «en un rato» no llega nunca: una edición
+          colombiana puede no estar en ningún catálogo internacional, y
+          eso no se arregla esperando. Lo que hace falta es poder
+          escribirlo — sin perder el código, que ya está bien leído y es
+          justo el dato más pesado de teclear. */''}
+    ${salida && codigo ? `
+      <button class="btn-ghost full" style="margin-top:10px" onclick="escribirEsteLibro('${esc(codigo)}')">
+        Escribir este libro a mano
+      </button>` : ''}`;
+}
+
+/**
+ * Salir del escáner y rellenar la ficha a mano, con el código puesto.
+ *
+ * El ISBN viaja en el borrador y `saveDraft` lo guarda con el libro, así
+ * que lo que se leyó no se pierde por el camino: sirve para no volver a
+ * escanearlo y para reconocerlo si algún día el catálogo lo tiene.
+ */
+export function escribirEsteLibro(codigo) {
+  pararEscaner();
+  trabajo = null;
+  draft = {
+    title: '', author: '', pages: '—', genre: 'Novela contemporánea',
+    source: 'codigo', isbn: codigo,
+  };
+  render();
 }
 
 function renderManual() {
@@ -301,9 +336,14 @@ function renderDraft() {
         ? `<img class="draft-cover" src="${esc(b.cover)}" alt="">`
         : `<div class="draft-cover">${lomoHtml(b, { mini: true })}</div>`}
       <div>
+        ${/* «Encontrado en el catálogo» solo puede decirse cuando de
+              verdad lo encontró un catálogo. Escrito encima de un libro
+              que no encontró nadie sería la misma mentira que ponía a
+              Tolkien en una portada azul con un gato. */''}
         <div class="draft-source">${{
           agente: 'Identificado por el agente',
           foto: 'Sin identificar · revisa los datos',
+          codigo: 'No está en los catálogos · escríbelo tú',
         }[b.source] || 'Encontrado en el catálogo'}</div>
         <input class="finput" id="f-title" value="${esc(b.title)}">
         <input class="finput" id="f-author" style="margin-top:6px" value="${esc(b.author)}">
@@ -474,7 +514,13 @@ export async function usarCodigo(code) {
         + 'y el otro no lo tiene. Vuelve a intentarlo en un rato antes de darlo por perdido.',
     }[res.reason] || ' · no está en los catálogos. Prueba con la foto de la portada, '
       + 'o escribe el título a mano.',
-    { girando: false, codigo: code, detalle: res.detalle });
+    /* La salida se ofrece siempre que el código esté BIEN LEÍDO. Con un
+       ISBN inválido no: ahí lo que hay que arreglar es la lectura, y
+       guardar un código que no es no le sirve a nadie. */
+    {
+      girando: false, codigo: code, detalle: res.detalle,
+      salida: res.reason !== 'isbn-invalido',
+    });
     /* Y SE VUELVE A MIRAR. Sin esto, un código que no está en los
        catálogos dejaba la cámara encendida y ciega: el mensaje decía
        qué pasó y luego no pasaba nada nunca más, ni con ese libro ni

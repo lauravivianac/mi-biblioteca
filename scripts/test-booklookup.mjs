@@ -6,7 +6,7 @@
 import {
   looksLikeSame, titleSimilarity,
   cleanIsbn, isValidIsbn, fold, guessGenre, scoreCandidate, mergeCandidates, buscarPorTitulo,
-  lookupByIsbn,
+  lookupByIsbn, lookupByCoverText, respaldadoPorLaPortada,
 } from '../src/booklookup.js';
 
 let pass = 0, fail = 0;
@@ -229,6 +229,97 @@ console.log('\nCUANDO EL CATÁLOGO NO CONTESTA');
   ok(ri.reason === 'no-encontrado',
     'los dos contestan y no lo tienen: ESO sí es «no está»', ri.reason);
   ok(!ri.caidas?.length, 'y no consta ninguna caída');
+
+  globalThis.fetch = fetchDeVerdad;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   UNA PORTADA NO PUEDE TRAER OTRO LIBRO
+
+   Foto de «Antes de que se enfríe el café», portada azul con un gato.
+   La ficha salió diciendo, con todas las letras:
+
+       ENCONTRADO EN EL CATÁLOGO
+       The Lord of the Rings · J.R.R. Tolkien · "Azbuka" · 1954
+
+   Y lista para guardar. Eso es peor que no encontrar nada: un «no lo
+   reconocemos» se corrige escribiéndolo, y esto se corrige cuando
+   alguien se da cuenta —si se da cuenta— de que tiene a Tolkien en la
+   estantería en vez del libro que fotografió.
+
+   Pasaba porque una búsqueda por texto NUNCA dice «no lo tengo»:
+   devuelve lo más parecido que tenga, y para un texto ilegible lo más
+   parecido es cualquier cosa. Se cogía el primero sin comprobar nada.
+   ───────────────────────────────────────────────────────────── */
+
+console.log('\nLO QUE TRAE EL CATÁLOGO TIENE QUE ESTAR EN LA PORTADA');
+
+const PORTADA_CAFE = 'ANTES DE QUE\nSE ENFRÍE EL CAFÉ\nToshikazu Kawaguchi';
+const TOLKIEN = { title: 'The Lord of the Rings', author: 'J.R.R. Tolkien' };
+const ELCAFE = { title: 'Antes de que se enfríe el café', author: 'Toshikazu Kawaguchi' };
+
+ok(!respaldadoPorLaPortada(TOLKIEN, PORTADA_CAFE),
+  'Tolkien NO lo respalda una portada que no lo nombra');
+ok(respaldadoPorLaPortada(ELCAFE, PORTADA_CAFE),
+  'y el libro que sí es, sí');
+
+/* El revoltijo del OCR trae editorial, faja y autora además del título.
+   Comparar por parecido castigaría al bueno —el revoltijo tiene muchas
+   más palabras— así que se mira si el título propuesto ESTÁ DENTRO. */
+const CONRUIDO = 'PENGUIN RANDOM HOUSE\nMÁS DE UN MILLÓN DE EJEMPLARES\n'
+  + 'LA CABINA DE LOS ÚLTIMOS PENSAMIENTOS\nLee Su-Yeon\nNOVELA';
+ok(respaldadoPorLaPortada({ title: 'La cabina de los últimos pensamientos', author: 'Lee Su-Yeon' }, CONRUIDO),
+  'el título entero dentro de un revoltijo sigue valiendo');
+ok(!respaldadoPorLaPortada({ title: 'La casa de los espíritus', author: 'Isabel Allende' }, CONRUIDO),
+  'y otro libro que solo comparte palabras vacías, no',
+  'con «de los» bastaría si se contaran los artículos');
+
+/* El apellido respalda por su cuenta: hay portadas donde el título va
+   en una tipografía que el OCR no saca. */
+ok(respaldadoPorLaPortada({ title: 'Otro título distinto', author: 'Toshikazu Kawaguchi' }, PORTADA_CAFE),
+  'el apellido de quien lo escribe también respalda');
+ok(!respaldadoPorLaPortada({ title: 'X', author: 'Ana Luis' }, 'ana luis'),
+  'pero un nombre corto no dispara nada',
+  'sin el mínimo de letras, un «ana» suelto valdría de aval');
+
+ok(!respaldadoPorLaPortada(ELCAFE, ''), 'sin texto leído no se respalda nada');
+ok(!respaldadoPorLaPortada(null, PORTADA_CAFE), 'y sin libro tampoco revienta');
+
+console.log('\nY LA BÚSQUEDA POR PORTADA NO ACEPTA CUALQUIER COSA');
+{
+  const fetchDeVerdad = globalThis.fetch;
+  /* Los dos catálogos contestan bien y devuelven a Tolkien, que es
+     justo lo que pasó: no fallaron, respondieron lo más parecido que
+     tenían a un texto que no entendieron. */
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      docs: [{ title: 'The Lord of the Rings', author_name: ['J.R.R. Tolkien'], number_of_pages_median: 1193 }],
+      items: [{ volumeInfo: { title: 'The Lord of the Rings', authors: ['J.R.R. Tolkien'], pageCount: 1193 } }],
+    }),
+  });
+
+  const r = await lookupByCoverText(PORTADA_CAFE);
+  ok(!r.ok, 'NO SE DA POR ENCONTRADO un libro que no estaba en la portada',
+    JSON.stringify(r.candidates?.[0] || r.reason));
+  ok(r.reason === 'sin-coincidencia',
+    'y se cuenta como «no lo encontramos», que es la verdad', r.reason);
+
+  /* Y con el libro de verdad, sí se encuentra: la comprobación no puede
+     dejar fuera al bueno, o sería un candado sin llave. */
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      docs: [{ title: 'Antes de que se enfríe el café', author_name: ['Toshikazu Kawaguchi'], number_of_pages_median: 208 }],
+      items: [{ volumeInfo: { title: 'Antes de que se enfríe el café', authors: ['Toshikazu Kawaguchi'], pageCount: 208 } }],
+    }),
+  });
+  const bien = await lookupByCoverText(PORTADA_CAFE);
+  ok(bien.ok && /enfr/i.test(bien.candidates[0].title),
+    'el libro que sí es se sigue encontrando',
+    JSON.stringify(bien.candidates?.[0] || bien.reason));
 
   globalThis.fetch = fetchDeVerdad;
 }

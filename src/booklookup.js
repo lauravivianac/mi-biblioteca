@@ -420,7 +420,14 @@ export async function lookupByCoverText(ocrText) {
   for (const attempt of [lines.slice(0, 2).join(' '), lines[0], lines.slice(0, 3).join(' ')]) {
     if (!attempt) continue;
     const r = await buscarPorTitulo(attempt);
-    if (r.libros.length) return { ok: true, candidates: r.libros, usedQuery: attempt };
+    /* NO VALE CUALQUIER COSA QUE DEVUELVA EL BUSCADOR. Una búsqueda por
+       texto nunca dice «no lo tengo»: devuelve lo más parecido que
+       tenga, y de un texto ilegible lo más parecido es cualquier libro.
+       Así apareció «The Lord of the Rings» como resultado de fotografiar
+       una portada azul con un gato. El porqué, en
+       `respaldadoPorLaPortada`. */
+    const respaldados = r.libros.filter((l) => respaldadoPorLaPortada(l, ocrText));
+    if (respaldados.length) return { ok: true, candidates: respaldados, usedQuery: attempt };
     /* Si los catálogos están caídos, los tres intentos van a dar lo
        mismo y ninguno significa «no lo reconocemos». Se recuerda para
        no acabar diciendo que la foto salió mal. */
@@ -475,6 +482,64 @@ export function titleSimilarity(a, b) {
  * real que comparte una palabra, y aceptarlo sería cambiar una
  * mentira por otra.
  */
+/**
+ * ¿Este libro tiene algo que ver con lo que se leyó en la portada?
+ *
+ * ── EL CASO EXACTO ──────────────────────────────────────────
+ *
+ * Foto de «Antes de que se enfríe el café», portada azul con un gato.
+ * La ficha salió diciendo, con todas las letras:
+ *
+ *     ENCONTRADO EN EL CATÁLOGO
+ *     The Lord of the Rings · J.R.R. Tolkien · "Azbuka" · 1954
+ *
+ * Y lista para guardar. Eso es peor que no encontrar nada: un «no lo
+ * reconocemos» se corrige escribiéndolo, y esto se corrige cuando
+ * alguien se da cuenta —si se da cuenta— de que tiene a Tolkien en la
+ * estantería en vez del libro que fotografió.
+ *
+ * ── POR QUÉ PASABA ──────────────────────────────────────────
+ *
+ * Una búsqueda por texto NUNCA dice «no lo tengo»: devuelve lo más
+ * parecido que encuentre, y para un texto ilegible lo más parecido es
+ * cualquier cosa. Se cogía el primer resultado sin comprobar nada.
+ *
+ * Este fichero ya tenía la lección aprendida veinte líneas más arriba,
+ * para lo que sugiere el agente: «pedir un libro inventado casi siempre
+ * devuelve otro libro real que comparte una palabra». Un OCR de una
+ * portada es exactamente eso, un texto que puede no significar nada, y
+ * no se le estaba aplicando la misma vara.
+ *
+ * ── Y POR QUÉ NO VALE `looksLikeSame` TAL CUAL ──────────────
+ *
+ * Porque no es una comparación entre iguales. Lo leído es un revoltijo
+ * —título, autora, editorial, la faja— y el título del catálogo es
+ * limpio y corto. Comparar los dos por parecido castiga al bueno: el
+ * revoltijo tiene muchas más palabras, así que el porcentaje baja
+ * aunque el título esté entero dentro.
+ *
+ * Lo que hay que preguntar es al revés: ¿las palabras DEL TÍTULO QUE
+ * PROPONE EL CATÁLOGO estaban en la portada? «Lord» y «Rings» no
+ * estaban por ninguna parte. «Cabina», «últimos» y «pensamientos», sí.
+ */
+export function respaldadoPorLaPortada(libro, textoLeido, { minimo = 0.5 } = {}) {
+  const leidas = new Set(palabrasClave(textoLeido || ''));
+  if (!leidas.size) return false;
+
+  const suyas = palabrasClave(libro?.title || '');
+  if (suyas.length) {
+    const comunes = suyas.filter((w) => leidas.has(w)).length;
+    if (comunes / suyas.length >= minimo) return true;
+  }
+
+  /* El apellido también respalda, y hace falta: hay portadas donde el
+     título va en una tipografía que el OCR no saca y el nombre de quien
+     lo escribe se lee perfectamente. Se piden cinco letras para que no
+     lo dispare un «luis» o un «ana» sueltos. */
+  return palabrasClave(libro?.author || '')
+    .some((w) => w.length >= 5 && leidas.has(w));
+}
+
 export function looksLikeSame(pedido, encontrado) {
   const a = fold(pedido);
   const b = fold(encontrado);
