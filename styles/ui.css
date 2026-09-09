@@ -777,6 +777,13 @@ body:not(.signed-in) .atajos { display: none; }
 /* DECIR DÓNDE BUSCAR. La caja y su botón en una línea: escribir el
    barrio y buscarlo son un solo gesto, y partirlos en dos filas hace
    que el botón parezca de otra cosa. */
+/* LO QUE LE PASÓ A UN CÓDIGO, que se queda hasta que haya otro.
+   Separado del estado de la cámara —que se reescribe cada vez que
+   vuelve a mirar— porque si no, el aviso y su botón duran los dos
+   segundos y medio que tarda el escáner en volver a empezar. */
+#scan-fallo:not(:empty) { margin-top: 10px; }
+.scan-fallo-txt { margin: 0 0 10px; font-size: .9rem; color: var(--muted); }
+
 .lugares-donde { margin-bottom: 14px; }
 .lugares-donde-caja { display: flex; gap: 8px; align-items: stretch; }
 .lugares-donde-caja .finput { flex: 1; min-width: 0; }
