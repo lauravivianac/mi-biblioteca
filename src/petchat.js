@@ -55,9 +55,29 @@ let esperando = false;
    `null` = usa el más reciente. Solo se fija cuando ella elige. */
 let libroElegido = null;
 
+/* ── «EN GENERAL» ES UNA ELECCIÓN, NO UN HUECO ───────────────
+   «El zorrito sigue sin estar abierto a chatear de libros, lo que
+    quiere es iterar sobre un libro.»
+
+   Y tenía razón por una razón de interfaz, no de modelo: con algo
+   abierto SIEMPRE había un libro en la cabecera, en el contexto y en
+   el recuadro de escribir («Pregúntale algo de tu libro»). El chat
+   decía por todas partes que iba de ESE libro, y el único modo de
+   salirse era escribir «quiero hablarte de otro» y esperar a que el
+   modelo cambiara de tema por su cuenta.
+
+   Esto es lo contrario: un valor que dice «de ninguno en concreto»,
+   al mismo nivel que los libros abiertos y con su propia ficha en la
+   fila. Se nota que no estás hablando de un libro porque LO ELEGISTE,
+   no porque la app no encontrara ninguno. */
+export const SIN_LIBRO = 'ninguno-en-concreto';
+
 const librosDisponibles = () => petLibrosEnCurso();
 
 function libroDeLaCharla() {
+  /* Antes que nada: si dijo «en general», no hay libro. Por delante de
+     los abiertos, porque la elección gana a lo que la app supondría. */
+  if (libroElegido === SIN_LIBRO) return null;
   const abiertos = librosDisponibles();
   if (!abiertos.length) return null;
   if (libroElegido) {
@@ -142,11 +162,22 @@ function pintar() {
       </div>
     </div>
 
-    ${abiertos.length > 1 ? `
+    ${/* LA FILA SALE CON UN SOLO LIBRO ABIERTO, QUE ES CUANDO MÁS FALTA
+          HACE. Antes solo aparecía con dos o más —era un desempate— así
+          que con uno la cabecera decía «está leyendo X contigo» y no
+          había en pantalla ni una señal de que se pudiera hablar de
+          otra cosa. Con la ficha «En general» delante, la fila deja de
+          ser un desempate y pasa a ser la pregunta de la que trata
+          todo esto: ¿de qué hablamos? */''}
+    ${abiertos.length ? `
       <div class="petchat-cuales">
-        <span class="petchat-cuales-que">Llevas ${abiertos.length} a la vez:</span>
+        <span class="petchat-cuales-que">¿De qué hablamos?</span>
+        <button class="petchat-cual${libro ? '' : ' on'}"
+                onclick="hablarDeLibro(${JSON.stringify(SIN_LIBRO).replace(/"/g, '&quot;')})">
+          En general
+        </button>
         ${abiertos.map((b) => `
-          <button class="petchat-cual${b.id === libro.id ? ' on' : ''}"
+          <button class="petchat-cual${b.id === libro?.id ? ' on' : ''}"
                   onclick="hablarDeLibro(${JSON.stringify(b.id).replace(/"/g, '&quot;')})">
             ${esc(b.title)}
           </button>`).join('')}
@@ -171,7 +202,7 @@ function pintar() {
 
     <div class="chat-escribir">
       <input class="finput" id="petchat-input" maxlength="200"
-             placeholder="Pregúntale algo de tu libro..."
+             placeholder="${libro ? 'Pregúntale algo de tu libro...' : 'Pregúntale lo que quieras de libros...'}"
              ${esperando ? 'disabled' : ''}
              onkeydown="if(event.key==='Enter'){event.preventDefault();enviarMascota()}">
       <button class="btn-magic" onclick="enviarMascota()" ${esperando ? 'disabled' : ''}>Enviar</button>
@@ -187,9 +218,24 @@ function pintar() {
   if (h) h.scrollTop = h.scrollHeight;
 }
 
-export function openPetChat() {
+/**
+ * Abrir la conversación.
+ *
+ * `general: true` entra SIN libro: es lo que hace la ficha «Chat de
+ * libros» del estante y la puerta de la hoja de la pregunta. Las dos
+ * prometen lo mismo —hablar de libros, no de uno— y si al abrirse
+ * apareciera un libro en la cabecera habrían mentido en el primer
+ * segundo. Desde ahí, elegir uno es tocar su ficha.
+ */
+export function openPetChat({ general = false } = {}) {
+  libroElegido = general ? SIN_LIBRO : null;
   openSheet('petchat-overlay');
   pintar();
+}
+
+/** La entrada directa, sin libro: la que se toca desde el estante. */
+export function chatDeLibros() {
+  openPetChat({ general: true });
 }
 
 export function closePetChat(e) {
