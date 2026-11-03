@@ -136,7 +136,9 @@ function app(entrada = { status: 'pending' }) {
   };
 }
 
-/* Con el ánimo así, tocar a la mascota abre la pregunta y no el chat. */
+/* Con el ánimo así, tocar a la mascota abre la pregunta. Ya NO deja
+   sin chat: la hoja tiene su propia puerta —ver el último grupo— pero
+   el ánimo sigue decidiendo qué se abre al tocarla. */
 const clavada = (mood) => mood === 'rescatando' || mood === 'preguntando';
 
 /* ── DE PARTIDA ──────────────────────────────────────────────── */
@@ -146,7 +148,7 @@ grupo('EL LIBRO DE AGOSTO, EN SEPTIEMBRE');
 const antes = app().mirar();
 ok('está atrasado, y con razón', antes.atrasado);
 ok('y la mascota pregunta por él', antes.mood === 'rescatando', antes.mood);
-ok('así que tocarla abre la pregunta y NO el chat', clavada(antes.mood));
+ok('así que tocarla abre la pregunta, no el chat', clavada(antes.mood));
 
 /* ── «MÁS ADELANTE» ──────────────────────────────────────────── */
 
@@ -267,6 +269,74 @@ if (candidato) {
     store.findBook(candidato.id).month === mesOriginal,
     store.findBook(candidato.id).month);
 }
+
+/* ── LA PUERTA AL CHAT, DENTRO DE LA HOJA ────────────────────
+
+     «El zorrito sigue sin estar abierto a chatear de libros, sino que
+      quiere iterar sobre un libro.»
+
+   Y así era. Con una pregunta pendiente, tocarla abre esta hoja y
+   nunca la conversación, así que hasta no decidir algo sobre ESE libro
+   no se podía hablar de ningún otro. Quien quería hablar de libros se
+   encontraba un formulario sobre Bartleby.
+
+   Arriba se comprueba la salida indirecta —contestar «más adelante»
+   libera el ánimo y con él el chat—. Esto comprueba la directa: que la
+   hoja tiene su propia puerta y que usarla NO decide nada. */
+
+grupo('DESDE LA PREGUNTA SE PUEDE IR A HABLAR');
+
+/* La hoja necesita dónde pintarse. */
+const nodos = new Map();
+for (const id of ['petask-overlay', 'petask-body', 'petchat-overlay', 'petchat-body']) {
+  const clases = new Set();
+  nodos.set(id, {
+    id,
+    innerHTML: '',
+    style: {},
+    classList: {
+      add: (c) => clases.add(c), remove: (c) => clases.delete(c), contains: (c) => clases.has(c),
+    },
+  });
+}
+globalThis.document.getElementById = (id) => nodos.get(id) || null;
+
+const petask = await import('../src/petask.js');
+const agente = await import('../src/agent.js');
+
+const libroDePrueba = store.allBooks()[0];
+
+/* CON agente ofrecido. */
+agente.setAgentConsent(true);
+petask.openPetAsk(libroDePrueba);
+const conAgente = nodos.get('petask-body').innerHTML;
+
+ok('la hoja se pinta', conAgente.length > 0);
+ok('Y OFRECE IRSE A HABLAR DE LIBROS',
+  conAgente.includes('hablemosDeLibros()'),
+  'sin esta puerta hay que decidir algo sobre el libro para poder hablar');
+ok('y dice que no decide nada sobre este libro',
+  /sin decidir nada/i.test(conAgente), conAgente.slice(-240));
+
+/* SIN agente no se ofrece: un botón que promete algo que no hay es
+   peor que ninguno, y eso ya está escrito en este repo. */
+agente.setAgentConsent(false);
+petask.openPetAsk(libroDePrueba);
+ok('y si se dijo que no al agente, la puerta no está',
+  !nodos.get('petask-body').innerHTML.includes('hablemosDeLibros()'),
+  'ofrecería una conversación que no puede contestar');
+
+/* USARLA NO DECIDE NADA. La pregunta sigue viva: no contestar no es lo
+   mismo que decir «ahora no». */
+agente.setAgentConsent(true);
+petask.openPetAsk(libroDePrueba);
+const antesDeHablar = JSON.stringify(store.entry(libroDePrueba.id));
+petask.hablemosDeLibros();
+ok('USARLA NO TOCA EL LIBRO NI EL PLAN',
+  JSON.stringify(store.entry(libroDePrueba.id)) === antesDeHablar,
+  `antes ${antesDeHablar} · después ${JSON.stringify(store.entry(libroDePrueba.id))}`);
+ok('y la hoja de la pregunta se cierra',
+  !nodos.get('petask-overlay').classList.contains('open'));
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);
