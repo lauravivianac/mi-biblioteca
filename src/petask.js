@@ -265,7 +265,11 @@ export function ahoraNo() {
  */
 export function hablemosDeLibros() {
   closePetAsk();
-  openPetChat();
+  /* SIN LIBRO, a propósito. El botón promete «sin decidir nada sobre
+     este»: si la conversación se abriera hablando justo del libro de
+     la pregunta que se acaba de dejar atrás, sería la misma trampa con
+     otra puerta. */
+  openPetChat({ general: true });
 }
 
 function cerrarCon(mensaje) {

@@ -338,5 +338,91 @@ ok('USARLA NO TOCA EL LIBRO NI EL PLAN',
 ok('y la hoja de la pregunta se cierra',
   !nodos.get('petask-overlay').classList.contains('open'));
 
+/* ── Y UNA PUERTA QUE SE VE SIN TOCAR NADA ───────────────────
+
+     «Mira si no se puede habilitar una opción que diga chat o algo así
+      para hablar solo de libros.»
+
+   Dos cosas distintas, y las dos faltaban:
+
+   1. LLEGAR. El estante de la mascota abre una cosa u otra según su
+      ánimo, y eso no se puede leer desde fuera: antes de tocarlo no
+      hay forma de saber si hay conversación detrás. Ahora lleva su
+      propia ficha, que entra al chat siempre.
+
+   2. QUE SEA DE LIBROS Y NO DE UN LIBRO. Con algo abierto, el chat
+      ponía un libro en la cabecera, en el recuadro de escribir, en las
+      tres sugerencias y en el contexto que viaja al modelo. Daba igual
+      lo abierto que estuviera el modelo: la PANTALLA decía que esto
+      iba de ese libro.
+
+   Lo segundo es lo que de verdad se comprueba aquí, y se comprueba por
+   las sugerencias: `sugerencias(libro)` se bifurca según haya libro o
+   no, así que ver las genéricas es ver que no se eligió ninguno — que
+   es exactamente lo que se le manda al agente. */
+
+grupo('SE PUEDE ENTRAR A HABLAR DE LIBROS, SIN LIBRO');
+
+const petchat = await import('../src/petchat.js');
+const petui = await import('../src/pet.js');
+
+/* Con un libro EN CURSO, que es el caso en el que fallaba. Sin
+   ninguno abierto el chat ya era general y no probaría nada. */
+store.updateEntry(libroDePrueba.id, { status: 'reading', page: 10, lastReadAt: Date.now() });
+
+agente.setAgentConsent(true);
+const estante = petui.renderPet();
+ok('EL ESTANTE OFRECE EL CHAT SIN TOCAR NADA',
+  estante.includes('chatDeLibros()'),
+  'sin esto hay que tocar la mascota y esperar a ver qué abre su ánimo');
+ok('y no dispara también lo que haya debajo',
+  /stopPropagation\(\)\s*;\s*chatDeLibros\(\)/.test(estante),
+  'el estante entero es un botón: sin frenar el toque, abriría las dos cosas');
+
+agente.setAgentConsent(false);
+ok('sin agente, la ficha no está',
+  !petui.renderPet().includes('chatDeLibros()'),
+  'ofrecería una conversación que no puede contestar');
+
+/* Y AHORA LO QUE IMPORTA: entrar por ahí no es entrar a hablar de un
+   libro. */
+agente.setAgentConsent(true);
+petchat.chatDeLibros();
+const general = nodos.get('petchat-body').innerHTML;
+
+ok('la conversación se pinta', general.length > 0);
+/* El título SÍ aparece —tiene su ficha en la fila, y para eso está—
+   así que lo que se mira es la cabecera: es ahí donde el chat decía
+   de qué iba esto. */
+ok('NO SE ABRE AFIRMANDO QUE SE HABLA DE UN LIBRO',
+  !/Está leyendo|Hablando de/.test(general),
+  general.match(/class="petchat-sub">([\s\S]{0,120})/)?.[1] || 'sin cabecera');
+ok('y lo demuestra ofreciendo preguntas de libros en general',
+  general.includes('¿Qué me recomiendas leer?'),
+  'si hubiera libro elegido saldrían las tres suyas: eso es lo que viaja al agente');
+ok('el recuadro no pide preguntar por «tu libro»',
+  !/placeholder="[^"]*tu libro/.test(general),
+  general.match(/placeholder="[^"]*"/)?.[0] || 'sin recuadro');
+ok('y la ficha «En general» se ve elegida',
+  /class="petchat-cual on"[\s\S]{0,200}En general/.test(general),
+  'si no se ve cuál está elegida, no se sabe de qué se está hablando');
+
+/* LA VUELTA, Y SE MIRA EN LA PANTALLA, NO EN LA FUNCIÓN. Llamar a
+   `hablarDeLibro()` a mano y ver que cambia el contexto no prueba
+   nada sobre quien usa la app: con la fila escondida —que es como
+   estaba, solo salía con dos libros o más— esa comprobación sigue en
+   verde mientras en el móvil no hay por dónde volver. Así que lo que
+   se exige es la FICHA, que es lo único que se puede tocar. */
+ok('Y CON UN SOLO LIBRO ABIERTO, SU FICHA ESTÁ PARA VOLVER',
+  new RegExp(`class="petchat-cual"[\\s\\S]{0,200}${libroDePrueba.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
+    .test(general),
+  'sin ficha se entra en general y ya no se puede hablar de lo que se está leyendo');
+
+petchat.hablarDeLibro(libroDePrueba.id);
+const conLibro = nodos.get('petchat-body').innerHTML;
+ok('y al tocarla la conversación pasa a ese libro',
+  conLibro.includes('¿De qué trata sin destriparme nada?'),
+  'las sugerencias siguen siendo las generales: no cambió de contexto');
+
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);

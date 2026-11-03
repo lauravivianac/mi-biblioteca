@@ -140,6 +140,31 @@
   margin: 0;
 }
 
+/* ── LA FICHA DE CHAT, DENTRO DEL ESTANTE ────────────────────
+   Va dentro de `.pet-talk` y no como tercera columna: el estante es
+   una rejilla de dos —el rincón con la mascota, y lo que dice— y
+   colgarle una columna más le quitaría sitio al dibujo en un móvil
+   estrecho justo para un botón de dos palabras.
+
+   Alto mínimo 32 px: es una zona de toque dentro de otra zona de
+   toque, y si queda pequeña se falla y se abre lo de debajo, que es
+   precisamente lo que no quería quien vino a hablar. */
+.pet-chat {
+  margin-top: 8px;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gold);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: var(--label-spacing);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.pet-chat:active { opacity: .65; }
+
 /* ── PERSONALIZAR ────────────────────────────────────────────
    Segundo estante de la tienda: la misma mecánica que los temas. */
 .pet-preview {

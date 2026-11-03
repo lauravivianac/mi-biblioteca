@@ -21,6 +21,7 @@ import { ACHIEVEMENTS } from './achievements.js';
 import { esc } from './ui.js';
 import { estadoMascota, fraseMascota, librosEnCurso, posePara } from './pet-core.js';
 import { stalledBooks } from './planner.js';
+import { agentOffered } from './agent.js';
 
 /* ── PERSONALIZACIÓN ─────────────────────────────────────────
    Todo se desbloquea leyendo. Un accesorio que costó terminar un
@@ -747,6 +748,26 @@ export function renderPet() {
               quién la decía. */''}
         <div class="pet-name">${esc(petNombre(cfg))}</div>
         <p class="pet-phrase">${esc(petPhrase(state))}</p>
+
+        ${/* LA PUERTA QUE SE VE SIN TOCAR NADA.
+              «Mira si no se puede habilitar una opción que diga chat o
+               algo así para hablar solo de libros.»
+
+              Tocar el estante abre lo que toque según su ánimo —la
+              pregunta si la tiene, la conversación si no— y eso está
+              bien, pero no se puede leer de antemano: desde fuera, el
+              estante es una frase bonita y no se sabe qué hay detrás.
+              Quien quiere hablar de libros necesita ver que se puede
+              ANTES de tocar, y llegar al mismo sitio siempre, tenga
+              ella la pregunta que tenga.
+
+              `stopPropagation` porque el estante entero es un botón:
+              sin eso, tocar aquí dispararía también `pokePet()` y
+              volveríamos a depender del ánimo. */''}
+        ${agentOffered() ? `
+          <button class="pet-chat" onclick="event.stopPropagation();chatDeLibros()">
+            Chat de libros
+          </button>` : ''}
       </div>
     </div>`;
 }
