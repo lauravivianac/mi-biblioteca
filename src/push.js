@@ -34,10 +34,12 @@
    llegar. Misma regla que el consentimiento del agente en la #61.
    ───────────────────────────────────────────────────────────── */
 
-import { doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-import { db } from './firebase.js';
 import { currentUser } from './auth.js';
-import { settings, updateSettings } from './store.js';
+import {
+  settings, updateSettings, miRecordatorio, horasDeLectura, readingDays,
+} from './store.js';
+import { workerUrl } from './agent.js';
+import { horaHabitual } from './habito-core.js';
 
 /**
  * La clave pública VAPID de ESTE despliegue.
@@ -95,18 +97,105 @@ function comoSeGuarda(sub) {
   };
 }
 
-/* Un identificador estable POR DISPOSITIVO, sacado de la propia
-   dirección de push. Así el mismo teléfono no acumula suscripciones
-   duplicadas cada vez que se apaga y se enciende, y el móvil y el
-   portátil de la misma persona conviven sin pisarse. */
-async function idDeSub(endpoint) {
-  const datos = new TextEncoder().encode(endpoint);
-  const hash = await crypto.subtle.digest('SHA-256', datos);
-  return [...new Uint8Array(hash)].slice(0, 12)
-    .map((b) => b.toString(16).padStart(2, '0')).join('');
+/* El identificador por dispositivo —que evita que el mismo teléfono
+   acumule suscripciones duplicadas— lo calcula ahora el Worker a
+   partir de la propia dirección de push (`idDeSub` en worker/index.js).
+   Tenerlo en los dos sitios era tener dos formas de nombrar la misma
+   cosa, y basta con que una cambie para que el cron escriba en una
+   clave y el borrado busque en otra. */
+
+/* ── DÓNDE SE GUARDA, Y POR QUÉ CAMBIÓ  ·  #95 ───────────────
+
+   Antes esto escribía en Firestore, en `users/<uid>/push/<id>`. El
+   problema no era guardar: era LEER. Quien tiene que leer esto es el
+   cron del Worker, y el permiso más estrecho que Firestore sabe dar
+   es «toda la base de datos» — no hay rol por colección. Para mandar
+   un recordatorio, el Worker habría quedado con lectura y escritura
+   sobre la biblioteca, las reseñas y la red social de todas las
+   cuentas.
+
+   Así que la suscripción va al Worker y vive solo allí, en KV. Lo que
+   sale de este dispositivo es lo mínimo para decidir cuándo avisar:
+   las claves de push, el huso horario, el ajuste del recordatorio y
+   QUÉ DÍA se leyó por última vez. Ni el libro, ni la página, ni la
+   lista de horas a las que lees — la hora objetivo se deduce aquí y
+   viaja ya calculada.
+
+   Y como no está en Firestore, borrar la cuenta no se lo lleva por
+   delante solo: hay que decírselo al Worker, y eso es `olvidarPush`. */
+
+/** Hablar con el Worker. Nada que ver con el agente: esto no consulta
+    ningún modelo, así que no pasa por su consentimiento ni gasta. */
+async function pedirAlWorker(cuerpo) {
+  const url = workerUrl();
+  if (!url) return 'sin-worker';
+
+  const user = currentUser();
+  if (!user) return 'sin-sesion';
+
+  try {
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${await user.getIdToken()}`,
+      },
+      body: JSON.stringify(cuerpo),
+    });
+    if (r.ok) return null;
+    const { error } = await r.json().catch(() => ({}));
+    return error || `http-${r.status}`;
+  } catch {
+    return 'sin-red';
+  }
 }
 
-const refDe = (uid, id) => doc(db, 'users', uid, 'push', id);
+/** Lo que el Worker necesita saber para decidir si toca avisar. */
+function fichaDeAviso(sub) {
+  const guardada = comoSeGuarda(sub);
+  const config = miRecordatorio();
+  return {
+    p256dh: guardada.p256dh,
+    auth: guardada.auth,
+    tz: guardada.tz,
+    activo: Boolean(config.activo),
+    dias: config.dias,
+    /* La hora deducida se manda YA RESUELTA. Mandar las horas a las
+       que lees para que el servidor saque la media sería mandar un
+       perfil de tus hábitos para calcular un número que aquí ya
+       sabemos. */
+    hora: config.hora ?? horaHabitual(horasDeLectura()).hora,
+    ultimoDiaLeido: readingDays().at(-1) || '',
+  };
+}
+
+/**
+ * Poner al día lo que el Worker sabe de este dispositivo.
+ *
+ * Se llama al encender, al cambiar el recordatorio y al apuntar un día
+ * de lectura nuevo. Sin esto la ficha se queda congelada en el momento
+ * de suscribirse: apagarías el recordatorio en Ajustes y el aviso
+ * seguiría llegando, que es la peor cara que puede poner esta función.
+ *
+ * No devuelve error ni avisa si falla: es sincronización de fondo, y
+ * un fallo de red aquí no debe interrumpir nada de lo que esté
+ * haciendo quien lee. Lo peor que pasa es que la ficha se actualice en
+ * la siguiente ocasión.
+ */
+export async function sincronizarPush() {
+  if (!pushDisponible() || !pushEncendido()) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) return;
+    await pedirAlWorker({ accion: 'guardar-sub', endpoint: sub.endpoint, ficha: fichaDeAviso(sub) });
+  } catch { /* ver arriba: en silencio, a propósito */ }
+}
+
+/** Al borrar la cuenta. Esto no está en Firestore, así que hay que pedirlo. */
+export async function olvidarPush() {
+  await pedirAlWorker({ accion: 'olvidar-subs' });
+}
 
 /**
  * Encender: pedir permiso, suscribirse y guardar.
@@ -139,11 +228,14 @@ export async function encenderPush() {
     return 'no-se-pudo-suscribir';
   }
 
-  try {
-    await setDoc(refDe(user.uid, await idDeSub(sub.endpoint)), comoSeGuarda(sub));
-  } catch {
-    return 'no-se-pudo-guardar';
-  }
+  /* AQUÍ SÍ SE ESPERA EL RESULTADO, al revés que en `sincronizarPush`.
+     Encender es una acción con un botón delante: si el servidor no se
+     quedó con la suscripción, el interruptor NO debe quedarse en «sí»
+     prometiendo avisos que no van a llegar. */
+  const fallo = await pedirAlWorker({
+    accion: 'guardar-sub', endpoint: sub.endpoint, ficha: fichaDeAviso(sub),
+  });
+  if (fallo) return fallo === 'sin-almacen' ? 'avisos-no-disponibles' : 'no-se-pudo-guardar';
 
   updateSettings({ pushOn: true });
   return null;
@@ -160,12 +252,11 @@ export async function encenderPush() {
 export async function apagarPush() {
   updateSettings({ pushOn: false });
 
-  const user = currentUser();
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
     if (!sub) return;
-    if (user) await deleteDoc(refDe(user.uid, await idDeSub(sub.endpoint))).catch(() => {});
+    await pedirAlWorker({ accion: 'borrar-sub', endpoint: sub.endpoint });
     await sub.unsubscribe();
   } catch {
     /* Que no se pueda dar de baja en el navegador no debe dejar el

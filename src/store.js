@@ -96,6 +96,20 @@ export const settings = () => ({ ...DEFAULT_SETTINGS, ...state.settings });
    clics en vez de tus días de lectura. */
 
 export const readingDays = () => settings().readingDays || [];
+
+/* ── DOS GANCHOS PARA LO QUE VIVE FUERA DE FIRESTORE ─────────
+   Las suscripciones de aviso ya no están en Firestore: viven en el
+   Worker (ver src/push.js). Eso deja dos momentos en los que hay que
+   avisarle desde aquí — se leyó un día nuevo, y se borró la cuenta —
+   y este módulo NO puede importar push.js: push.js importa este, y
+   sería una vuelta cerrada.
+
+   Así que se registran desde main.js, igual que `setConsentPrompt`
+   hace con el agente. */
+let alLeerDiaNuevo = null;
+let alBorrarTodo = null;
+export const onReadingDay = (fn) => { alLeerDiaNuevo = fn; };
+export const onDeleteUserData = (fn) => { alBorrarTodo = fn; };
 export const myStreak = () => streakInfo(readingDays());
 
 /**
@@ -123,6 +137,10 @@ export function recordReadingDay(date = new Date()) {
   const despues = addDay(antes, date);
   if (despues === antes) return false;      // ya estaba apuntado hoy
   updateSettings({ readingDays: despues });
+  /* Solo cuando el día es NUEVO, que es justo lo que el cron necesita
+     saber: «¿leyó hoy?». Llamarlo en cada página apuntada sería un
+     viaje al Worker por cada número tecleado. */
+  alLeerDiaNuevo?.();
   return true;
 }
 
@@ -813,6 +831,19 @@ export function exportCsv() {
 /** Borra TODO lo de esta usuaria en Firestore. Recorre el árbol: no es una sola operación. */
 export async function deleteAllUserData() {
   if (!state.uid) return;
+  /* PRIMERO lo que está fuera de Firestore, y primero por una razón
+     de orden: las suscripciones de aviso viven en el Worker y se
+     borran enseñando el token de Firebase. Si esto fuera después de
+     borrar la cuenta, ya no habría token con el que pedirlo y la
+     dirección de push se quedaría ahí, recibiendo recordatorios de
+     una cuenta que no existe. */
+  try { await alBorrarTodo?.(); } catch (e) {
+    /* Que no se pueda avisar al Worker NO debe abortar el borrado:
+       dejar a medias los datos de Firestore sería mucho peor que una
+       suscripción huérfana, que además deja de servir en cuanto el
+       navegador la caduque. */
+    console.warn('No se pudieron borrar las suscripciones de aviso:', e);
+  }
   /* Las reseñas publicadas viven FUERA de users/{uid}, que es justo lo
      que las hace legibles. Por eso hay que ir a buscarlas: borrar la
      cuenta y dejar tus reseñas publicadas con tu nombre sería el peor

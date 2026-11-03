@@ -51,6 +51,13 @@ const POR_QUE_NO_SE_PUEDE = {
   'sin-sesion': 'Hay que haber entrado para poder mandarte avisos.',
   'no-se-pudo-suscribir': 'No hemos podido suscribir este dispositivo. Vuelve a intentarlo.',
   'no-se-pudo-guardar': 'Nos suscribimos, pero no pudimos guardarlo. Vuelve a intentarlo.',
+  /* Distinto de «vuelve a intentarlo»: reintentar no va a arreglar
+     esto, le falta algo al despliegue. Decir «inténtalo otra vez»
+     cuando es imposible deja a quien lee dándole al botón. */
+  'avisos-no-disponibles': 'Este despliegue todavía no tiene dónde guardar los avisos. '
+    + 'No es cosa tuya: volverá a aparecer cuando esté listo.',
+  'sin-worker': 'Este despliegue no tiene servidor de avisos configurado.',
+  'sin-red': 'No hubo forma de llegar al servidor. Comprueba tu conexión.',
 };
 
 export function pintarAvisos() {

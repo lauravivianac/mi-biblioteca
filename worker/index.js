@@ -460,6 +460,13 @@ export function originAllowed(origin, allowed) {
 const escapeRx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 import { mandarAviso } from './push.js';
+import { momentoEn } from './reloj.js';
+/* LA MISMA REGLA QUE LA APP, no una copia. `tocaAvisar` decide si toca
+   avisar y `claveDia` cuál es «hoy»; las dos viven en src/habito-core.js
+   desde la #69, sin DOM ni red, y ya tienen pruebas. Reimplementarlas
+   aquí sería garantizar que algún día Ajustes diga una cosa («hoy no te
+   avisaremos: ya leíste») y el servidor haga otra. */
+import { tocaAvisar, claveDia } from '../src/habito-core.js';
 
 /* ── EL CRON QUE MANDA LOS AVISOS  ·  historias #69 y #95 ─────
 
@@ -474,13 +481,16 @@ import { mandarAviso } from './push.js';
    y entonces no es una notificación: es un aviso para quien ya está
    mirando.
 
-   ── LO QUE FALTA POR CONECTAR ───────────────────────────────
+   ── DE DÓNDE SALEN LAS SUSCRIPCIONES ────────────────────────
 
-   De dónde salen las suscripciones. Viven en Firestore, en
-   `users/<uid>/push/<id>`, y leerlas desde aquí necesita credenciales
-   de servidor que todavía no están puestas. Mientras tanto esta función
-   deja escrito el esqueleto y no manda nada: es preferible un cron que
-   no hace nada y lo dice a uno que parece funcionar. */
+   De KV, que las escribe la propia app por `POST /push` con su token.
+   Ver `suscripcionesPendientes` más abajo: ahí está por qué no se usa
+   Firestore, que era el plan anterior.
+
+   SIN KV ESTO NO MANDA NADA, y lo dice. Hace falta crear el espacio y
+   descomentar `[[kv_namespaces]]` en wrangler.toml; mientras no esté,
+   el cron corre, mira y se calla, que es preferible a un cron que
+   parece funcionar. */
 async function mandarLosAvisos(env) {
   const vapid = {
     publica: env.VAPID_PUBLICA || '',
@@ -504,33 +514,234 @@ async function mandarLosAvisos(env) {
 
   let mandados = 0;
   const caducadas = [];
-  for (const { sub, carga } of pendientes) {
+  for (const { clave, ficha, dia, sub, carga } of pendientes) {
     const r = await mandarAviso(sub, carga, vapid);
-    if (r.ok) mandados += 1;
-    /* Un 404 o un 410 significan que esa suscripción ya no existe. Hay
-       que BORRARLA: sin eso, la lista crece para siempre con
-       direcciones muertas a las que se llama todos los días. */
-    else if (r.caducada) caducadas.push(sub);
-    else console.error('No se pudo mandar:', r.estado, r.error || '');
+    if (r.ok) {
+      mandados += 1;
+      /* SE APUNTA DESPUÉS DE MANDARLO, no antes. Apuntarlo primero
+         sería más fácil —una escritura menos si falla— pero un fallo
+         de red dejaría el día marcado sin que llegara nada, y esa
+         persona se queda sin aviso hasta mañana por un error que no
+         fue suyo. */
+      await apuntarAvisado(env, clave, ficha, dia);
+    } else if (r.caducada) {
+      /* Un 404 o un 410 significan que esa suscripción ya no existe. Hay
+         que BORRARLA: sin eso, la lista crece para siempre con
+         direcciones muertas a las que se llama todos los días. */
+      caducadas.push({ uid: ficha.uid, endpoint: ficha.endpoint });
+    } else {
+      console.error('No se pudo mandar:', r.estado, r.error || '');
+    }
   }
 
   if (caducadas.length) await olvidarSuscripciones(env, caducadas);
   return { mandados, caducadas: caducadas.length };
 }
 
-/* De dónde salen los avisos que tocan ahora. Todavía no hay forma de
-   leer Firestore desde aquí, así que devuelve una lista vacía — y lo
-   dice, en vez de fingir que miró. */
-async function suscripcionesPendientes(env) {
-  if (!env.FIRESTORE_CUENTA) {
-    console.log('Cron: sin credenciales de Firestore todavía; no se puede saber a quién avisar.');
+/* ── DE DÓNDE SALEN LAS SUSCRIPCIONES  ·  #95 ────────────────
+
+   De KV, no de Firestore, y esa es la decisión que importa de toda
+   esta pieza.
+
+   LO QUE SE DESCARTÓ. Darle al Worker una cuenta de servicio de
+   Google para leer `users/<uid>/push/<id>`. Funciona, y es lo que
+   decía el esqueleto anterior, pero el permiso más estrecho que
+   Firestore sabe dar es «toda la base de datos»: no hay rol por
+   colección. O sea que el mismo Worker que atiende HTTP público
+   tendría lectura y escritura sobre la biblioteca, las reseñas y la
+   red social de TODAS las cuentas. Para mandar un «¿seguimos con el
+   libro?» eso es un radio de daño absurdo.
+
+   LO QUE SE HIZO. El Worker guarda su propia copia, con lo mínimo
+   para poder mandar y decidir cuándo:
+
+     sub:<uid>:<id> → { endpoint, p256dh, auth, tz,
+                        activo, dias, hora, ultimoDiaLeido, avisado }
+
+   Lo manda la app por `POST /push` con su token de Firebase, que el
+   Worker ya sabe verificar (`verifyToken`) desde la #53. Aquí no hay
+   ninguna credencial de Google, y si esto se filtrara entero, lo que
+   se lleva son direcciones de push — ni un título, ni un nombre, ni
+   una página.
+
+   LO QUE CUESTA. Dos copias del mismo dato y una lista que recorrer.
+   `list()` de KV no es un motor de consultas: devuelve todo y hay que
+   filtrar aquí. Con cientos o unos miles de suscripciones va sobrado;
+   el día que sean muchas más, esto pide D1 y una consulta de verdad,
+   no otra vuelta de tuerca a KV. */
+
+const PREFIJO_SUB = 'sub:';
+
+/** El mismo identificador por dispositivo que calcula la app. */
+export async function idDeSub(endpoint) {
+  const datos = new TextEncoder().encode(String(endpoint || ''));
+  const hash = await crypto.subtle.digest('SHA-256', datos);
+  return [...new Uint8Array(hash)].slice(0, 12)
+    .map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+const claveSub = (uid, id) => `${PREFIJO_SUB}${uid}:${id}`;
+
+async function listarSubs(env) {
+  if (!env.AGENTE) return [];
+  const fuera = [];
+  let cursor;
+  do {
+    /* `list` pagina de 1000 en 1000. Sin seguir el cursor, a partir de
+       mil suscripciones el cron dejaría de avisar a la gente del
+       final y nadie se enteraría: no hay error, solo silencio. */
+    const pagina = await env.AGENTE.list({ prefix: PREFIJO_SUB, cursor });
+    for (const k of pagina.keys) fuera.push(k.name);
+    cursor = pagina.list_complete ? null : pagina.cursor;
+  } while (cursor);
+  return fuera;
+}
+
+/**
+ * Las que toca avisar AHORA, cada una con su mensaje.
+ *
+ * Quien decide es `tocaAvisar`, el mismo de la app (src/habito-core.js)
+ * y con las mismas pruebas: si el cron tuviera su propia copia de esa
+ * regla, Ajustes diría «hoy no te avisaremos porque ya leíste» y el
+ * servidor podría opinar otra cosa.
+ */
+export async function suscripcionesPendientes(env, ahora = new Date()) {
+  if (!env.AGENTE) {
+    console.log('Cron: sin KV no hay dónde guardar las suscripciones; no se puede saber a quién avisar.');
     return [];
   }
-  return [];
+
+  const pendientes = [];
+  for (const clave of await listarSubs(env)) {
+    let ficha;
+    try { ficha = JSON.parse(await env.AGENTE.get(clave)); } catch { ficha = null; }
+    if (!ficha?.endpoint) continue;
+
+    const momento = momentoEn(ficha.tz, ahora);
+    const { avisar } = tocaAvisar(
+      { activo: ficha.activo, dias: ficha.dias, hora: ficha.hora },
+      {
+        /* La app manda el ÚLTIMO día leído, no la lista entera: para
+           «¿leyó hoy?» basta con ese, y el historial de lectura de
+           alguien no tiene por qué estar en un servidor de avisos. */
+        diasLeidos: ficha.ultimoDiaLeido ? [ficha.ultimoDiaLeido] : [],
+        ahora: momento,
+        ultimoAviso: ficha.avisado || '',
+      },
+    );
+    if (!avisar) continue;
+
+    pendientes.push({
+      clave,
+      ficha,
+      dia: claveDia(momento),
+      sub: { endpoint: ficha.endpoint, p256dh: ficha.p256dh, auth: ficha.auth },
+      carga: JSON.stringify({
+        title: 'Tu rato de leer',
+        body: '¿Seguimos donde lo dejaste?',
+        /* Sin título de libro ni página: ese dato no está aquí, y
+           traerlo costaría justo la llave de Firestore que esto
+           evita. Un aviso genérico que llega vale más que uno
+           detallado que no existe. */
+        url: '/',
+      }),
+    });
+  }
+  return pendientes;
+}
+
+/** Que no se avise dos veces el mismo día. Lo lleva el Worker, no la app. */
+async function apuntarAvisado(env, clave, ficha, dia) {
+  if (!env.AGENTE) return;
+  await env.AGENTE.put(clave, JSON.stringify({ ...ficha, avisado: dia }));
+}
+
+export const ACCIONES_SUB = ['guardar-sub', 'borrar-sub', 'olvidar-subs'];
+
+/* ── GUARDAR, BORRAR, OLVIDARLO TODO ─────────────────────────
+
+   EL `uid` SALE DEL TOKEN, NUNCA DEL CUERPO. Si viniera en el JSON,
+   cualquiera con una cuenta podría borrarle los avisos a otra persona
+   —o peor, escribirle una suscripción— mandando un uid que no es el
+   suyo.
+
+   Y LA VERIFICACIÓN VIVE AQUÍ DENTRO, no en quien llama. La primera
+   versión recibía el `uid` ya resuelto como argumento, y eso dejaba
+   la parte que de verdad importa —de dónde salió ese uid— fuera de lo
+   que se puede probar: una prueba podía dar por bueno este bloque
+   mientras la ruta le pasaba alegremente `body.uid`. Metiéndolo
+   dentro, la única forma de llamar a esto es con una petición y su
+   token, y `verificar` se puede sustituir en las pruebas para
+   comprobar el camino entero. */
+export async function manejarSuscripcion(request, body, env, allowOrigin, verificar = verifyToken) {
+  const uid = await verificar((request.headers.get('Authorization') || '').replace(/^Bearer /, ''));
+  if (!uid) return json({ error: 'sin-sesion' }, 401, allowOrigin);
+
+  if (!env.AGENTE) {
+    /* Sin KV no hay dónde guardar, y decirlo es mejor que aceptar la
+       suscripción y perderla en silencio: la app enseña que los
+       avisos no están disponibles en vez de prometerlos. */
+    return json({ error: 'sin-almacen' }, 503, allowOrigin);
+  }
+
+  if (body.accion === 'olvidar-subs') {
+    /* Borrar la cuenta tiene que llevarse también esto. Vive fuera de
+       Firestore, así que `deleteAllUserData` no lo alcanza. */
+    let n = 0;
+    for (const clave of await listarSubs(env)) {
+      if (!clave.startsWith(`${PREFIJO_SUB}${uid}:`)) continue;
+      await env.AGENTE.delete(clave);
+      n += 1;
+    }
+    return json({ ok: true, borradas: n }, 200, allowOrigin);
+  }
+
+  const endpoint = String(body.endpoint || '');
+  if (!endpoint.startsWith('https://')) return json({ error: 'sin-endpoint' }, 400, allowOrigin);
+  const id = await idDeSub(endpoint);
+
+  if (body.accion === 'borrar-sub') {
+    await env.AGENTE.delete(claveSub(uid, id));
+    return json({ ok: true }, 200, allowOrigin);
+  }
+
+  const f = body.ficha || {};
+  if (!f.p256dh || !f.auth) return json({ error: 'sin-claves' }, 400, allowOrigin);
+
+  /* Se guarda SOLO lo que hace falta para decidir y mandar, y se
+     normaliza aquí: lo que llega es de fuera, y un `dias` que no sea
+     una lista de números rompería `tocaAvisar` una vez al día en un
+     sitio donde nadie está mirando. */
+  const ficha = {
+    uid,
+    endpoint,
+    p256dh: String(f.p256dh),
+    auth: String(f.auth),
+    tz: String(f.tz || ''),
+    activo: Boolean(f.activo),
+    dias: Array.isArray(f.dias) ? f.dias.map(Number).filter((d) => d >= 0 && d <= 6) : [],
+    hora: Number.isFinite(Number(f.hora)) && f.hora !== null ? Number(f.hora) : null,
+    ultimoDiaLeido: String(f.ultimoDiaLeido || '').slice(0, 10),
+    /* El «ya avisé hoy» se conserva al actualizar la ficha. Si se
+       reiniciara, abrir la app después de recibir el aviso daría pie
+       a un segundo aviso el mismo día. */
+    avisado: (await leerFicha(env, claveSub(uid, id)))?.avisado || '',
+  };
+
+  await env.AGENTE.put(claveSub(uid, id), JSON.stringify(ficha));
+  return json({ ok: true }, 200, allowOrigin);
+}
+
+async function leerFicha(env, clave) {
+  try { return JSON.parse(await env.AGENTE.get(clave)); } catch { return null; }
 }
 
 async function olvidarSuscripciones(env, subs) {
-  console.log(`Cron: ${subs.length} suscripciones caducadas por borrar.`);
+  if (!env.AGENTE) return;
+  for (const sub of subs) {
+    await env.AGENTE.delete(claveSub(sub.uid, await idDeSub(sub.endpoint)));
+  }
+  console.log(`Cron: ${subs.length} suscripciones caducadas, borradas.`);
 }
 
 export default {
@@ -602,6 +813,16 @@ async function manejar(request, env) {
 
     let body;
     try { body = await request.json(); } catch { return json({ error: 'json' }, 400, allowOrigin); }
+
+    /* ── LAS SUSCRIPCIONES DE AVISO  ·  #95 ────────────────────
+       Va ANTES de `INTENTS` y sale por su propio camino: esto no
+       llama a ningún modelo, así que no debe pasar por el límite
+       diario de consultas ni por el techo de gasto. Mezclarlo habría
+       hecho que encender las notificaciones te gastara una consulta
+       del agente, que no tiene ningún sentido. */
+    if (ACCIONES_SUB.includes(body.accion)) {
+      return manejarSuscripcion(request, body, env, allowOrigin);
+    }
 
     const spec = INTENTS[body.intent];
     if (!spec) return json({ error: 'intent-no-permitido' }, 400, allowOrigin);
