@@ -72,6 +72,41 @@ export const TIPOS_AVISO = [
 
 export const ES_TIPO = (id) => TIPOS_AVISO.some((t) => t.id === id);
 
+/* ── EL IPHONE NO ES UN NAVEGADOR QUE «NO PUEDE» ─────────────
+
+   En iOS, Safari solo expone `PushManager` y `Notification` cuando la
+   app se abre DESDE LA PANTALLA DE INICIO. En una pestaña normal no
+   existen, por capaz que sea el teléfono: hay que añadirla antes con
+   Compartir → Añadir a pantalla de inicio.
+
+   Sin distinguir este caso, la pantalla decía «este navegador no puede
+   con las notificaciones, o este despliegue no las tiene
+   configuradas» — dos cosas que no son, y ninguna accionable. Quien lo
+   lee en un iPhone concluye que la app no sirve para esto, cuando le
+   falta un gesto de tres segundos.
+
+   Vive aquí y no en push.js porque así es una función de datos a
+   datos: recibe lo que diga el navegador y contesta. En push.js habría
+   que montar un `navigator` de mentira para probarla.
+
+   `puedePush` entra como dato por una razón: el día que Apple exponga
+   Push en pestañas normales, esto deja de saltar solo, sin que nadie
+   tenga que acordarse de venir a borrarlo. */
+export function faltaInstalarEnIOS({
+  userAgent = '', platform = '', maxTouchPoints = 0,
+  standalone = false, displayStandalone = false, puedePush = false,
+} = {}) {
+  if (puedePush) return false;          // ya puede: no falta nada
+  if (standalone || displayStandalone) return false;  // ya está instalada
+
+  const esIPhone = /iPad|iPhone|iPod/.test(userAgent);
+  /* El iPad moderno se presenta como un Mac de escritorio; lo que lo
+     delata es que tiene pantalla táctil. Sin esto, a quien lo use le
+     saldría el mensaje genérico y a nadie se le ocurriría instalarla. */
+  const esIPadDisfrazado = platform === 'MacIntel' && maxTouchPoints > 1;
+  return esIPhone || esIPadDisfrazado;
+}
+
 /* El horario de silencio, de fábrica. De once de la noche a ocho de la
    mañana: nadie quiere que le vibre el teléfono a las tres porque
    alguien al otro lado del mundo comentó una reseña. Viene ENCENDIDO —
