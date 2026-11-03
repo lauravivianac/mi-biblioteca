@@ -1370,7 +1370,11 @@ body {
 .instalar-cartel {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  z-index: 60;
+  /* POR ENCIMA DE LOS BOTONES FLOTANTES, que están en 200.
+     Con un z-index menor, el «+» se pintaba justo encima de
+     «Entendido» y el cartel no se podía cerrar: se veía, se leía, y
+     el único botón que tenía quedaba debajo de otro botón. */
+  z-index: 210;
   display: none;
   gap: 14px;
   align-items: center;
@@ -1402,3 +1406,17 @@ body {
    antes que estrujarlos. */
 .instalar-botones { display: flex; gap: 8px; flex: 0 0 auto; }
 .instalar-botones button { min-height: 40px; padding: 8px 16px; }
+
+/* ── Y LOS FLOTANTES SE APARTAN MIENTRAS ESTÁ PUESTO ─────────
+   Subir el cartel por encima no basta: dejaría el «+» enterrado
+   debajo, y añadir un libro es lo que más se hace en esta app. Se
+   suben los dos la altura exacta del cartel, que la mide instalar.js
+   y la deja en `--cartel-alto` — el texto cambia según el navegador
+   (no es lo mismo el de Safari que el de Instagram), así que una
+   altura fija a ojo se quedaría corta justo en el caso más largo.
+
+   Sin `env(safe-area-inset-bottom)` aquí a propósito: la altura del
+   cartel YA lo incluye en su relleno, y sumarlo otra vez los subiría
+   el doble de lo que hace falta. */
+body.con-cartel .fab { bottom: calc(22px + var(--cartel-alto, 0px)); }
+body.con-cartel .atajos { bottom: calc(84px + var(--cartel-alto, 0px)); }

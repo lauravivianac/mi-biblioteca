@@ -75,10 +75,35 @@ function pintar(modo) {
       </button>
     </div>`;
   caja.classList.add('visible');
+  medirse();
 }
+
+/* LA ALTURA, AL CSS. Los botones flotantes («+» y los atajos) viven
+   fijos en la esquina de abajo a la derecha, justo donde cae el
+   cartel: sin apartarlos, el «+» se pinta encima del botón de cerrar
+   y el cartel no se puede quitar.
+
+   Se mide en vez de estimarse porque el texto cambia según dónde
+   estés —el de Instagram es más largo que el de Safari— y una altura
+   fija a ojo se queda corta justo en el caso peor. */
+function medirse() {
+  const caja = $('instalar-cartel');
+  if (!caja) return;
+  document.documentElement.style.setProperty('--cartel-alto', `${caja.offsetHeight}px`);
+  document.body.classList.add('con-cartel');
+}
+
+/* Al girar el teléfono el texto se reparte en menos líneas y el
+   cartel encoge: sin volver a medir, los botones se quedarían
+   flotando en el hueco que ya no existe. */
+window.addEventListener('resize', () => {
+  if ($('instalar-cartel')?.classList.contains('visible')) medirse();
+});
 
 export function ocultarCartel() {
   $('instalar-cartel')?.classList.remove('visible');
+  document.body.classList.remove('con-cartel');
+  document.documentElement.style.removeProperty('--cartel-alto');
 }
 
 /** «Ahora no» / «Entendido»: lo mismo, y los dos se respetan. */
