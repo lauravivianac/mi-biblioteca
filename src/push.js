@@ -40,6 +40,7 @@ import {
 } from './store.js';
 import { workerUrl } from './agent.js';
 import { horaHabitual } from './habito-core.js';
+import { faltaInstalarEnIOS } from './push-core.js';
 
 /**
  * La clave pública VAPID de ESTE despliegue.
@@ -62,6 +63,24 @@ export const pushDisponible = () => Boolean(VAPID_PUBLICA)
   && 'serviceWorker' in navigator
   && 'PushManager' in window
   && 'Notification' in window;
+
+/**
+ * ¿Estamos en un iPhone al que solo le falta instalarse?
+ *
+ * Lo decide `faltaInstalarEnIOS` en push-core.js; aquí solo se le
+ * cuenta qué dice este navegador. Toda la explicación de por qué esto
+ * existe está allí, junto a la función.
+ */
+export const leFaltaInstalarse = () => Boolean(VAPID_PUBLICA)
+  && typeof navigator !== 'undefined'
+  && faltaInstalarEnIOS({
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    maxTouchPoints: navigator.maxTouchPoints,
+    standalone: window.navigator?.standalone === true,
+    displayStandalone: window.matchMedia?.('(display-mode: standalone)')?.matches === true,
+    puedePush: pushDisponible(),
+  });
 
 /** ¿Está encendido para esta persona? */
 export const pushEncendido = () => Boolean(settings().pushOn);

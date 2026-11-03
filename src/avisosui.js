@@ -26,6 +26,7 @@ import {
 } from './push-core.js';
 import {
   pushDisponible, pushEncendido, pushDenegado, encenderPush, apagarPush,
+  leFaltaInstalarse,
 } from './push.js';
 import { misAvisos, setTipoAviso, setSilencio } from './store.js';
 import { $, esc, toast, openSheet, closeSheet } from './ui.js';
@@ -70,8 +71,18 @@ export function pintarAvisos() {
   const ahoraCallado = enSilencio(cfg.silencio);
 
   if (!pushDisponible()) {
-    cuerpo.innerHTML = `
-      <p class="planner-hint">${esc(POR_QUE_NO_SE_PUEDE['no-disponible'])}</p>`;
+    /* EN UN IPHONE NO ES QUE NO PUEDA: ES QUE FALTA INSTALARLA.
+       Decirle «este navegador no puede» a quien tiene un iPhone
+       perfectamente capaz es mandarla a casa por un gesto de tres
+       segundos que nadie le ha contado. */
+    cuerpo.innerHTML = leFaltaInstalarse()
+      ? `<p class="planner-hint">
+           En el iPhone los avisos solo funcionan con la app añadida a la
+           pantalla de inicio. Toca <strong>Compartir</strong> —el cuadrado con la
+           flecha— y luego <strong>Añadir a pantalla de inicio</strong>. Ábrela
+           desde ahí y este interruptor aparece.
+         </p>`
+      : `<p class="planner-hint">${esc(POR_QUE_NO_SE_PUEDE['no-disponible'])}</p>`;
     return;
   }
 

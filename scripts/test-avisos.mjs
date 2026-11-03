@@ -23,7 +23,7 @@
    ───────────────────────────────────────────────────────────── */
 
 import {
-  TIPOS_AVISO, AVISOS_POR_DEFECTO, SILENCIO_POR_DEFECTO, avisosCompletos,
+  TIPOS_AVISO, faltaInstalarEnIOS, AVISOS_POR_DEFECTO, SILENCIO_POR_DEFECTO, avisosCompletos,
   enSilencio, silencioLegible, sePuedeAvisar, POR_QUE_NO_LLEGA, agruparAvisos, ES_TIPO,
   resumenAvisos,
 } from '../src/push-core.js';
@@ -221,6 +221,76 @@ grupo('Y LA CLAVE PÚBLICA SIGUE SIENDO LA PÚBLICA');
    sin clave, nada de lo de arriba llega a ningún sitio. */
 ok('ES_TIPO distingue los tipos de verdad de los inventados',
   ES_TIPO('mensaje') && !ES_TIPO('mensajito'));
+
+/* ── EL IPHONE QUE «NO PUEDE» ────────────────────────────────
+
+     «Este navegador no puede con las notificaciones, o este despliegue
+      no las tiene configuradas.»
+
+   Eso le salía a Laura en un iPhone 100 % capaz. En iOS, Safari solo
+   expone Push cuando la app se abre desde la pantalla de inicio, así
+   que la comprobación de siempre daba falso y el mensaje echaba la
+   culpa al teléfono o al despliegue — ni una de las dos era verdad, y
+   ninguna decía qué hacer.
+
+   Lo que se comprueba aquí es que el caso se distingue, y que NO se
+   distingue de más: decirle «añádela a la pantalla de inicio» a quien
+   está en un Android o en un escritorio sería el mismo fallo girado. */
+
+grupo('EN UN IPHONE, NO ES QUE NO PUEDA: FALTA INSTALARLA');
+
+const IPHONE = {
+  userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 '
+    + '(KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1',
+  platform: 'iPhone',
+};
+const ANDROID = {
+  userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) '
+    + 'Chrome/130.0.0.0 Mobile Safari/537.36',
+  platform: 'Linux armv8l',
+};
+
+ok('EN UN IPHONE EN PESTAÑA, FALTA INSTALARLA',
+  faltaInstalarEnIOS({ ...IPHONE, puedePush: false }),
+  'es el caso de la captura: el mensaje culpaba al teléfono');
+
+ok('ya instalada en la pantalla de inicio, no falta nada',
+  !faltaInstalarEnIOS({ ...IPHONE, standalone: true, puedePush: false }));
+
+ok('y tampoco si lo dice display-mode',
+  !faltaInstalarEnIOS({ ...IPHONE, displayStandalone: true, puedePush: false }));
+
+/* EL DÍA QUE APPLE LO EXPONGA EN PESTAÑAS, ESTO SE APAGA SOLO. Si
+   dependiera solo del sistema, seguiría mandando a instalar a gente
+   que ya puede suscribirse, y nadie se acordaría de venir a borrarlo. */
+ok('si el navegador YA puede, no se le manda a instalar nada',
+  !faltaInstalarEnIOS({ ...IPHONE, puedePush: true }),
+  'mandaría a instalar la app a quien ya puede recibir avisos');
+
+ok('en Android no se le dice que la instale',
+  !faltaInstalarEnIOS({ ...ANDROID, puedePush: false }),
+  'ahí «no puede» sí es la respuesta correcta, y el consejo de iOS no aplica');
+
+ok('ni en un escritorio',
+  !faltaInstalarEnIOS({ userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', platform: 'Win32' }));
+
+/* El iPad moderno miente: se presenta como un Mac de escritorio. Lo
+   delata la pantalla táctil, y sin esto le saldría el mensaje
+   genérico. */
+ok('Y EL IPAD, QUE SE HACE PASAR POR UN MAC, TAMBIÉN SE RECONOCE',
+  faltaInstalarEnIOS({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+    platform: 'MacIntel',
+    maxTouchPoints: 5,
+  }));
+
+ok('pero un Mac de verdad, sin pantalla táctil, no',
+  !faltaInstalarEnIOS({
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+    platform: 'MacIntel',
+    maxTouchPoints: 0,
+  }),
+  'le diría a alguien en un Mac que lo añada a la pantalla de inicio');
 
 console.log(`\n${pasaron} pruebas pasaron, ${fallaron} fallaron.\n`);
 process.exit(fallaron ? 1 : 0);
