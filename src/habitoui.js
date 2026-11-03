@@ -35,6 +35,7 @@ import {
   horasDeLectura, miRecordatorio, setRecordatorio, readingDays, ultimoAviso,
 } from './store.js';
 import { $, esc, openSheet, closeSheet } from './ui.js';
+import { sincronizarPush } from './push.js';
 
 export function openRecordatorio() {
   horasAbiertas = false;
@@ -143,17 +144,27 @@ export function pintarRecordatorio() {
 
 /* ── LO QUE SE TOCA ──────────────────────────────────────────── */
 
-export function toggleRecordatorio() {
-  setRecordatorio({ activo: !miRecordatorio().activo });
+/* TODO CAMBIO DEL RECORDATORIO TIENE QUE LLEGAR AL WORKER.
+   Quien manda el aviso es el cron, y decide con la copia que tiene
+   guardada: sin esta línea, apagar el recordatorio aquí lo apagaría
+   en la pantalla y los avisos seguirían llegando igual. Pasa por una
+   función y no suelto en cada sitio para que el próximo ajuste que se
+   añada no se olvide de sincronizar. */
+function cambiarRecordatorio(patch) {
+  setRecordatorio(patch);
+  sincronizarPush();
   pintarRecordatorio();
+}
+
+export function toggleRecordatorio() {
+  cambiarRecordatorio({ activo: !miRecordatorio().activo });
 }
 
 export function setHoraRecordatorio(h) {
   /* Volver a «mi hora habitual» pliega la lista: si ya no se está
      eligiendo una hora, no hay motivo para seguir enseñando veintiuna. */
   if (h == null) horasAbiertas = false;
-  setRecordatorio({ hora: h });
-  pintarRecordatorio();
+  cambiarRecordatorio({ hora: h });
 }
 
 /**
@@ -170,9 +181,8 @@ export function toggleDiaRecordatorio(i) {
   const quedan = dias.includes(i) ? dias.filter((d) => d !== i) : [...dias, i];
 
   if (!quedan.length) {
-    setRecordatorio({ activo: false, dias: TODOS_LOS_DIAS });
+    cambiarRecordatorio({ activo: false, dias: TODOS_LOS_DIAS });
   } else {
-    setRecordatorio({ dias: quedan.sort((a, b) => a - b) });
+    cambiarRecordatorio({ dias: quedan.sort((a, b) => a - b) });
   }
-  pintarRecordatorio();
 }

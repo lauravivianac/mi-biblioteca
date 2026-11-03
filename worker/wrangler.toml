@@ -11,11 +11,17 @@ workers_dev = true
 # ahí, contestando. Ninguna es necesaria — la app usa una sola dirección.
 preview_urls = false
 
-# ── DÓNDE SE LLEVAN LAS CUENTAS ──────────────────────────────────────
+# ── DÓNDE SE LLEVAN LAS CUENTAS Y LAS SUSCRIPCIONES ──────────────────
 # Va comentado a propósito: con un id inventado, `wrangler deploy` falla
 # y te quedas sin agente. Sin KV el Worker funciona igual, pero los
 # contadores viven en memoria y se pierden cuando Cloudflare recicla el
 # isolate — o sea, el techo mensual no frena de verdad.
+#
+# Y DESDE LA #95 HACE FALTA PARA LOS AVISOS, no solo para las cuentas.
+# Las suscripciones de notificación viven aquí, bajo el prefijo `sub:`
+# (ver worker/index.js). Sin este espacio, el cron corre cada hora, no
+# encuentra a nadie y lo dice en el registro; la app, por su parte,
+# enseña que los avisos no están disponibles en vez de prometerlos.
 #
 # Para activarlo, dos pasos:
 #   1) npx wrangler kv namespace create AGENTE

@@ -4,7 +4,11 @@
    ───────────────────────────────────────────────────────────── */
 
 import { watchAuth, completePendingSignIn } from './auth.js';
-import { loadStore, settings, onSave, flush, setDisplayName, uid } from './store.js';
+import {
+  loadStore, settings, onSave, flush, setDisplayName, uid,
+  onReadingDay, onDeleteUserData,
+} from './store.js';
+import { sincronizarPush, olvidarPush } from './push.js';
 import { applyTheme, localTheme } from './theme-engine.js';
 import { seedNewAccount } from './store.js';
 import * as views from './views.js';
@@ -71,6 +75,13 @@ const show = (id, on) => $(id)?.classList.toggle('visible', on);
    pantalla de screens.js. Se enchufa aquí para que src/agent.js no
    dependa de la interfaz. */
 setConsentPrompt(screens.ensureAgentConsent);
+
+/* Las suscripciones de aviso viven en el Worker, no en Firestore (ver
+   src/push.js), así que store.js tiene que poder avisarle de dos
+   cosas sin importarlo — lo importa él a su vez y sería una vuelta
+   cerrada. Se enchufan aquí, por lo mismo que la línea de arriba. */
+onReadingDay(sincronizarPush);
+onDeleteUserData(olvidarPush);
 
 Object.assign(window, {
   nav, closeSheet,
