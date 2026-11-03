@@ -21,9 +21,9 @@ preview_urls = false
 #   1) npx wrangler kv namespace create AGENTE
 #   2) descomenta las tres líneas de abajo y pega el id que imprimió
 #
-# [[kv_namespaces]]
-# binding = "AGENTE"
-# id = "aqui-el-id-que-te-dio-wrangler"
+[[kv_namespaces]]
+binding = "AGENTE"
+id = "bb31f11d087c4b369b66e7e91bf23aac"
 
 # ── EL RELOJ DE LOS AVISOS  ·  historias #69 y #95 ───────────────────
 # Cada hora en punto. No cada minuto: el recordatorio tiene media hora de
