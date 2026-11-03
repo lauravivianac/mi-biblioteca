@@ -9,6 +9,7 @@ import {
   onReadingDay, onDeleteUserData,
 } from './store.js';
 import { sincronizarPush, olvidarPush } from './push.js';
+import * as instalar from './instalar.js';
 import { applyTheme, localTheme } from './theme-engine.js';
 import { seedNewAccount } from './store.js';
 import * as views from './views.js';
@@ -89,6 +90,7 @@ Object.assign(window, {
   ...profileui, ...socialui, ...inviteui, ...feedui, ...commentsui, ...swapui,
   ...exploreui, ...chatui, ...postsui, ...lugaresui, ...shelvesui, ...habitoui, ...avisosui,
   ...petchat, ...petask,
+  ...instalar,
   closeStore: (e) => backdropClose(e, 'store-overlay'),
   closeRecs: (e) => backdropClose(e, 'recs-overlay'),
   closeSettings: (e) => backdropClose(e, 'settings-overlay'),
@@ -167,6 +169,14 @@ watchAuth(async (user) => {
 
   /* El punto de avisos. No bloquea nada. */
   socialui.refreshNotices().catch(() => {});
+
+  /* EL CARTEL DE INSTALAR, Y SOLO CON SESIÓN YA ABIERTA. Encima de
+     la pantalla de acceso sería pedirle a alguien que se instale una
+     app que todavía no ha visto por dentro — y al lado de un
+     formulario de contraseña, un cartel que aparece solo es justo lo
+     que la gente ha aprendido a descartar sin leer. Él solo se calla
+     si ya está instalada o si dijo «ahora no» hace poco. */
+  instalar.vigilarInstalacion();
 
   /* A quién he bloqueado, en cuanto hay sesión: hace falta ANTES de
      pintar nada social, porque es lo que decide qué no se enseña. */

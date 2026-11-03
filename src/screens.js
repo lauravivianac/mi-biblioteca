@@ -50,6 +50,7 @@ import {
   allShelves, createShelf, renameShelf, removeShelf,
   shelfCounts, toggleBookShelf, SHELF_COLORS, SHELF_EMOJIS, SUGGESTED,
 } from './shelves.js';
+import { sePuedeOfrecerInstalar } from './instalar.js';
 import { ico } from './icons.js';
 import { lomoHtml } from './lomo.js';
 
@@ -681,6 +682,17 @@ export function openSettings() {
     <div class="set-card">
       ${filaAjuste('openAvisos()', 'Qué avisos recibo',
         resumenAvisos(settings().avisos, { encendido: pushEncendido() }))}
+
+      ${/* INSTALARLA TAMBIÉN SE PIDE DESDE AQUÍ, no solo desde el
+            cartel que sale solo. Ese cartel se puede cerrar con un
+            «ahora no», y entonces desaparece dos semanas: sin esta
+            fila, quien lo descartó y luego quiere los avisos no tiene
+            por dónde volver. Va en Avisos y no en otro sitio porque
+            en el iPhone instalarla ES el requisito para recibirlos. */''}
+      ${sePuedeOfrecerInstalar()
+        ? filaAjuste('ofrecerInstalar()', 'Tenerla como app',
+          'En el iPhone, además, es lo que hace que lleguen los avisos')
+        : ''}
     </div>
 
     <div class="section-heading"><span class="section-heading-text">Tu perfil</span></div>

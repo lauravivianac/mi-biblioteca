@@ -1356,3 +1356,49 @@ body {
   border: var(--hairline);
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.45);
 }
+
+/* ── EL CARTEL DE INSTALAR  ·  ver src/instalar-core.js ──────
+   Abajo y fijo, no un modal en el centro: lo que propone es útil
+   pero no urgente, y un modal obliga a decidir antes de poder
+   seguir mirando. Desde abajo se lee, se atiende o se ignora, y
+   la app sigue siendo usable con el cartel puesto.
+
+   `env(safe-area-inset-bottom)` porque en un iPhone sin botón, la
+   barra de gestos se come la parte de abajo: sin eso, el botón de
+   «Ahora no» queda debajo de la raya y no se puede tocar — justo
+   en el teléfono al que más le interesa este cartel. */
+.instalar-cartel {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 60;
+  display: none;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: var(--panel, #1a1714);
+  border-top: 1px solid var(--border-soft);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .35);
+}
+.instalar-cartel.visible { display: flex; }
+
+.instalar-texto { flex: 1 1 240px; min-width: 0; }
+.instalar-titulo {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: var(--label-spacing);
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+.instalar-que {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+/* Los botones no se encogen por debajo de lo tocable: con el texto
+   largo del caso de iOS, `flex-wrap` los baja a su propia línea
+   antes que estrujarlos. */
+.instalar-botones { display: flex; gap: 8px; flex: 0 0 auto; }
+.instalar-botones button { min-height: 40px; padding: 8px 16px; }
