@@ -56,7 +56,7 @@ VAPID_PUBLICA = "BCMCk19F16wf7bLNniqoXoOZyCI8XdOQNRuIxPxBFmePdL5b2R3Et0eBbaR5IP7
 # `https://mi-biblioteca-*.vercel.app` NO deja entrar a
 # `otra-cosa.vercel.app` ni a `mi-biblioteca-x.vercel.app.evil.com`;
 # hay pruebas de eso en scripts/test-worker.mjs.
-ALLOWED_ORIGINS = "https://lauravivianac.github.io,https://mi-biblioteca.vercel.app,https://mi-biblioteca-*.vercel.app,http://localhost:8080"
+ALLOWED_ORIGINS = "https://lauravivianac.github.io,https://mi-biblioteca.vercel.app,https://mi-biblioteca-*.vercel.app,http://localhost:8080,https://libros.lauracaceres.com"
 
 # NI LA DE DEEPSEEK NI LA PRIVADA DE VAPID van aquí: este archivo está en
 # el repositorio. Las dos van como secretos del entorno:
