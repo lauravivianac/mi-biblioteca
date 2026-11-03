@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────
-   PROXY DE DEEPSEEK  ·  historias #53, #54, #55, #56
+   PROXY DEL MODELO (Claude; DeepSeek de respaldo)  ·  historias #53, #54, #55, #56
 
    La app es HTML estático: cualquier key dentro del cliente es
    visible con F12 y se agota en horas. Aquí vive la key, como
@@ -8,7 +8,7 @@
    DESPLEGAR:
      git checkout main && git pull                ← wrangler sube lo que
      cd worker                                       hay EN EL DISCO, no
-     npx wrangler secret put DEEPSEEK_API_KEY        lo que está en main
+     npx wrangler secret put ANTHROPIC_API_KEY       lo que está en main
      npx wrangler deploy
 
    La key NO va en wrangler.toml ni en ningún archivo del repo.
@@ -253,10 +253,26 @@ async function sumar(env, clave, cuanto, ttl) {
  * tocar código para actualizarlos garantiza que nadie los actualice.
  */
 export function costMicros(usage = {}, { inPerM = 0, outPerM = 0 } = {}) {
-  const entrada = Number(usage.prompt_tokens) || 0;
-  const salida = Number(usage.completion_tokens) || 0;
+  // DeepSeek: prompt_tokens / completion_tokens. Claude: input_tokens / output_tokens.
+  const entrada = Number(usage.prompt_tokens ?? usage.input_tokens) || 0;
+  const salida = Number(usage.completion_tokens ?? usage.output_tokens) || 0;
   // precio por millón × tokens = millonésimas de dólar, directo
   return Math.round(entrada * inPerM + salida * outPerM);
+}
+
+/** Precios de Claude Haiku 5.5 en dólares por millón de tokens (nov 2026). */
+export function preciosClaude(env = {}) {
+  const num = (v, d) => (Number.isFinite(Number(v)) && v !== '' && v != null ? Number(v) : d);
+  return { inPerM: num(env.CLAUDE_PRICE_IN_PER_M, 0.10), outPerM: num(env.CLAUDE_PRICE_OUT_PER_M, 0.50) };
+}
+
+/** Saca el JSON de la respuesta de Claude: une los bloques de texto (los de
+ *  pensamiento se ignoran) y toma del primer `{` al último `}`. */
+export function jsonDeClaude(data = {}) {
+  const texto = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+  const a = texto.indexOf('{');
+  const z = texto.lastIndexOf('}');
+  return a >= 0 && z > a ? texto.slice(a, z + 1) : '{}';
 }
 
 /** Lee los precios y el techo de la configuración, con valores por defecto. */
@@ -636,23 +652,45 @@ async function manejar(request, env) {
       await sumar(env, `miss:${MES()}`, 1, MES_TTL);
     }
 
-    const r = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: spec.system },
-          { role: 'user', content: text },
-        ],
-        max_tokens: spec.maxTokens,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-      }),
-    });
+    /* EL PROVEEDOR: Claude si el Worker tiene ANTHROPIC_API_KEY, y
+       DeepSeek solo como respaldo mientras exista su llave. Cambiar de
+       uno a otro es poner o quitar un secreto, sin tocar código. */
+    const usarClaude = !!env.ANTHROPIC_API_KEY;
+    const r = usarClaude
+      ? await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-api-key': env.ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: env.CLAUDE_MODEL || 'claude-haiku-5-5',
+            /* Haiku 5.5 piensa antes de contestar y ese pensamiento
+               cuenta dentro de max_tokens: el margen es para que no se
+               coma la respuesta. Sin temperature: el modelo no la acepta. */
+            max_tokens: spec.maxTokens + 2000,
+            system: spec.system + '\nResponde SOLO con un objeto JSON válido, sin texto antes ni después.',
+            messages: [{ role: 'user', content: text }],
+          }),
+        })
+      : await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-chat',
+            messages: [
+              { role: 'system', content: spec.system },
+              { role: 'user', content: text },
+            ],
+            max_tokens: spec.maxTokens,
+            temperature: 0.2,
+            response_format: { type: 'json_object' },
+          }),
+        });
 
     if (!r.ok) return json({ error: 'proveedor', status: r.status }, 502, allowOrigin);
 
@@ -662,10 +700,10 @@ async function manejar(request, env) {
        devuelve los tokens que de verdad usó. Y se apunta aunque la
        respuesta venga ilegible — el dinero se gastó igual. */
     await sumar(env, claveDia, 1, DIA_TTL);
-    await sumar(env, claveGasto, costMicros(data.usage, precios), MES_TTL);
+    await sumar(env, claveGasto, costMicros(data.usage, usarClaude ? preciosClaude(env) : precios), MES_TTL);
 
     let out;
-    try { out = JSON.parse(data.choices?.[0]?.message?.content || '{}'); }
+    try { out = JSON.parse(usarClaude ? jsonDeClaude(data) : (data.choices?.[0]?.message?.content || '{}')); }
     catch { return json({ error: 'respuesta-ilegible' }, 502, allowOrigin); }
 
     /* El propio modelo avisa cuando le pidieron otra cosa. Se corta
