@@ -154,8 +154,85 @@ const resultado = await pagina.evaluate(async (filas) => {
   }
   closeSheet('settings-overlay');
   salida.cuantas = todosLosIds.length;
+
   return salida;
 }, FILAS_DE_AJUSTES);
+
+/* ── EL CARTEL DE INSTALAR, CONTRA LOS BOTONES FLOTANTES ────
+   Página aparte y con user agent de iPhone A PROPÓSITO: en un
+   escritorio no se ofrece instalar nada —no hay forma— así que
+   comprobarlo ahí daría verde sin mirar nada. Y `signed-in`, porque
+   los botones flotantes no existen hasta que hay sesión y son justo
+   con quien hay que medir el choque.
+
+   EL FALLO QUE ESTO CAZA. La primera versión puso el cartel en
+   z-index 60 contra el 200 de los flotantes, y el «+» se pintaba
+   ENCIMA de «Entendido»: el cartel se veía, se leía, y su único botón
+   quedaba debajo de otro botón.
+
+   Lo que no lo cazó fue mirar el centro del cartel en vez de sus
+   botones — el centro estaba despejado. Por eso aquí se pregunta qué
+   hay debajo del dedo EN CADA BOTÓN, que es donde va a caer. */
+const UA_IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 '
+  + '(KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1';
+
+const enElMovil = await navegador.newPage({
+  viewport: { width: 390, height: 664 },
+  userAgent: UA_IPHONE,
+});
+await enElMovil.route('**/*', (ruta) => (ruta.request().url().startsWith(base)
+  ? ruta.continue()
+  : ruta.fulfill({ status: 200, contentType: 'text/plain', body: '' })));
+await enElMovil.goto(`${base}/index.html`);
+await enElMovil.waitForSelector('#instalar-cartel', { state: 'attached' });
+
+const cartel = await enElMovil.evaluate(async () => {
+  const { ofrecerInstalar } = await import('/src/instalar.js');
+  for (const id of ['loading-screen', 'auth-screen']) {
+    document.getElementById(id)?.style.setProperty('display', 'none', 'important');
+  }
+  document.body.classList.add('signed-in');   // los flotantes solo existen con sesión
+  ofrecerInstalar();
+  await new Promise((r) => setTimeout(r, 50));
+
+  const caja = document.getElementById('instalar-cartel');
+  const debajoDelDedo = (n) => {
+    const b = n.getBoundingClientRect();
+    const enc = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+    return n === enc || n.contains(enc);
+  };
+  const mas = document.querySelector('.fab');
+  const botones = [...caja.querySelectorAll('button')];
+  return {
+    sale: caja.classList.contains('visible'),
+    titulo: caja.querySelector('.instalar-titulo')?.textContent.trim(),
+    botones: botones.length,
+    botonesTocables: botones.length > 0 && botones.every(debajoDelDedo),
+    /* Y al revés: subir el cartel por encima no puede enterrar el
+       «+», que es lo que más se usa de toda la app. */
+    masTocable: mas ? debajoDelDedo(mas) : null,
+    sinScrollLateral: document.documentElement.scrollWidth <= window.innerWidth,
+    /* ── Y SI LA MEDIDA FALLA ──────────────────────────────
+       Apartar los flotantes depende de que JavaScript mida el cartel
+       y deje la altura en `--cartel-alto`. Si eso no ocurre —se midió
+       antes de que el texto ocupara su sitio, o el navegador no
+       aplicó la variable— vuelven a caer justo encima.
+
+       Esa es la red que sostiene el z-index, y no se puede comprobar
+       con todo funcionando: con los flotantes ya apartados, el cartel
+       pasaría la prueba estando en z-index 60 o en 210, que es
+       exactamente lo que pasó la primera vez que lo intenté. Así que
+       aquí se le quita la medida a propósito. */
+    conLaMedidaRota: (() => {
+      document.documentElement.style.removeProperty('--cartel-alto');
+      document.body.classList.remove('con-cartel');
+      const sigueTocable = botones.every(debajoDelDedo);
+      document.documentElement.style.setProperty('--cartel-alto', `${caja.offsetHeight}px`);
+      document.body.classList.add('con-cartel');
+      return sigueTocable;
+    })(),
+  };
+});
 
 await navegador.close();
 servidor.close();
@@ -194,6 +271,25 @@ for (const [id, arriba] of Object.entries(resultado.todas)) {
 }
 comprobar('se probaron todas las hojas del marcado', resultado.cuantas >= 25,
   `solo se encontraron ${resultado.cuantas}`);
+
+comprobar('en un iPhone, el cartel de instalar sale y dice qué hacer',
+  cartel.sale && cartel.botones >= 1 && /pantalla de inicio/i.test(cartel.titulo || ''),
+  JSON.stringify(cartel));
+
+comprobar('Y SUS BOTONES SE PUEDEN TOCAR, no hay nada encima',
+  cartel.botonesTocables === true,
+  'el «+» flotante se pintaba justo encima de «Entendido»: el cartel no se podía cerrar');
+
+comprobar('y el «+» tampoco queda enterrado debajo del cartel',
+  cartel.masTocable === true,
+  'añadir un libro es lo que más se hace en esta app');
+
+comprobar('y el cartel no saca scroll lateral en una pantalla estrecha',
+  cartel.sinScrollLateral === true);
+
+comprobar('Y AUNQUE FALLE LA MEDIDA, el botón sigue siendo tocable',
+  cartel.conLaMedidaRota === true,
+  'sin la medida los flotantes vuelven a caer encima: lo que queda es el z-index');
 
 comprobar('el marcado no lanza errores de JavaScript',
   erroresDePagina.length === 0, erroresDePagina.join(' · '));
