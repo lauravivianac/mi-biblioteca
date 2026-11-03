@@ -12,24 +12,25 @@ workers_dev = true
 preview_urls = false
 
 # ── DÓNDE SE LLEVAN LAS CUENTAS Y LAS SUSCRIPCIONES ──────────────────
-# Va comentado a propósito: con un id inventado, `wrangler deploy` falla
-# y te quedas sin agente. Sin KV el Worker funciona igual, pero los
-# contadores viven en memoria y se pierden cuando Cloudflare recicla el
-# isolate — o sea, el techo mensual no frena de verdad.
+# Creado el 3-nov-2026 con `npx wrangler kv namespace create AGENTE`.
+# Aquí viven dos cosas distintas:
 #
-# Y DESDE LA #95 HACE FALTA PARA LOS AVISOS, no solo para las cuentas.
-# Las suscripciones de notificación viven aquí, bajo el prefijo `sub:`
-# (ver worker/index.js). Sin este espacio, el cron corre cada hora, no
-# encuentra a nadie y lo dice en el registro; la app, por su parte,
-# enseña que los avisos no están disponibles en vez de prometerlos.
+#   · los contadores de gasto y la caché del agente. Sin KV funcionan
+#     igual, pero en memoria, y se pierden cuando Cloudflare recicla el
+#     isolate — o sea, el techo mensual no frenaría de verdad;
+#   · las suscripciones de notificación, bajo el prefijo `sub:` (#95,
+#     ver worker/index.js). Estas NO tienen plan B: sin este espacio el
+#     cron corre cada hora, no encuentra a nadie y lo dice en el
+#     registro, y la app enseña que los avisos no están disponibles en
+#     vez de prometerlos.
 #
-# Para activarlo, dos pasos:
-#   1) npx wrangler kv namespace create AGENTE
-#   2) descomenta las tres líneas de abajo y pega el id que imprimió
-#
-# [[kv_namespaces]]
-# binding = "AGENTE"
-# id = "aqui-el-id-que-te-dio-wrangler"
+# El id no es un secreto —nombra el espacio, no da acceso a él— y por
+# eso va en el repositorio: si viviera solo en el portátil de quien
+# desplegó, el siguiente `deploy` desde otro sitio dejaría al Worker
+# sin KV sin avisar de nada.
+[[kv_namespaces]]
+binding = "AGENTE"
+id = "bb31f11d087c4b369b66e7e91bf23aac"
 
 # ── EL RELOJ DE LOS AVISOS  ·  historias #69 y #95 ───────────────────
 # Cada hora en punto. No cada minuto: el recordatorio tiene media hora de
