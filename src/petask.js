@@ -37,6 +37,8 @@ import { petConfig, petState, petVista, petNombre, petPhrase } from './pet.js';
 import { updateEntry, entry, settings, updateSettings, recordReadingDay } from './store.js';
 import { refreshAll } from './views.js';
 import { placeInMonth, quitarDelPlan } from './gaps.js';
+import { openPetChat } from './petchat.js';
+import { agentOffered } from './agent.js';
 
 /** El libro por el que pregunta ahora mismo. */
 let enCuestion = null;
@@ -138,7 +140,29 @@ function pintar() {
         <span class="petask-opt-que">Ahora no</span>
         <span class="petask-opt-por">No te lo vuelvo a sacar hoy</span>
       </button>
-    </div>`;
+    </div>
+
+    ${/* Y LA PUERTA AL CHAT, QUE FALTABA.
+
+          Mientras ella tiene una pregunta pendiente, tocarla abre esta
+          hoja y nunca la conversación —eso está decidido en
+          `pokePet`— con lo cual, hasta que no se decidiera algo sobre
+          ESTE libro, no se podía hablar de ningún otro. Quien quiere
+          hablar de libros se encontraba un formulario sobre Bartleby.
+
+          `pokePet` ya decía en un comentario que «la conversación sigue
+          a un toque desde la propia hoja». No era verdad: el toque no
+          existía. Aquí está.
+
+          Va separado de las cuatro opciones a propósito: las otras
+          cuatro deciden algo sobre el libro, y esta no decide nada. Y
+          solo si hay agente, que un botón que promete algo que no hay
+          es peor que ninguno. */''}
+    ${agentOffered() ? `
+      <button class="petask-hablar" onclick="hablemosDeLibros()">
+        Hablemos de libros
+        <span class="petask-hablar-por">Sin decidir nada sobre este</span>
+      </button>` : ''}`;
 }
 
 /* ── LAS RESPUESTAS ──────────────────────────────────────────── */
@@ -229,6 +253,19 @@ export function masAdelante() {
 export function ahoraNo() {
   if (enCuestion) aplazar(enCuestion.id);
   cerrarCon('');
+}
+
+/**
+ * Dejar la pregunta donde está y ponerse a hablar.
+ *
+ * NO se aplaza el libro ni se toca el plan: quien quiere hablar de
+ * libros no está contestando nada sobre este. La pregunta sigue viva y
+ * ella la volverá a sacar cuando toque, que es lo correcto — no
+ * contestar no es lo mismo que decir «ahora no».
+ */
+export function hablemosDeLibros() {
+  closePetAsk();
+  openPetChat();
 }
 
 function cerrarCon(mensaje) {

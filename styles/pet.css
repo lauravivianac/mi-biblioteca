@@ -277,3 +277,16 @@
 .petask-opt-por { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 /* «Ahora no» es una salida, no una opción más: se ve, pero no compite. */
 .petask-opt-suave { background: transparent; }
+
+/* LA PUERTA AL CHAT. Separada de las cuatro opciones porque no decide
+   nada sobre el libro: las otras cuatro son respuestas a su pregunta y
+   esta es irse a hablar de otra cosa. Sin recuadro, para que no se lea
+   como una quinta respuesta. */
+.petask-hablar {
+  display: block; width: 100%; margin-top: 14px; padding: 10px 0;
+  border: 0; border-top: 1px solid var(--border-soft); background: transparent;
+  font: inherit; color: var(--gold); cursor: pointer; text-align: center;
+}
+.petask-hablar-por {
+  display: block; margin-top: 2px; font-size: .82rem; color: var(--muted);
+}
